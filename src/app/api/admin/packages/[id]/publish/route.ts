@@ -1,0 +1,20 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  const pkg = await db.package.findUnique({ where: { id } });
+  if (!pkg) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!pkg.currentVersionId) return NextResponse.json({ error: "No version to publish" }, { status: 400 });
+
+  await db.package.update({
+    where: { id },
+    data: { status: "PUBLISHED" },
+  });
+
+  return NextResponse.json({ success: true });
+}

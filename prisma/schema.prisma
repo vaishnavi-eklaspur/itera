@@ -52,7 +52,7 @@ model Package {
   id               String        @id @default(cuid())
   slug             String        @unique
   status           PackageStatus @default(DRAFT)
-  currentVersionId String?
+  currentVersionId String?       @unique
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 

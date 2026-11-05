@@ -1,0 +1,97 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+
+export async function GET() {
+  const [total, byStatus, enquiries, admins] = await Promise.all([
+    db.enquiry.count(),
+    db.enquiry.groupBy({ by: ["status"], _count: true }),
+    db.enquiry.findMany({
+      select: {
+        createdAt: true,
+        status: true,
+        assignedToId: true,
+        replies: { select: { sentAt: true }, take: 1, orderBy: { sentAt: "asc" } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
+    db.user.findMany({
+      where: { role: "ADMIN" },
+      select: { id: true, name: true },
+    }),
+  ]);
+
+  // Response times for enquiries that have replies
+  const responseTimes = enquiries
+    .filter((e) => e.replies.length > 0)
+    .map((e) => ({
+      minutes: Math.floor((e.replies[0].sentAt.getTime() - e.createdAt.getTime()) / 60000),
+      assignedToId: e.assignedToId,
+    }));
+
+  const avgResponseTime = responseTimes.length > 0
+    ? Math.round(responseTimes.reduce((sum, r) => sum + r.minutes, 0) / responseTimes.length)
+    : 0;
+
+  const repliedWithinHour = responseTimes.filter((r) => r.minutes <= 60).length;
+  const slaRate = responseTimes.length > 0
+    ? Math.round((repliedWithinHour / responseTimes.length) * 100)
+    : 0;
+
+  // Per-consultant stats
+  const consultantStats = admins.map((admin) => {
+    const assigned = enquiries.filter((e) => e.assignedToId === admin.id);
+    const replied = assigned.filter((e) => e.replies.length > 0);
+    const times = responseTimes.filter((r) => r.assignedToId === admin.id);
+    return {
+      id: admin.id,
+      name: admin.name,
+      assigned: assigned.length,
+      replied: replied.length,
+      avgResponseTime: times.length > 0
+        ? Math.round(times.reduce((s, r) => s + r.minutes, 0) / times.length)
+        : 0,
+    };
+  });
+
+  // Daily enquiry counts (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const dailyEnquiries = enquiries
+    .filter((e) => e.createdAt >= thirtyDaysAgo)
+    .reduce((acc, e) => {
+      const day = e.createdAt.toISOString().split("T")[0];
+      acc[day] = (acc[day] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+  // Top packages by enquiry count
+  const packageCounts = await db.enquiry.groupBy({
+    by: ["packageId"],
+    _count: true,
+    where: { packageId: { not: null } },
+    orderBy: { _count: { packageId: "desc" } },
+    take: 5,
+  });
+
+  const topPackageIds = packageCounts.map((p) => p.packageId).filter(Boolean) as string[];
+  const topPackages = await db.package.findMany({
+    where: { id: { in: topPackageIds } },
+    include: { currentVersion: { select: { title: true } } },
+  });
+
+  const topPackageData = packageCounts.map((p) => ({
+    title: topPackages.find((tp) => tp.id === p.packageId)?.currentVersion?.title || "Unknown",
+    count: p._count,
+  }));
+
+  return NextResponse.json({
+    total,
+    byStatus: Object.fromEntries(byStatus.map((s) => [s.status, s._count])),
+    avgResponseTime,
+    slaRate,
+    consultantStats,
+    dailyEnquiries,
+    topPackages: topPackageData,
+  });
+}
