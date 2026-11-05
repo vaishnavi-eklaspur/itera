@@ -12,6 +12,15 @@ export const metadata: Metadata = {
   },
   description:
     "Handcrafted holiday packages across Kerala and South India. Houseboats, hill stations, temples and beaches — curated by local experts.",
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://itera.vercel.app"),
+  openGraph: {
+    type: "website",
+    siteName: "Itera",
+    title: "Itera — Kerala & South India Travel Packages",
+    description: "Handcrafted holiday packages across Kerala and South India. Houseboats, hill stations, temples and beaches — curated by local experts.",
+  },
+  twitter: { card: "summary_large_image" },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({

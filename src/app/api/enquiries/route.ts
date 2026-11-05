@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   });
 
   // Trigger AI extraction asynchronously (fire-and-forget)
-  fetch(`${process.env.NEXTAUTH_URL}/api/internal/ai/extract`, {
+  fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3001"}/api/internal/ai`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ enquiryId: enquiry.id }),

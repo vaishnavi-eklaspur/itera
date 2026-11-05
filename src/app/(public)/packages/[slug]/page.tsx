@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { db } from "@/lib/db";
@@ -30,12 +31,18 @@ export async function generateMetadata({
   const pkg = await getPackage(slug);
   if (!pkg?.currentVersion) return { title: "Package Not Found" };
   const v = pkg.currentVersion;
+  const minPrice = pkg.seasonalPrices.length ? Math.min(...pkg.seasonalPrices.map((p) => p.pricePerPerson)) : 0;
   return {
     title: v.title,
     description: v.description.slice(0, 160),
     openGraph: {
-      title: v.title,
+      title: `${v.title} — ${v.days} Days in ${v.destination}`,
       description: v.description.slice(0, 160),
+      type: "website",
+    },
+    other: {
+      "product:price:amount": String(minPrice),
+      "product:price:currency": "INR",
     },
   };
 }
@@ -62,13 +69,55 @@ export default async function PackageDetailPage({
     activities: string[];
   }[];
 
+  const relatedPackages = await db.package.findMany({
+    where: { status: "PUBLISHED", slug: { not: slug } },
+    include: {
+      currentVersion: { select: { title: true, destination: true, days: true, description: true } },
+      seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" }, take: 1 },
+    },
+    take: 3,
+    orderBy: { updatedAt: "desc" },
+  });
+
   const whatsappMessage = encodeURIComponent(
     `Hi, I'm interested in the "${v.title}" package (${v.days} days). Could you share more details?`
   );
 
+  const base = process.env.NEXTAUTH_URL || "https://itera.vercel.app";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TouristTrip",
+    name: v.title,
+    description: v.description,
+    touristType: "Leisure",
+    itinerary: {
+      "@type": "ItemList",
+      numberOfItems: v.days,
+      itemListElement: itinerary.map((day) => ({
+        "@type": "ListItem",
+        position: day.day,
+        name: day.title,
+        description: day.description,
+      })),
+    },
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "INR",
+      lowPrice: minPrice,
+      highPrice: Math.max(...pkg.seasonalPrices.map((p) => p.pricePerPerson)),
+      offerCount: pkg.seasonalPrices.length,
+    },
+    provider: {
+      "@type": "TravelAgency",
+      name: "Itera",
+      url: base,
+    },
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Hero */}
       <div className="relative h-[40vh] min-h-[300px] bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-900">
@@ -237,6 +286,32 @@ export default async function PackageDetailPage({
           </div>
         </div>
       </main>
+
+      {/* Related Packages */}
+      {relatedPackages.length > 0 && (
+        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 border-t border-slate-100">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-6">You Might Also Like</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {relatedPackages.map((rp) => {
+              const rv = rp.currentVersion;
+              if (!rv) return null;
+              const rpPrice = rp.seasonalPrices[0]?.pricePerPerson;
+              return (
+                <Link key={rp.id} href={`/packages/${rp.slug}`} className="group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg hover:border-slate-200 transition-all">
+                  <div className="aspect-[16/10] bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center">
+                    <MapPin className="w-10 h-10 text-teal-300" />
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-semibold text-slate-900 group-hover:text-teal-700 transition line-clamp-1">{rv.title}</h3>
+                    <p className="text-xs text-slate-500 mt-1">{rv.destination} · {rv.days} Days</p>
+                    {rpPrice && <p className="mt-2 text-sm font-semibold text-teal-700">{formatPrice(rpPrice)}<span className="text-xs font-normal text-slate-400">/person</span></p>}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Mobile WhatsApp FAB */}
       <a

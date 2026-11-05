@@ -669,6 +669,128 @@ async function main() {
       ],
       aiDraftReply: null,
     },
+    // Solo backpacker
+    {
+      packageId: null,
+      name: "Aditya Kapoor",
+      email: "aditya.k@example.com",
+      phone: "+91 91111 22222",
+      message: "Solo traveller here, 25M. Want to do Kerala on a budget — hostels are fine. 10 days in January. Interested in surfing at Varkala, trekking in Munnar, and the backwaters. Budget around 25-30k total.",
+      adults: 1,
+      budget: "30,000",
+      status: EnquiryStatus.NEW,
+      aiExtracted: { dates: { start: "2027-01-01", end: "2027-01-10", flexible: true, raw: "10 days in January" }, adults: 1, children: 0, destination: "Kerala", budget: { total: 30000, perPerson: 30000, currency: "INR" }, requirements: ["surfing", "trekking", "backwaters", "budget", "solo"], confidence: 0.9 },
+      aiSuggestions: [
+        { packageSlug: "trivandrum-kovalam-varkala-beach", score: 0.65, reasons: ["Varkala included", "Beach-focused"] },
+        { packageSlug: "kochi-alleppey-weekend", score: 0.5, reasons: ["Backwaters included", "₹15,500/person — within budget"] },
+      ],
+      aiDraftReply: null,
+    },
+    // Senior citizens
+    {
+      packageId: coorg?.id,
+      name: "Dr. Suresh & Mrs. Lakshmi Iyer",
+      email: "suresh.iyer@example.com",
+      phone: "+91 94444 33333",
+      message: "Retired couple, both 68 years. Want a relaxed trip — not too much walking or climbing. Coorg coffee plantations look nice. 4-5 days, comfortable hotels. Need AC car with patient driver. Budget not an issue.",
+      adults: 2,
+      budget: "No constraint",
+      status: EnquiryStatus.IN_PROGRESS,
+      assignedToId: consultant.id,
+      aiExtracted: { dates: null, adults: 2, children: 0, destination: "Coorg", budget: null, requirements: ["relaxed pace", "comfortable hotels", "AC car", "patient driver", "senior-friendly"], confidence: 0.85 },
+      aiSuggestions: [
+        { packageSlug: "coorg-mysore-royal-retreat", score: 0.88, reasons: ["Coorg match", "4-star resort", "4 days — relaxed pace", "Manageable walking"] },
+      ],
+      aiDraftReply: null,
+    },
+    // NRI planning parents' trip
+    {
+      packageId: null,
+      name: "Rohan Desai",
+      email: "rohan.desai@gmail.com",
+      phone: "+1 408 555 7890",
+      message: "I'm based in the US. Want to gift my parents (60s) a Kerala trip for their 35th anniversary. They're in Mumbai. Need pickup from Kochi airport. 5-6 days, nice hotels, not too hectic. Houseboat must. I'll pay online — can you send an invoice?",
+      adults: 2,
+      budget: "1,50,000",
+      status: EnquiryStatus.NEW,
+      aiExtracted: { dates: null, adults: 2, children: 0, destination: "Kerala", budget: { total: 150000, perPerson: 75000, currency: "INR" }, requirements: ["anniversary gift", "Kochi airport pickup", "houseboat", "relaxed pace", "invoice needed"], confidence: 0.82 },
+      aiSuggestions: [
+        { packageSlug: "munnar-thekkady-alleppey-houseboat", score: 0.85, reasons: ["6 days", "Houseboat included", "Kochi pickup included", "₹32,500/person peak — ₹65,000 within budget"] },
+        { packageSlug: "kerala-honeymoon-special", score: 0.7, reasons: ["Anniversary-appropriate", "Premium properties", "7 days slightly longer but relaxed"] },
+      ],
+      aiDraftReply: null,
+    },
+    // Repeat customer
+    {
+      packageId: honeymoon?.id,
+      name: "Meera Nambiar",
+      email: "meera.n@example.com",
+      phone: "+91 93333 44444",
+      message: "Hi! We did the Munnar-Alleppey package with you last year and loved it. This time we want the honeymoon special for our anniversary. February or March. Same great experience please!",
+      adults: 2,
+      status: EnquiryStatus.REPLIED,
+      assignedToId: admin.id,
+      aiExtracted: { dates: { start: "2027-02-01", end: "2027-03-31", flexible: true, raw: "February or March" }, adults: 2, children: 0, destination: "Kerala", budget: null, requirements: ["honeymoon special", "anniversary", "repeat customer"], confidence: 0.92 },
+      aiSuggestions: [
+        { packageSlug: "kerala-honeymoon-special", score: 0.98, reasons: ["Exact package mentioned", "Anniversary trip", "Repeat customer — knows our quality"] },
+      ],
+      aiDraftReply: null,
+    },
+    // Large family
+    {
+      packageId: null,
+      name: "Farhan & Zara Ahmed",
+      email: "farhan.ahmed@example.com",
+      phone: "+91 92222 55555",
+      message: "Planning a family reunion trip — 8 adults and 4 kids (ages 5 to 14). Want something fun for the kids but not boring for adults. Kerala or Karnataka, 5-6 days, around Pongal holidays in January. Total budget around 5 lakhs.",
+      adults: 8,
+      children: 4,
+      budget: "5,00,000",
+      status: EnquiryStatus.NEW,
+      aiExtracted: { dates: { start: "2027-01-14", end: "2027-01-19", flexible: true, raw: "Pongal holidays in January" }, adults: 8, children: 4, destination: "Kerala or Karnataka", budget: { total: 500000, perPerson: null, currency: "INR" }, requirements: ["family reunion", "kid-friendly", "fun for adults"], confidence: 0.87 },
+      aiSuggestions: [
+        { packageSlug: "wayanad-kozhikode-heritage", score: 0.75, reasons: ["Wildlife sanctuary for kids", "Nature-focused", "5 days"] },
+        { packageSlug: "coorg-mysore-royal-retreat", score: 0.7, reasons: ["Elephant camp for kids", "Mysore Palace fun for all ages", "4 days"] },
+        { packageSlug: "best-of-kerala", score: 0.6, reasons: ["Comprehensive — something for everyone", "₹45,000 × 8 adults = ₹3.6L + kids — within ₹5L budget"] },
+      ],
+      aiDraftReply: null,
+    },
+    // Honeymoon from abroad
+    {
+      packageId: keralaPkg?.id,
+      name: "Thomas & Lisa Weber",
+      email: "thomas.weber@example.de",
+      phone: "+49 170 1234567",
+      message: "Guten Tag! We are from Germany and planning our honeymoon in India. Kerala looks wonderful. We want 7-8 days, luxury hotels, Ayurveda experience, houseboat, and maybe some wildlife. We arrive in Kochi on March 15. Budget EUR 3000 for both.",
+      adults: 2,
+      budget: "EUR 3,000",
+      status: EnquiryStatus.IN_PROGRESS,
+      assignedToId: admin.id,
+      aiExtracted: { dates: { start: "2027-03-15", end: "2027-03-22", flexible: false, raw: "arrive in Kochi on March 15" }, adults: 2, children: 0, destination: "Kerala", budget: { total: 270000, perPerson: 135000, currency: "INR" }, requirements: ["luxury", "Ayurveda", "houseboat", "wildlife", "honeymoon"], confidence: 0.93 },
+      aiSuggestions: [
+        { packageSlug: "kerala-honeymoon-special", score: 0.95, reasons: ["Honeymoon-specific", "Ayurveda spa included", "Premium houseboat", "7 nights", "₹52,000/person peak — ₹1.04L well within ~₹2.7L budget"] },
+        { packageSlug: "best-of-kerala", score: 0.8, reasons: ["8 days", "Includes wildlife at Periyar", "Houseboat included", "Can upgrade to 5-star"] },
+      ],
+      aiDraftReply: null,
+    },
+    // Photography tour enquiry
+    {
+      packageId: null,
+      name: "Kavitha Sundaram",
+      email: "kavitha.photo@example.com",
+      phone: "+91 98888 11111",
+      message: "I'm a professional photographer looking to do a photo tour of Kerala — need early morning access for golden hour shots at backwaters, tea estates, and Fort Kochi. Flexible dates, solo, 8-10 days. Can you arrange a driver who knows the best sunrise spots?",
+      adults: 1,
+      budget: "50,000",
+      status: EnquiryStatus.CLOSED,
+      assignedToId: consultant.id,
+      aiExtracted: { dates: null, adults: 1, children: 0, destination: "Kerala", budget: { total: 50000, perPerson: 50000, currency: "INR" }, requirements: ["photography", "golden hour", "backwaters", "tea estates", "Fort Kochi", "knowledgeable driver", "sunrise spots"], confidence: 0.88 },
+      aiSuggestions: [
+        { packageSlug: "best-of-kerala", score: 0.8, reasons: ["Covers all mentioned locations", "8 days", "Can customize for early morning starts"] },
+        { packageSlug: "munnar-thekkady-alleppey-houseboat", score: 0.7, reasons: ["Tea estates + backwaters", "6 days core route"] },
+      ],
+      aiDraftReply: null,
+    },
   ];
 
   for (const enq of enquiries) {

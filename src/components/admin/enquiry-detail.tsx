@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Send, Loader2, Bot, User, StickyNote, MapPin, ArrowLeft } from "lucide-react";
+import { Send, Loader2, Bot, User, StickyNote, MapPin, ArrowLeft, RefreshCw, Pencil, Check, X } from "lucide-react";
 import Link from "next/link";
 import { timeAgo, responseTimeBadge } from "@/lib/utils";
 
@@ -28,6 +28,57 @@ type SuggestedPackage = {
   currentVersion: { title: string; destination: string; days: number } | null;
 };
 
+function ConfidenceBadge({ value }: { value: number }) {
+  const pct = Math.round(value * 100);
+  const level = pct >= 75 ? "high" : pct >= 40 ? "medium" : "low";
+  const cls = level === "high" ? "bg-green-100 text-green-700" : level === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700";
+  return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>{pct}% {level}</span>;
+}
+
+function EditableField({ label, value, onSave, lowConfidence }: {
+  label: string; value: string; onSave: (v: string) => void; lowConfidence?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const isEmpty = !value || value === "—";
+  return (
+    <div className={`rounded-lg p-3 ${lowConfidence ? "bg-amber-50 ring-1 ring-amber-200" : "bg-white"}`}>
+      <p className="text-xs text-slate-400 capitalize mb-1">{label}</p>
+      {editing ? (
+        <div className="flex items-center gap-1">
+          <input value={draft} onChange={e => setDraft(e.target.value)} className="flex-1 text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500" autoFocus />
+          <button onClick={() => { onSave(draft); setEditing(false); }} className="text-green-600 hover:text-green-700"><Check className="w-4 h-4" /></button>
+          <button onClick={() => { setDraft(value); setEditing(false); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between group">
+          <p className={`text-sm font-medium ${isEmpty ? "text-slate-300 italic" : "text-slate-700"}`}>{isEmpty ? "Not detected" : value}</p>
+          <button onClick={() => setEditing(true)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-teal-600 transition-opacity"><Pencil className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function flattenExtracted(ai: Record<string, any>): { key: string; label: string; value: string }[] {
+  const fields: { key: string; label: string; value: string }[] = [];
+  if (ai.destination != null) fields.push({ key: "destination", label: "Destination", value: String(ai.destination ?? "") });
+  if (ai.dates) {
+    const d = ai.dates;
+    const raw = d.raw || [d.start, d.end].filter(Boolean).join(" – ") || "";
+    fields.push({ key: "dates", label: "Travel dates", value: raw + (d.flexible ? " (flexible)" : "") });
+  }
+  if (ai.adults != null) fields.push({ key: "adults", label: "Adults", value: String(ai.adults) });
+  if (ai.children != null) fields.push({ key: "children", label: "Children", value: String(ai.children) });
+  if (ai.budget) {
+    const b = ai.budget;
+    const amt = b.total ? `${b.currency ?? "INR"} ${b.total.toLocaleString()}` : b.perPerson ? `${b.currency ?? "INR"} ${b.perPerson.toLocaleString()}/person` : "";
+    fields.push({ key: "budget", label: "Budget", value: amt });
+  }
+  if (ai.requirements?.length) fields.push({ key: "requirements", label: "Requirements", value: ai.requirements.join(", ") });
+  return fields;
+}
+
 export function EnquiryDetail({
   enquiry,
   admins,
@@ -42,10 +93,42 @@ export function EnquiryDetail({
   const [noteContent, setNoteContent] = useState("");
   const [sending, setSending] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [localExtracted, setLocalExtracted] = useState<Record<string, any> | null>(enquiry.aiExtracted as Record<string, any> | null);
   const firstReplyAt = enquiry.replies.length > 0 ? new Date(enquiry.replies[enquiry.replies.length - 1].sentAt) : null;
   const badge = responseTimeBadge(new Date(enquiry.createdAt), firstReplyAt);
-  const aiExtracted = enquiry.aiExtracted as Record<string, any> | null;
-  const confidence = aiExtracted?.confidence as number | undefined;
+  const confidence = localExtracted?.confidence as number | undefined;
+
+  async function saveField(key: string, value: string) {
+    if (!localExtracted) return;
+    const updated = { ...localExtracted };
+    if (key === "destination") updated.destination = value;
+    else if (key === "adults") updated.adults = parseInt(value) || null;
+    else if (key === "children") updated.children = parseInt(value) || null;
+    else if (key === "dates") updated.dates = { ...updated.dates, raw: value };
+    else if (key === "budget") updated.budget = { ...updated.budget, total: parseInt(value.replace(/\D/g, "")) || null };
+    else if (key === "requirements") updated.requirements = value.split(",").map((s: string) => s.trim()).filter(Boolean);
+    setLocalExtracted(updated);
+    await fetch(`/api/admin/enquiries/${enquiry.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aiExtracted: updated }),
+    });
+  }
+
+  async function retryAI() {
+    setRetrying(true);
+    try {
+      await fetch("/api/internal/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enquiryId: enquiry.id }),
+      });
+      router.refresh();
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   async function sendReply() {
     setSending(true);
@@ -89,6 +172,9 @@ export function EnquiryDetail({
     router.refresh();
   }
 
+  const aiFields = localExtracted ? flattenExtracted(localExtracted) : [];
+  const isLowConfidence = (confidence ?? 0) < 0.4;
+
   return (
     <div>
       <Link href="/admin/enquiries" className="flex items-center gap-1 text-sm text-slate-500 hover:text-teal-700 mb-4">
@@ -125,30 +211,41 @@ export function EnquiryDetail({
             <p className="text-sm text-slate-600 whitespace-pre-wrap">{enquiry.message}</p>
           </section>
 
-          {/* AI Extraction */}
-          {aiExtracted && (
-            <section className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-3">
+          {/* AI Extraction — inline editable */}
+          <section className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
                 <Bot className="w-4 h-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-800">AI Extracted Fields</span>
-                {confidence != null && (
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                    {Math.round(confidence * 100)}% confidence
-                  </span>
-                )}
+                {confidence != null && <ConfidenceBadge value={confidence} />}
               </div>
+              <button onClick={retryAI} disabled={retrying} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50">
+                {retrying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                {retrying ? "Re-analyzing..." : "Retry AI"}
+              </button>
+            </div>
+            <p className="text-xs text-blue-500 mb-3">Fields extracted by AI — review and correct before using.</p>
+            {aiFields.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {Object.entries(aiExtracted).filter(([k]) => k !== "confidence").map(([key, value]) => (
-                  <div key={key} className="bg-white rounded-lg p-3">
-                    <p className="text-xs text-slate-400 capitalize">{key.replace(/_/g, " ")}</p>
-                    <p className="text-sm font-medium text-slate-700">
-                      {typeof value === "object" ? JSON.stringify(value) : String(value ?? "—")}
-                    </p>
-                  </div>
+                {aiFields.map(f => (
+                  <EditableField
+                    key={f.key}
+                    label={f.label}
+                    value={f.value}
+                    onSave={v => saveField(f.key, v)}
+                    lowConfidence={isLowConfidence}
+                  />
                 ))}
               </div>
-            </section>
-          )}
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-blue-600">No fields extracted yet.</p>
+                <button onClick={retryAI} disabled={retrying} className="mt-2 text-sm text-blue-700 hover:text-blue-900 font-medium">
+                  {retrying ? "Analyzing..." : "Run AI Extraction"}
+                </button>
+              </div>
+            )}
+          </section>
 
           {/* Suggested Packages */}
           {suggestedPackages.length > 0 && (
