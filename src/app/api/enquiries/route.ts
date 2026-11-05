@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { enquiryFormSchema } from "@/lib/validations";
 import { auth } from "@/lib/auth";
+import { sendAutoAckEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -30,9 +31,27 @@ export async function POST(req: NextRequest) {
       children: data.children || null,
       budget: data.budget || null,
       status: "NEW",
-      autoAckSentAt: new Date(),
     },
   });
+
+  // Send auto-acknowledgement email, then mark timestamp
+  let pkg = null;
+  if (enquiry.packageId) {
+    const p = await db.package.findUnique({
+      where: { id: enquiry.packageId },
+      include: { currentVersion: { select: { title: true, destination: true, days: true } } },
+    });
+    if (p?.currentVersion) pkg = p.currentVersion;
+  }
+  try {
+    await sendAutoAckEmail(data, pkg);
+    await db.enquiry.update({
+      where: { id: enquiry.id },
+      data: { autoAckSentAt: new Date() },
+    });
+  } catch (e) {
+    console.error("[EMAIL] Auto-ack failed:", e);
+  }
 
   // Trigger AI extraction asynchronously (fire-and-forget)
   fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3001"}/api/internal/ai`, {
