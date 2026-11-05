@@ -63,6 +63,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
   );
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSave() {
@@ -114,6 +115,37 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
       setError("Publish failed");
     } finally {
       setPublishing(false);
+    }
+  }
+
+  async function handlePreview() {
+    setPreviewing(true);
+    setError("");
+    try {
+      const body = {
+        title, destination, days, description, hotelTier,
+        inclusions: inclusions.filter(Boolean),
+        exclusions: exclusions.filter(Boolean),
+        itinerary,
+        seasonalPrices: prices,
+        slug: isNew ? slugify(title) : pkg.slug,
+        photos: [],
+      };
+      const res = await fetch("/api/admin/packages/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Preview failed");
+      }
+      const { token } = await res.json();
+      window.open(`/packages/preview/${token}`, "_blank");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setPreviewing(false);
     }
   }
 
@@ -176,6 +208,14 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
               )}
             </>
           )}
+          <button
+            onClick={handlePreview}
+            disabled={previewing}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+            Preview
+          </button>
           <button
             onClick={handleSave}
             disabled={saving}

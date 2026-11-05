@@ -156,3 +156,13 @@ model EnquiryReply {
   enquiry Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
   author  User    @relation(fields: [authorId], references: [id])
 }
+
+model PreviewCache {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  data      Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+}
