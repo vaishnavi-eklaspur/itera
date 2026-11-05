@@ -21,15 +21,15 @@ export function Navbar() {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/packages"
-              className="text-sm text-slate-600 hover:text-teal-700 transition"
-            >
+            <Link href="/packages" className="text-sm text-slate-600 hover:text-teal-700 transition">
               Packages
+            </Link>
+            <Link href="/blog" className="text-sm text-slate-600 hover:text-teal-700 transition">
+              Blog
             </Link>
             {session?.user ? (
               <div className="flex items-center gap-4">
-                {session.user.role === "ADMIN" && (
+                {["ADMIN", "EDITOR", "CONSULTANT"].includes(session.user.role as string) && (
                   <Link
                     href="/admin/enquiries"
                     className="text-sm text-slate-600 hover:text-teal-700 transition flex items-center gap-1"
@@ -79,16 +79,15 @@ export function Navbar() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden pb-4 space-y-2">
-            <Link
-              href="/packages"
-              className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg"
-              onClick={() => setMenuOpen(false)}
-            >
+            <Link href="/packages" className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg" onClick={() => setMenuOpen(false)}>
               Packages
+            </Link>
+            <Link href="/blog" className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg" onClick={() => setMenuOpen(false)}>
+              Blog
             </Link>
             {session?.user ? (
               <>
-                {session.user.role === "ADMIN" && (
+                {["ADMIN", "EDITOR", "CONSULTANT"].includes(session.user.role as string) && (
                   <Link
                     href="/admin/enquiries"
                     className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg"

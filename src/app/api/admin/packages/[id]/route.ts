@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { packageFormSchema } from "@/lib/validations";
+import { logActivity } from "@/lib/activity";
 
 export async function GET(
   req: NextRequest,
@@ -73,7 +74,11 @@ export async function PUT(
 
   await db.package.update({
     where: { id },
-    data: { currentVersionId: version.id, slug: data.slug },
+    data: {
+      currentVersionId: version.id,
+      slug: data.slug,
+      ...(body.scheduledAt !== undefined ? { scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : null } : {}),
+    },
   });
 
   // Update seasonal prices: delete old, create new
@@ -92,6 +97,8 @@ export async function PUT(
     });
   }
 
+  await logActivity(session.user.id, "updated", "package", id, `v${nextVersionNumber}`);
+
   return NextResponse.json({ success: true, versionNumber: nextVersionNumber });
 }
 
@@ -108,6 +115,8 @@ export async function DELETE(
     where: { id },
     data: { status: "ARCHIVED" },
   });
+
+  await logActivity(session.user.id, "archived", "package", id);
 
   return NextResponse.json({ success: true });
 }

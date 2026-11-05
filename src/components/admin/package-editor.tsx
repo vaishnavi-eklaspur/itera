@@ -29,6 +29,7 @@ type PackageData = {
   id: string;
   slug: string;
   status: string;
+  scheduledAt: string | null;
   currentVersion: {
     title: string;
     destination: string;
@@ -38,6 +39,7 @@ type PackageData = {
     inclusions: string[];
     exclusions: string[];
     itinerary: ItineraryDay[];
+    photos: string[];
   } | null;
   seasonalPrices: SeasonalPrice[];
   versions: { id: string; versionNumber: number; title: string; createdAt: string }[];
@@ -61,6 +63,8 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
   const [prices, setPrices] = useState<SeasonalPrice[]>(
     pkg?.seasonalPrices ?? [{ seasonName: "Regular", seasonStartMonth: 1, seasonEndMonth: 12, pricePerPerson: 0, basis: "Per person, twin sharing", gstInclusive: true }]
   );
+  const [photos, setPhotos] = useState<string[]>(v?.photos ?? []);
+  const [scheduledAt, setScheduledAt] = useState(pkg?.scheduledAt ? new Date(pkg.scheduledAt).toISOString().slice(0, 16) : "");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -76,7 +80,9 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
         exclusions: exclusions.filter(Boolean),
         itinerary,
         seasonalPrices: prices,
+        photos: photos.filter(Boolean),
         slug: isNew ? slugify(title) : undefined,
+        scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       };
 
       const url = isNew ? "/api/admin/packages" : `/api/admin/packages/${pkg.id}`;
@@ -129,7 +135,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
         itinerary,
         seasonalPrices: prices,
         slug: isNew ? slugify(title) : pkg.slug,
-        photos: [],
+        photos: photos.filter(Boolean),
       };
       const res = await fetch("/api/admin/packages/preview", {
         method: "POST",
@@ -403,6 +409,36 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
               </div>
             </section>
           )}
+
+          {/* Photos */}
+          <section className="bg-white rounded-xl border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-slate-900">Photos</h2>
+              <button onClick={() => setPhotos(prev => [...prev, ""])} className="text-sm text-teal-600 hover:text-teal-700">
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            {photos.length === 0 ? (
+              <p className="text-sm text-slate-400">No photos added</p>
+            ) : (
+              <div className="space-y-2">
+                {photos.map((url, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input placeholder="Image URL" value={url} onChange={(e) => { const next = [...photos]; next[i] = e.target.value; setPhotos(next); }} className="flex-1 px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    <button onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Scheduling */}
+          <section className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="font-semibold text-slate-900 mb-4">Publish Schedule</h2>
+            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            {scheduledAt && <p className="text-xs text-slate-400 mt-2">Will auto-publish at {new Date(scheduledAt).toLocaleString()}</p>}
+            {scheduledAt && <button onClick={() => setScheduledAt("")} className="text-xs text-red-500 mt-1">Clear schedule</button>}
+          </section>
 
           {/* Status */}
           {pkg && (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(
   req: NextRequest,
@@ -19,6 +20,8 @@ export async function POST(
     where: { id },
     data: { status: "PUBLISHED" },
   });
+
+  await logActivity(session.user.id, "published", "package", id);
 
   return NextResponse.json({ success: true });
 }

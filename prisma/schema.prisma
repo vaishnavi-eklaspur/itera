@@ -10,6 +10,8 @@ datasource db {
 enum Role {
   TRAVELLER
   ADMIN
+  EDITOR
+  CONSULTANT
 }
 
 enum PackageStatus {
@@ -46,6 +48,9 @@ model User {
   enquiryNotes      EnquiryNote[]
   enquiryReplies    EnquiryReply[]
   packageVersions   PackageVersion[]
+  blogPosts         BlogPost[]
+  quotes            Quote[]
+  activityLogs      ActivityLog[]
 }
 
 model Package {
@@ -53,6 +58,7 @@ model Package {
   slug             String        @unique
   status           PackageStatus @default(DRAFT)
   currentVersionId String?       @unique
+  scheduledAt      DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -60,6 +66,7 @@ model Package {
   versions       PackageVersion[] @relation("PackageVersions")
   seasonalPrices SeasonalPrice[]
   enquiries      Enquiry[]
+  quotes         Quote[]
 }
 
 model PackageVersion {
@@ -165,4 +172,64 @@ model PreviewCache {
   createdAt DateTime @default(now())
 
   @@index([token])
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String
+  content     String
+  coverImage  String?
+  category    String
+  tags        String[]
+  seoTitle    String?
+  seoDescription String?
+  relatedPackageIds String[]
+  published   Boolean  @default(false)
+  authorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([category])
+  @@index([published])
+}
+
+model Quote {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  packageId   String
+  enquiryId   String?
+  travellers  Int
+  travelDate  String?
+  pricePerPerson Int
+  totalPrice  Int
+  inclusions  String[]
+  exclusions  String[]
+  notes       String?
+  validUntil  DateTime
+  authorId    String
+  createdAt   DateTime @default(now())
+
+  package Package @relation(fields: [packageId], references: [id])
+  author  User    @relation(fields: [authorId], references: [id])
+
+  @@index([token])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entity     String
+  entityId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
 }

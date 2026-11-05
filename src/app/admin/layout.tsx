@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Inbox, BarChart3, Home } from "lucide-react";
+import { Package, Inbox, BarChart3, Home, FileText, ClipboardList, Activity } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,7 +13,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <NavLink href="/admin" icon={Home}>Dashboard</NavLink>
               <NavLink href="/admin/packages" icon={Package}>Packages</NavLink>
               <NavLink href="/admin/enquiries" icon={Inbox}>Enquiries</NavLink>
+              <NavLink href="/admin/blog" icon={FileText}>Blog</NavLink>
+              <NavLink href="/admin/quotes" icon={ClipboardList}>Quotes</NavLink>
               <NavLink href="/admin/analytics" icon={BarChart3}>Analytics</NavLink>
+              <NavLink href="/admin/activity" icon={Activity}>Activity</NavLink>
             </nav>
           </div>
           <Link href="/" className="text-xs text-slate-400 hover:text-slate-600">
@@ -27,6 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <MobileNavLink href="/admin" icon={Home}>Home</MobileNavLink>
         <MobileNavLink href="/admin/packages" icon={Package}>Packages</MobileNavLink>
         <MobileNavLink href="/admin/enquiries" icon={Inbox}>Enquiries</MobileNavLink>
+        <MobileNavLink href="/admin/blog" icon={FileText}>Blog</MobileNavLink>
         <MobileNavLink href="/admin/analytics" icon={BarChart3}>Analytics</MobileNavLink>
       </nav>
 
