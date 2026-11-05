@@ -24,11 +24,11 @@ async function getPackages() {
 }
 
 async function getDestinations() {
-  const versions = await db.packageVersion.findMany({
-    select: { destination: true },
-    distinct: ["destination"],
+  const packages = await db.package.findMany({
+    where: { status: "PUBLISHED" },
+    select: { currentVersion: { select: { destination: true } } },
   });
-  return versions.map((v) => v.destination);
+  return [...new Set(packages.map((p) => p.currentVersion?.destination).filter(Boolean))] as string[];
 }
 
 export default async function PackagesPage() {

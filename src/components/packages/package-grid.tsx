@@ -28,6 +28,7 @@ export function PackageGrid({
 }) {
   const [search, setSearch] = useState("");
   const [destination, setDestination] = useState("");
+  const [maxBudget, setMaxBudget] = useState("");
   const [sort, setSort] = useState("price-asc");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -48,6 +49,15 @@ export function PackageGrid({
       result = result.filter(
         (p) => p.currentVersion!.destination === destination
       );
+    }
+
+    if (maxBudget) {
+      const limit = parseInt(maxBudget);
+      if (!isNaN(limit)) {
+        result = result.filter((p) =>
+          Math.min(...p.seasonalPrices.map((s) => s.pricePerPerson)) <= limit
+        );
+      }
     }
 
     result.sort((a, b) => {
@@ -92,7 +102,7 @@ export function PackageGrid({
         >
           <SlidersHorizontal className="w-4 h-4" /> Filters
         </button>
-        <div className={`${showFilters ? "flex" : "hidden"} sm:flex gap-3`}>
+        <div className={`${showFilters ? "flex" : "hidden"} sm:flex gap-3 flex-wrap`}>
           <select
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
@@ -103,6 +113,13 @@ export function PackageGrid({
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
+          <input
+            type="number"
+            placeholder="Max budget/person"
+            value={maxBudget}
+            onChange={(e) => setMaxBudget(e.target.value)}
+            className="w-40 px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
@@ -126,7 +143,7 @@ export function PackageGrid({
         <div className="text-center py-16">
           <p className="text-slate-500">No packages match your search.</p>
           <button
-            onClick={() => { setSearch(""); setDestination(""); }}
+            onClick={() => { setSearch(""); setDestination(""); setMaxBudget(""); }}
             className="mt-3 text-sm text-teal-600 hover:text-teal-700 font-medium"
           >
             Clear filters
