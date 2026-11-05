@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       hotelTier: data.hotelTier,
       itinerary: data.itinerary,
       photos: data.photos,
-      mapCenter: data.mapCenter || null,
+      mapCenter: data.mapCenter ?? undefined,
       authorId: session.user.id,
     },
   });
