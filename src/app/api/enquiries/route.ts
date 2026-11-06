@@ -3,8 +3,14 @@ import { db } from "@/lib/db";
 import { enquiryFormSchema } from "@/lib/validations";
 import { auth } from "@/lib/auth";
 import { sendAutoAckEmail } from "@/lib/email";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!rateLimit(ip)) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
+
   const body = await req.json();
   const parsed = enquiryFormSchema.safeParse(body);
 

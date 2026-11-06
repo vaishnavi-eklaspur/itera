@@ -37,49 +37,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "A package with this URL slug already exists" }, { status: 409 });
   }
 
-  const pkg = await db.package.create({
-    data: {
-      slug: data.slug,
-      status: "DRAFT",
-    },
-  });
+  const pkg = await db.$transaction(async (tx) => {
+    const p = await tx.package.create({
+      data: { slug: data.slug, status: "DRAFT" },
+    });
 
-  const version = await db.packageVersion.create({
-    data: {
-      packageId: pkg.id,
-      versionNumber: 1,
-      title: data.title,
-      destination: data.destination,
-      days: data.days,
-      description: data.description,
-      inclusions: data.inclusions,
-      exclusions: data.exclusions,
-      hotelTier: data.hotelTier,
-      itinerary: data.itinerary,
-      photos: data.photos,
-      mapCenter: data.mapCenter ?? undefined,
-      authorId: session.user.id,
-    },
-  });
-
-  await db.package.update({
-    where: { id: pkg.id },
-    data: { currentVersionId: version.id },
-  });
-
-  for (const price of data.seasonalPrices) {
-    await db.seasonalPrice.create({
+    const version = await tx.packageVersion.create({
       data: {
-        packageId: pkg.id,
+        packageId: p.id,
+        versionNumber: 1,
+        title: data.title,
+        destination: data.destination,
+        days: data.days,
+        description: data.description,
+        inclusions: data.inclusions,
+        exclusions: data.exclusions,
+        hotelTier: data.hotelTier,
+        itinerary: data.itinerary,
+        photos: data.photos,
+        mapCenter: data.mapCenter ?? undefined,
+        authorId: session.user.id,
+      },
+    });
+
+    await tx.package.update({
+      where: { id: p.id },
+      data: { currentVersionId: version.id },
+    });
+
+    await tx.seasonalPrice.createMany({
+      data: data.seasonalPrices.map((price) => ({
+        packageId: p.id,
         seasonName: price.seasonName,
         seasonStartMonth: price.seasonStartMonth,
         seasonEndMonth: price.seasonEndMonth,
         pricePerPerson: price.pricePerPerson,
         basis: price.basis,
         gstInclusive: price.gstInclusive,
-      },
+      })),
     });
-  }
+
+    return p;
+  });
 
   return NextResponse.json(pkg, { status: 201 });
 }

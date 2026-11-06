@@ -22,41 +22,43 @@ export async function POST(
   const v = source.currentVersion;
   const newSlug = `${source.slug}-copy-${Date.now().toString(36)}`;
 
-  const pkg = await db.package.create({ data: { slug: newSlug, status: "DRAFT" } });
+  const pkg = await db.$transaction(async (tx) => {
+    const p = await tx.package.create({ data: { slug: newSlug, status: "DRAFT" } });
 
-  const version = await db.packageVersion.create({
-    data: {
-      packageId: pkg.id,
-      versionNumber: 1,
-      title: `${v.title} (Copy)`,
-      destination: v.destination,
-      days: v.days,
-      description: v.description,
-      inclusions: v.inclusions,
-      exclusions: v.exclusions,
-      hotelTier: v.hotelTier,
-      itinerary: v.itinerary as object,
-      photos: v.photos,
-      mapCenter: v.mapCenter as object,
-      authorId: session.user.id,
-    },
-  });
-
-  await db.package.update({ where: { id: pkg.id }, data: { currentVersionId: version.id } });
-
-  for (const price of source.seasonalPrices) {
-    await db.seasonalPrice.create({
+    const version = await tx.packageVersion.create({
       data: {
-        packageId: pkg.id,
+        packageId: p.id,
+        versionNumber: 1,
+        title: `${v.title} (Copy)`,
+        destination: v.destination,
+        days: v.days,
+        description: v.description,
+        inclusions: v.inclusions,
+        exclusions: v.exclusions,
+        hotelTier: v.hotelTier,
+        itinerary: v.itinerary as object,
+        photos: v.photos,
+        mapCenter: v.mapCenter as object,
+        authorId: session.user.id,
+      },
+    });
+
+    await tx.package.update({ where: { id: p.id }, data: { currentVersionId: version.id } });
+
+    await tx.seasonalPrice.createMany({
+      data: source.seasonalPrices.map((price) => ({
+        packageId: p.id,
         seasonName: price.seasonName,
         seasonStartMonth: price.seasonStartMonth,
         seasonEndMonth: price.seasonEndMonth,
         pricePerPerson: price.pricePerPerson,
         basis: price.basis,
         gstInclusive: price.gstInclusive,
-      },
+      })),
     });
-  }
+
+    return p;
+  });
 
   return NextResponse.json(pkg, { status: 201 });
 }
