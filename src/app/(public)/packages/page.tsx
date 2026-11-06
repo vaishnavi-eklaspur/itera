@@ -38,12 +38,13 @@ export default async function PackagesPage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-teal-800 to-emerald-900 py-12 px-4">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold text-white">Travel Packages</h1>
-            <p className="mt-2 text-teal-200">
-              {packages.length} curated journeys across South India
+        {/* Hero */}
+        <div className="relative bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-900 py-20 px-4">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPjwvc3ZnPg==')] opacity-40" />
+          <div className="relative max-w-7xl mx-auto text-center">
+            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">Explore South India</h1>
+            <p className="mt-3 text-lg text-teal-200 max-w-2xl mx-auto">
+              {packages.length} handcrafted journeys through Kerala, Tamil Nadu, Karnataka &amp; Goa
             </p>
           </div>
         </div>

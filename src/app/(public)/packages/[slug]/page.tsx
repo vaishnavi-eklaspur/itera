@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/utils";
 import { EnquiryForm } from "@/components/packages/enquiry-form";
 import { PriceEstimator } from "@/components/packages/price-estimator";
 import { ItinerarySection } from "@/components/packages/itinerary-section";
+import { PhotoGallery } from "@/components/packages/photo-gallery";
 import { Check, X as XIcon, Calendar, Star, Users, MapPin, MessageCircle } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -160,6 +161,9 @@ export default async function PackageDetailPage({
             <section>
               <p className="text-slate-600 leading-relaxed">{v.description}</p>
             </section>
+
+            {/* Photo Gallery */}
+            <PhotoGallery photos={v.photos} />
 
             {/* Quick facts */}
             <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">

@@ -2,310 +2,185 @@
 
 ## 1. Project Overview
 
-**Itera** is a travel management platform for Kerala and South India travel packages. It serves two user types:
+**Itera** is a full-stack travel platform for a Kerala/South India tour operator. It replaces a manual workflow (content updates via vendor at ₹3k + 3 days per change, enquiries across WhatsApp/email/phone) with a unified CMS + AI-powered enquiry pipeline.
 
-- **Travellers** browse curated travel packages, view seasonal pricing, explore interactive itinerary maps, and submit enquiries via a web form or WhatsApp.
-- **Admins** manage packages through a full CMS with versioning, handle enquiries with AI-assisted extraction and reply drafting, and monitor business performance through an analytics dashboard.
-
-### Problem Statement
-
-Travel agencies managing Kerala/South India packages need a unified platform that:
-1. Presents packages with seasonal pricing transparency (Kerala tourism is highly seasonal)
-2. Captures and routes enquiries efficiently with AI assistance
-3. Provides version-controlled package management for seasonal updates
-4. Gives operational visibility through enquiry analytics
+**Stack:** Next.js 16 (App Router, SSR), React 19, PostgreSQL (Neon), Prisma 6, NextAuth v5, Claude API, Tailwind CSS 4, Leaflet.
 
 ---
 
-## 2. Architecture
+## 2. Architecture Decisions
 
-### 2.1 System Architecture
+### 2.1 SSR-First with App Router
 
-```
-[Browser] → [Next.js 16 App Router] → [PostgreSQL (Neon)]
-                    ↓
-            [Proxy Layer (auth)]
-                    ↓
-         ┌──────────┴──────────┐
-    [Server Components]   [API Routes]
-    (SSR pages with        (mutations,
-     instant = false)      AI pipeline)
-                              ↓
-                    [Claude API (Sonnet 4)]
-                    (extraction + suggestions)
-```
+All public pages use server-side rendering (`export const instant = false`) for SEO and first-paint performance. Admin pages also SSR — only interactive components (`"use client"`) ship JS. This gives search-engine indexing (packages, blog, JSON-LD structured data) without a separate API layer.
 
-### 2.2 Tech Stack
+### 2.2 Append-Only Package Versioning
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| Framework | Next.js 16.4.5 (App Router, Turbopack) | SSR, caching, file-based routing |
-| Runtime | React 19.3, Server Components | Streaming, reduced client JS |
-| Database | PostgreSQL on Neon (Serverless) | Serverless scaling, branching for dev |
-| ORM | Prisma 6 | Type-safe queries, migrations |
-| Auth | NextAuth v5 (beta) | JWT strategy, role-based access |
-| Styling | Tailwind CSS 4 | Utility-first, zero runtime |
-| AI | Claude API (claude-sonnet-4-20250514) | Enquiry extraction, package matching |
-| Maps | react-leaflet + Leaflet | Interactive itinerary maps, OSM tiles |
-| Validation | Zod 4 | Schema validation, form parsing |
+Every package edit creates a new `PackageVersion` row. `Package.currentVersionId` (unique FK) points to the active version. Restoring an old version creates a *new* version with copied data — no row is ever mutated.
 
-### 2.3 Key Architectural Decisions
+**Why:** Tour operators revert pricing/itinerary changes across seasons frequently. Append-only provides instant rollback and a built-in audit trail.
 
-**Next.js 16 Cache Components**: Uses `export const instant = false` instead of the deprecated `export const dynamic = "force-dynamic"`. Server components opt into dynamic rendering explicitly.
+### 2.3 Seasonal Pricing as Separate Table
 
-**Proxy over Middleware**: Migrated from `middleware.ts` to `proxy.ts` following Next.js 16 conventions. Uses `getToken()` from next-auth/jwt for session validation at the proxy layer.
+`SeasonalPrice` rows live outside the version tree. On package update, old prices are deleted and new ones created inside a single `$transaction`. This lets prices change independently of itinerary content — operators adjust pricing weekly during peak season without creating version churn.
 
-**Hybrid AI Matching**: AI is never the sole decision-maker. Package suggestions query the database first (destination + budget match), then Claude generates only the human-readable reasoning. Staff must approve all AI-drafted replies before sending.
+### 2.4 Hybrid AI Pipeline (Human-in-the-Loop)
 
-**Versioned Packages**: Every package edit creates a new `PackageVersion`. The `Package.currentVersionId` pointer allows instant rollback. Admins see full version history.
+Three stages:
+1. **Extract** — Claude parses free-text enquiry into structured fields (dates, travellers, budget, destination).
+2. **Match** — Deterministic scoring algorithm ranks packages. No AI here — pure math for transparency.
+3. **Draft** — Claude generates a reply using matched packages and extracted data.
+
+Nothing reaches the traveller until staff reviews and explicitly accepts. The extraction prompt rejects embedded instructions, output is Zod-validated, and human approval is mandatory.
+
+**Why deterministic matching?** AI-based matching is a black box. The hybrid approach gives explainable recommendations while handling messy free-text input.
+
+### 2.5 Defense-in-Depth Auth
+
+Two layers:
+1. **Proxy layer** (`src/proxy.ts`) — Next.js 16's replacement for middleware. Checks JWT + role for `/admin/*` and `/api/admin/*`.
+2. **Route-level auth** — Each handler calls `auth()` independently as backup.
+
+Internal routes (`/api/internal/ai`, `/api/cron/publish`) use shared-secret header validation.
+
+### 2.6 Transaction Safety
+
+All multi-step database operations (package create, update, duplicate, version restore) are wrapped in `db.$transaction()`. The package update path — which deletes all seasonal prices then recreates them — is atomic: a crash mid-operation rolls back everything.
 
 ---
 
 ## 3. Data Model
 
-### 3.1 Core Entities
+### Core Entities
 
 ```
-User (id, email, name, passwordHash, role: TRAVELLER|ADMIN)
-  │
-  ├── Package (id, slug, status, currentVersionId)
-  │     ├── PackageVersion (versionNumber, title, destination, days,
-  │     │                    description, itinerary: Json, inclusions,
-  │     │                    exclusions, hotelTier, photos, mapCenter)
-  │     └── SeasonalPrice (seasonName, startMonth, endMonth,
-  │                         pricePerPerson, basis, gstInclusive)
-  │
-  └── Enquiry (id, name, email, phone, message, travelDate,
-               guests, budget, status, assignedToId,
-               aiExtracted: Json, aiSuggestions: Json, aiDraftReply)
-        ├── EnquiryReply (content, channel: EMAIL|WHATSAPP|PHONE, sentAt)
-        └── EnquiryNote (content, createdAt) [internal staff notes]
+User (id, email, name, passwordHash, role: TRAVELLER|ADMIN|EDITOR|CONSULTANT)
+
+Package (id, slug, status: DRAFT|PUBLISHED|ARCHIVED, currentVersionId, scheduledAt)
+  ├── PackageVersion[] (append-only: versionNumber, title, destination, days,
+  │                      itinerary: JSON, photos[], inclusions[], exclusions[])
+  └── SeasonalPrice[] (seasonName, startMonth, endMonth, pricePerPerson, basis)
+
+Enquiry (id, name, email, message, status: NEW|IN_PROGRESS|REPLIED|CLOSED,
+         aiExtracted: JSON, aiSuggestions: JSON, aiDraftReply)
+  ├── EnquiryReply[] (content, channel: EMAIL|WHATSAPP|SYSTEM)
+  └── EnquiryNote[] (internal staff notes)
+
+BlogPost (slug, title, content, category, tags[], relatedPackageIds[])
+Quote (token, packageId, travellers, pricePerPerson, totalPrice, validUntil)
+ActivityLog (userId, action, entity, entityId, details)
 ```
 
-### 3.2 Key Relationships
+### Key Constraints
 
-- `Package` → `PackageVersion`: One-to-many, with `currentVersionId` as the active pointer
-- `Package` → `SeasonalPrice`: One-to-many, Kerala's 3-4 distinct tourist seasons
-- `Enquiry` → `Package`: Optional FK (enquiries can be general or package-specific)
-- `Enquiry` → `EnquiryReply`: One-to-many, tracks all communication
-- `Enquiry` → `User` (assignedTo): Admin assignment for workload distribution
+- `Package.slug` unique, `Package.currentVersionId` unique FK (exactly one "current" version)
+- Cascade deletes: Version, Price, Note, Reply all cascade from parent
+- Indexes: `Enquiry(status, assignedToId, createdAt)`, `BlogPost(published)`, `ActivityLog(createdAt)`
 
 ---
 
-## 4. Features
+## 4. API Design
 
-### 4.1 Public Pages
+### Public
+| Route | Purpose |
+|-------|---------|
+| `GET /api/packages` | Published packages with search/filter |
+| `GET /api/packages/[slug]` | Package detail (published only) |
+| `POST /api/enquiries` | Submit enquiry (rate-limited: 5/min per IP) |
+| `GET /api/enquiries` | User's own enquiries (auth required) |
 
-| Feature | Implementation |
-|---------|---------------|
-| Package listing | SSR grid with client-side filtering (destination, price, duration) and sorting |
-| Package detail | Hero image, quick facts bar, seasonal pricing table, accordion itinerary with interactive Leaflet map |
-| Price estimator | Client component: select month + guests → instant price calculation using seasonal data |
-| Enquiry form | Zod-validated form, posts to `/api/enquiries`, triggers async AI extraction |
-| WhatsApp button | Pre-filled WhatsApp link with package context, mobile FAB for touch access |
-| My Enquiries | Authenticated traveller view of their submitted enquiries with status tracking |
+### Admin (proxy + route-level auth)
+| Route | Purpose |
+|-------|---------|
+| `GET/POST /api/admin/packages` | List / create |
+| `GET/PUT/DELETE /api/admin/packages/[id]` | Read / update (new version) / archive |
+| `POST .../[id]/publish\|duplicate` | Status change / clone |
+| `GET/POST .../[id]/versions` | History / restore |
+| `POST .../preview` | Preview unsaved changes |
+| `GET /api/admin/enquiries` | Inbox with filters |
+| `PUT /api/admin/enquiries/bulk` | Bulk status update |
+| `GET/PUT .../[id]` | Detail / update fields |
+| `POST .../[id]/reply\|notes` | Send reply / add note |
+| `GET /api/admin/analytics` | Dashboard data |
+| `GET/POST/PUT/DELETE /api/admin/blog/*` | Blog CMS |
+| `GET/POST /api/admin/quotes` | Quote builder |
 
-### 4.2 Admin CMS
-
-| Feature | Implementation |
-|---------|---------------|
-| Dashboard | KPI cards (packages, enquiries, new count) + recent enquiries list |
-| Package editor | Full CRUD: basic info, itinerary builder (day-by-day with lat/lng for map), inclusions/exclusions list editor, seasonal pricing manager |
-| Version history | Every save creates a numbered version; restore any previous version with one click |
-| Publish/duplicate | Toggle package status; duplicate a package as a new draft |
-| Enquiry inbox | Filterable by status (NEW, IN_PROGRESS, REPLIED, CLOSED), shows response time badges |
-| Enquiry detail | Original message, AI-extracted fields, suggested packages, reply composer (email/WhatsApp/phone channels), internal notes |
-| Analytics | KPIs (total, new, response rate, avg response time), status breakdown bars, top packages ranking, 30-day volume chart |
-
-### 4.3 AI Pipeline
-
-```
-Enquiry submitted → POST /api/enquiries
-                        ↓
-                  Save to database
-                        ↓
-              POST /api/internal/ai (async)
-                        ↓
-              ┌─────────┴──────────┐
-        Claude extracts:      DB query matches:
-        - dates, budget,      packages by destination
-          guests, interests,  + budget range
-          destination         
-              └─────────┬──────────┘
-                        ↓
-              Claude generates reasoning
-              for top matches + draft reply
-                        ↓
-              Update enquiry with:
-              aiExtracted, aiSuggestions,
-              aiDraftReply
-                        ↓
-              Admin reviews & sends
-              (human-in-the-loop)
-```
-
-### 4.4 Authentication & Authorization
-
-- **JWT strategy** with NextAuth v5 Credentials provider
-- **Proxy-level protection**: `proxy.ts` intercepts `/admin/*` and `/api/admin/*` routes
-- **Role check**: `ADMIN` role required for admin routes; non-admin users redirected to home
-- **API protection**: Admin API routes return 401/403 JSON responses for unauthorized requests
+### Internal (secret-header auth)
+| Route | Purpose |
+|-------|---------|
+| `POST /api/internal/ai` | AI extraction pipeline (INTERNAL_API_SECRET) |
+| `GET /api/cron/publish` | Auto-publish scheduled packages (CRON_SECRET) |
 
 ---
 
-## 5. API Routes
+## 5. Security
 
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/auth/[...nextauth]` | * | NextAuth handlers (sign in/out/session) |
-| `/api/auth/register` | POST | User registration (TRAVELLER role) |
-| `/api/packages` | GET | Public package listing |
-| `/api/packages/[slug]` | GET | Public package detail |
-| `/api/enquiries` | POST | Submit enquiry (public) |
-| `/api/admin/packages` | GET, POST | List/create packages (admin) |
-| `/api/admin/packages/[id]` | GET, PUT, DELETE | Package CRUD (admin) |
-| `/api/admin/packages/[id]/publish` | POST | Toggle publish status |
-| `/api/admin/packages/[id]/duplicate` | POST | Clone package as draft |
-| `/api/admin/packages/[id]/versions` | POST | Restore a specific version |
-| `/api/admin/enquiries` | GET | List enquiries with filters |
-| `/api/admin/enquiries/[id]` | GET, PATCH | Get/update enquiry details |
-| `/api/admin/enquiries/[id]/reply` | POST | Send reply to enquiry |
-| `/api/admin/enquiries/[id]/notes` | POST | Add internal note |
-| `/api/admin/analytics` | GET | Analytics data |
-| `/api/internal/ai` | POST | AI extraction pipeline (internal) |
+- **Passwords:** bcrypt cost 12
+- **Sessions:** JWT via NextAuth v5, httpOnly cookies
+- **Validation:** Zod schemas on every mutation
+- **SQL injection:** Prisma parameterized queries (no raw SQL)
+- **XSS:** React default escaping, no dangerouslySetInnerHTML on user content
+- **Rate limiting:** In-memory sliding window, 5 req/min per IP on enquiry POST
+- **Internal routes:** Shared-secret header checks (INTERNAL_API_SECRET, CRON_SECRET)
+- **AI safety:** Extraction prompt rejects embedded instructions, Zod validates output, human approval required
 
 ---
 
-## 6. Security Considerations
+## 6. Testing
 
-- **Password hashing**: bcrypt with default salt rounds
-- **JWT tokens**: Signed with `NEXTAUTH_SECRET`, httpOnly cookies
-- **Input validation**: Zod schemas on all API inputs
-- **Role-based access**: Enforced at proxy and API route levels
-- **SQL injection prevention**: Prisma parameterized queries (no raw SQL)
-- **XSS prevention**: React's default escaping, no `dangerouslySetInnerHTML`
-- **AI safety**: Human-in-the-loop — AI never sends replies directly to customers
-- **Environment secrets**: `.env` gitignored, secrets in Vercel environment variables
+**Framework:** Vitest 5
+
+**Current:** 20 tests covering input validation schemas (enquiry form, registration, package form, AI extraction output) including edge cases for gibberish input and prompt injection payloads.
+
+**Expansion priorities:** Package versioning logic, auth access control, AI extraction parsing, enquiry status transitions.
 
 ---
 
-## 7. Performance
+## 7. Features Beyond Core
 
-- **Server Components**: Most pages render on the server, minimizing client JavaScript
-- **Partial Prerendering**: Package detail pages use PPR (static shell + dynamic content stream)
-- **Turbopack**: Fast dev server rebuilds (~2s cold start)
-- **Database**: Neon serverless PostgreSQL with connection pooling
-- **Image optimization**: Next.js `<Image>` component with lazy loading
-- **Dynamic imports**: Leaflet map loaded only when itinerary section is visible
-
----
-
-## 8. Project Structure
-
-```
-src/
-├── app/
-│   ├── page.tsx                    # Homepage (SSR featured packages)
-│   ├── loading.tsx                 # Home skeleton
-│   ├── error.tsx                   # Global error boundary
-│   ├── not-found.tsx               # 404 page
-│   ├── (auth)/
-│   │   ├── login/page.tsx          # Login form
-│   │   └── register/page.tsx       # Registration form
-│   ├── (public)/
-│   │   ├── packages/
-│   │   │   ├── page.tsx            # Package listing
-│   │   │   ├── loading.tsx         # Listing skeleton
-│   │   │   └── [slug]/page.tsx     # Package detail
-│   │   └── my-enquiries/page.tsx   # Traveller's enquiries
-│   ├── admin/
-│   │   ├── layout.tsx              # Admin shell (top nav + mobile bottom nav)
-│   │   ├── loading.tsx             # Admin skeleton
-│   │   ├── page.tsx                # Dashboard
-│   │   ├── packages/
-│   │   │   ├── page.tsx            # Package list
-│   │   │   ├── new/page.tsx        # New package
-│   │   │   └── [id]/page.tsx       # Edit package
-│   │   ├── enquiries/
-│   │   │   ├── page.tsx            # Enquiry inbox
-│   │   │   └── [id]/page.tsx       # Enquiry detail
-│   │   └── analytics/page.tsx      # Analytics dashboard
-│   └── api/                        # API routes (see Section 5)
-├── components/
-│   ├── admin/
-│   │   ├── package-editor.tsx      # Full package CMS editor
-│   │   └── enquiry-detail.tsx      # Enquiry management UI
-│   └── packages/
-│       ├── package-grid.tsx        # Filterable/sortable grid
-│       ├── enquiry-form.tsx        # Public enquiry form
-│       ├── price-estimator.tsx     # Instant price calculator
-│       ├── itinerary-section.tsx   # Accordion + map toggle
-│       └── itinerary-map.tsx       # Leaflet map component
-├── lib/
-│   ├── auth.ts                     # NextAuth config
-│   ├── auth-types.ts               # Session/JWT type augmentation
-│   ├── db.ts                       # Prisma client singleton
-│   ├── utils.ts                    # Shared utilities
-│   └── validations.ts             # Zod schemas
-└── proxy.ts                        # Auth proxy (Next.js 16)
-
-prisma/
-├── schema.prisma                   # Database schema
-└── seed.ts                         # Seed data (5 packages, 5 users, 11 enquiries)
-```
+| Feature | Purpose |
+|---------|---------|
+| Blog CMS | Travel content with categories, tags, SEO, related packages |
+| Quote builder | Shareable branded quotes with token-based public access |
+| Editor/Consultant roles | Beyond ADMIN/TRAVELLER for team workflows |
+| Activity log | Audit trail for all admin actions |
+| Bulk enquiry actions | Select multiple → change status in batch |
+| Photo gallery + lightbox | Grid display with click-to-expand on detail page |
+| Scheduled publishing | Set future publish date, cron auto-publishes |
+| Response time badges | Green/amber/red indicators on enquiry inbox |
+| Price estimator | Client-side calculator: month + guests → instant total |
 
 ---
 
-## 9. Deployment
+## 8. Trade-offs and Upgrade Paths
 
-### Environment Variables Required
-
-```
-DATABASE_URL=           # Neon PostgreSQL connection string
-NEXTAUTH_SECRET=        # JWT signing secret (generate with: openssl rand -base64 32)
-NEXTAUTH_URL=           # Production URL (e.g., https://itera.vercel.app)
-ANTHROPIC_API_KEY=      # Claude API key for AI features
-```
-
-### Deploy to Vercel
-
-1. Push to GitHub: `gh repo create itera --private --source=. --push`
-2. Import in Vercel dashboard → connect GitHub repo
-3. Set environment variables in Vercel project settings
-4. Deploy (Vercel auto-detects Next.js)
-5. Run database migration: `npx prisma db push` (schema is already applied to Neon)
-6. Seed production data if needed: `npx prisma db seed`
+| Decision | Trade-off | Upgrade path |
+|----------|-----------|--------------|
+| In-memory rate limiter | Resets on restart, single-instance | Redis or Vercel Edge rate limiting |
+| URL-based photos | No upload, no CDN optimization | S3/Cloudinary + next/image |
+| Mock email (console log) | No actual delivery | SendGrid/Resend integration |
+| Client-side budget filter | Post-query filtering | DB-level price range query |
+| No pagination | All packages loaded at once | Cursor-based pagination |
+| PreviewCache in DB | Rows accumulate | TTL-based cleanup cron |
 
 ---
 
-## 10. Seed Data
+## 9. Seed Data
 
-The seed script (`prisma/seed.ts`) creates:
-
-- **2 users**: 1 admin (admin@itera.in), 1 traveller (traveller@itera.in)
-- **5 packages**: Munnar Hills, Alleppey Backwaters, Wayanad Wildlife, Kovalam Beach, Coorg Coffee Trail
-- **Seasonal prices**: 3-4 seasons per package (Peak/Monsoon/Winter/Summer) with realistic Kerala pricing
-- **11 enquiries**: Mix of statuses (NEW, IN_PROGRESS, REPLIED, CLOSED) with realistic traveller messages
-- **Replies & notes**: Sample replies and internal notes on select enquiries
+`prisma/seed.ts` creates:
+- **3 users:** admin (admin@itera.in), consultant, traveller
+- **10 packages:** Munnar, Alleppey, Wayanad, Kovalam, Coorg, etc. with full itineraries
+- **3-4 seasonal prices per package** (Peak/Monsoon/Winter/Summer)
+- **18 enquiries** in various states (NEW, IN_PROGRESS, REPLIED, CLOSED)
+- Sample replies and internal notes
 
 ---
 
-## 11. Trade-offs & Future Work
+## 10. What I'd Do Next
 
-### Intentional Simplifications
-
-| Decision | Rationale | Upgrade Path |
-|----------|-----------|-------------|
-| JWT over database sessions | Simpler setup, no session table needed | Switch to database strategy if token revocation needed |
-| Client-side package filtering | Fast UX for small catalog (<100 packages) | Server-side search with Prisma full-text if catalog grows |
-| Single-process AI pipeline | Adequate for low enquiry volume | Queue (BullMQ/SQS) if >100 enquiries/day |
-| CSS bar chart in analytics | Zero dependencies, works server-side | Recharts/D3 if complex visualizations needed |
-| bcrypt for passwords | Battle-tested, sufficient for this scale | Argon2id for higher security requirements |
-
-### Future Enhancements
-
-- Email notifications on new enquiries (Resend/SendGrid integration)
-- Multi-image gallery per package (currently single hero)
-- PDF itinerary export for travellers
-- Enquiry assignment round-robin for multi-admin teams
-- A/B testing for package page layouts
+1. **Image pipeline** — S3 upload with presigned URLs, Cloudinary transforms, `next/image`
+2. **Email delivery** — Resend for auto-ack and reply emails
+3. **Pagination** — Cursor-based for packages and enquiries as data grows
+4. **Real-time inbox** — WebSocket/SSE for live enquiry updates
+5. **PDF export** — Generate itinerary PDFs for travellers
+6. **Analytics depth** — Conversion funnel tracking (enquiry → reply → booking)

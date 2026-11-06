@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Loader2, Plus, Trash2, Eye, History, Copy, Upload } from "lucide-react";
+import { Save, Loader2, Plus, Trash2, Eye, History, Copy, Upload, ChevronUp, ChevronDown } from "lucide-react";
 import { slugify } from "@/lib/utils";
 
 type ItineraryDay = {
@@ -419,15 +419,25 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
               </button>
             </div>
             {photos.length === 0 ? (
-              <p className="text-sm text-slate-400">No photos added</p>
+              <p className="text-sm text-slate-400">No photos added. Click + to add image URLs.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {photos.map((url, i) => (
-                  <div key={i} className="flex gap-2">
+                  <div key={i} className="flex gap-2 items-start">
+                    {url && /^https?:\/\/.+/i.test(url) && (
+                      <img src={url} alt="" className="w-16 h-12 object-cover rounded border border-slate-200 shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    )}
                     <input placeholder="Image URL" value={url} onChange={(e) => { const next = [...photos]; next[i] = e.target.value; setPhotos(next); }} className="flex-1 px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                    <button onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                    <div className="flex flex-col gap-0.5 shrink-0">
+                      <button disabled={i === 0} onClick={() => { const next = [...photos]; [next[i - 1], next[i]] = [next[i], next[i - 1]]; setPhotos(next); }} className="text-slate-400 hover:text-slate-600 disabled:opacity-30"><ChevronUp className="w-3.5 h-3.5" /></button>
+                      <button disabled={i === photos.length - 1} onClick={() => { const next = [...photos]; [next[i], next[i + 1]] = [next[i + 1], next[i]]; setPhotos(next); }} className="text-slate-400 hover:text-slate-600 disabled:opacity-30"><ChevronDown className="w-3.5 h-3.5" /></button>
+                    </div>
+                    <button onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500 shrink-0 mt-1"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
+                {photos.filter(Boolean).length > 0 && (
+                  <p className="text-xs text-slate-400">First photo is used as the hero image. Drag to reorder.</p>
+                )}
               </div>
             )}
           </section>
