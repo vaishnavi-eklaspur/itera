@@ -20,6 +20,11 @@ If a field cannot be determined, set it to null. Set confidence based on how cle
 Customer message: `;
 
 export async function POST(req: NextRequest) {
+  const secret = req.headers.get("x-internal-secret");
+  if (secret !== process.env.INTERNAL_API_SECRET) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { enquiryId } = await req.json();
 
   const enquiry = await db.enquiry.findUnique({ where: { id: enquiryId } });
@@ -189,7 +194,7 @@ Write a warm reply (under 200 words) that addresses their requirements, recommen
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     // Graceful fallback on any AI failure
     await db.enquiry.update({
       where: { id: enquiryId },

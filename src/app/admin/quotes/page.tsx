@@ -54,7 +54,7 @@ export default function QuotesPage() {
       }),
     });
     if (res.ok) {
-      const data = await res.json();
+      await res.json();
       setShowForm(false);
       fetch("/api/admin/quotes").then((r) => r.json()).then(setQuotes);
     }

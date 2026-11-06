@@ -6,6 +6,17 @@ import { Send, Loader2, Bot, User, StickyNote, MapPin, ArrowLeft, RefreshCw, Pen
 import Link from "next/link";
 import { timeAgo, responseTimeBadge } from "@/lib/utils";
 
+type AIExtracted = {
+  destination?: string | null;
+  dates?: { start?: string | null; end?: string | null; flexible?: boolean; raw?: string | null } | null;
+  adults?: number | null;
+  children?: number | null;
+  budget?: { total?: number | null; perPerson?: number | null; currency?: string } | null;
+  requirements?: string[];
+  confidence?: number;
+  [key: string]: unknown;
+};
+
 type Enquiry = {
   id: string;
   name: string;
@@ -14,7 +25,7 @@ type Enquiry = {
   message: string;
   status: string;
   createdAt: string;
-  aiExtracted: Record<string, any> | null;
+  aiExtracted: AIExtracted | null;
   aiDraftReply: string | null;
   assignedToId: string | null;
   assignedTo: { id: string; name: string } | null;
@@ -60,7 +71,7 @@ function EditableField({ label, value, onSave, lowConfidence }: {
   );
 }
 
-function flattenExtracted(ai: Record<string, any>): { key: string; label: string; value: string }[] {
+function flattenExtracted(ai: AIExtracted): { key: string; label: string; value: string }[] {
   const fields: { key: string; label: string; value: string }[] = [];
   if (ai.destination != null) fields.push({ key: "destination", label: "Destination", value: String(ai.destination ?? "") });
   if (ai.dates) {
@@ -94,10 +105,10 @@ export function EnquiryDetail({
   const [sending, setSending] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
   const [retrying, setRetrying] = useState(false);
-  const [localExtracted, setLocalExtracted] = useState<Record<string, any> | null>(enquiry.aiExtracted as Record<string, any> | null);
+  const [localExtracted, setLocalExtracted] = useState<AIExtracted | null>(enquiry.aiExtracted);
   const firstReplyAt = enquiry.replies.length > 0 ? new Date(enquiry.replies[enquiry.replies.length - 1].sentAt) : null;
   const badge = responseTimeBadge(new Date(enquiry.createdAt), firstReplyAt);
-  const confidence = localExtracted?.confidence as number | undefined;
+  const confidence = typeof localExtracted?.confidence === "number" ? localExtracted.confidence : undefined;
 
   async function saveField(key: string, value: string) {
     if (!localExtracted) return;

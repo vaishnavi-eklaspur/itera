@@ -41,7 +41,7 @@ export function EnquiryForm({
           <Send className="w-5 h-5 text-teal-600" />
         </div>
         <h3 className="font-semibold text-teal-800">Enquiry Sent!</h3>
-        <p className="text-sm text-teal-600 mt-1">We'll get back to you within the hour.</p>
+        <p className="text-sm text-teal-600 mt-1">We&apos;ll get back to you within the hour.</p>
       </div>
     );
   }

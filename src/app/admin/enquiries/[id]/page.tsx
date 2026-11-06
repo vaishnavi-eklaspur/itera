@@ -31,7 +31,7 @@ export default async function AdminEnquiryDetailPage({
   const aiSuggestions = enquiry.aiSuggestions as { packageIds?: string[] } | null;
   const suggestedIds = aiSuggestions?.packageIds ?? [];
 
-  let suggestedPackages: any[] = [];
+  let suggestedPackages: { id: string; currentVersion: { title: string; destination: string; days: number } | null }[] = [];
   if (suggestedIds.length) {
     suggestedPackages = await db.package.findMany({
       where: { id: { in: suggestedIds } },

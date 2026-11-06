@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   // Trigger AI extraction asynchronously (fire-and-forget)
   fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3001"}/api/internal/ai`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-internal-secret": process.env.INTERNAL_API_SECRET || "" },
     body: JSON.stringify({ enquiryId: enquiry.id }),
   }).catch(() => {});
 
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   });
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

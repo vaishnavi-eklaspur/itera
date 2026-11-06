@@ -11,6 +11,8 @@
     "db:seed": "npx prisma db seed",
     "db:push": "npx prisma db push",
     "db:studio": "npx prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -44,6 +46,8 @@
     "eslint-config-next": "16.4.5",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
   }
 }

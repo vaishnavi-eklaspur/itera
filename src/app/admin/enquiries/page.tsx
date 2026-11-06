@@ -11,7 +11,7 @@ export default async function AdminEnquiriesPage({
 }) {
   const { status } = await searchParams;
 
-  const where = status ? { status: status as any } : {};
+  const where = status ? { status: status as "NEW" | "IN_PROGRESS" | "REPLIED" | "CLOSED" } : {};
   const enquiries = await db.enquiry.findMany({
     where,
     include: {

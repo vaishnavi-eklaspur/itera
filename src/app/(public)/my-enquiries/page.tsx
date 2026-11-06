@@ -29,7 +29,7 @@ export default async function MyEnquiriesPage() {
 
         {enquiries.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-slate-500">You haven't sent any enquiries yet.</p>
+            <p className="text-slate-500">You haven&apos;t sent any enquiries yet.</p>
             <Link href="/packages" className="mt-3 inline-block text-sm text-teal-600 hover:text-teal-700 font-medium">
               Browse Packages
             </Link>

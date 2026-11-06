@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Loader2, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
+import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import { slugify } from "@/lib/utils";
 
 type BlogData = {
@@ -63,8 +63,8 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
       const data = await res.json();
       if (isNew) router.push(`/admin/blog/${data.id}`);
       else router.refresh();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }

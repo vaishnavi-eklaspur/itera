@@ -41,7 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 }
 
-function NavLink({ href, icon: Icon, children }: { href: string; icon: any; children: React.ReactNode }) {
+function NavLink({ href, icon: Icon, children }: { href: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
   return (
     <Link href={href} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-teal-700 transition">
       <Icon className="w-4 h-4" />
@@ -50,7 +50,7 @@ function NavLink({ href, icon: Icon, children }: { href: string; icon: any; chil
   );
 }
 
-function MobileNavLink({ href, icon: Icon, children }: { href: string; icon: any; children: React.ReactNode }) {
+function MobileNavLink({ href, icon: Icon, children }: { href: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
   return (
     <Link href={href} className="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs text-slate-500 hover:text-teal-700">
       <Icon className="w-4 h-4" />

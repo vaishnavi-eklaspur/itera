@@ -67,7 +67,7 @@ export default async function AdminDashboard() {
 }
 
 function StatCard({ icon: Icon, label, value, href, accent }: {
-  icon: any; label: string; value: number | string; href: string; accent?: boolean;
+  icon: React.ComponentType<{ className?: string }>; label: string; value: number | string; href: string; accent?: boolean;
 }) {
   return (
     <Link href={href} className="bg-white rounded-xl border border-slate-200 p-4 hover:border-teal-200 hover:shadow-sm transition">

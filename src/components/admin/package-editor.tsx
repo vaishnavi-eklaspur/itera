@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Loader2, Plus, Trash2, GripVertical, Eye, History, Copy, Upload } from "lucide-react";
+import { Save, Loader2, Plus, Trash2, Eye, History, Copy, Upload } from "lucide-react";
 import { slugify } from "@/lib/utils";
 
 type ItineraryDay = {
@@ -103,8 +103,8 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
       } else {
         router.refresh();
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -148,8 +148,8 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
       }
       const { token } = await res.json();
       window.open(`/packages/preview/${token}`, "_blank");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Preview failed");
     } finally {
       setPreviewing(false);
     }
@@ -174,7 +174,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
     if (res.ok) router.refresh();
   }
 
-  function updateItineraryDay(index: number, field: string, value: any) {
+  function updateItineraryDay(index: number, field: string, value: string | number | string[]) {
     setItinerary(prev => prev.map((d, i) => i === index ? { ...d, [field]: value } : d));
   }
 

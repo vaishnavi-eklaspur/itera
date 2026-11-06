@@ -109,7 +109,7 @@ export default async function AnalyticsPage() {
 }
 
 function KPI({ icon: Icon, label, value, accent }: {
-  icon: any; label: string; value: string | number; accent?: boolean;
+  icon: React.ComponentType<{ className?: string }>; label: string; value: string | number; accent?: boolean;
 }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-4">
