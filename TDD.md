@@ -20,7 +20,37 @@
 
 ---
 
-## 2. Architecture and Why
+## 2. System Architecture
+
+```mermaid
+graph TB
+    subgraph Client
+        A[Traveller Browser] -->|SSR pages| N
+        B[Admin Browser] -->|SSR + API calls| N
+    end
+
+    subgraph Vercel
+        N[Next.js 16 App Router]
+        N -->|proxy.ts| P[Proxy Layer<br/>Auth · Rate Limit · Headers]
+        P --> R[API Routes]
+        P --> S[Server Components<br/>SSR Pages]
+        R -->|CRUD| DB
+        S -->|Read| DB
+        R -->|Fire & forget| AI
+    end
+
+    subgraph External
+        DB[(PostgreSQL<br/>Neon)]
+        AI[Gemini 2.0 Flash<br/>Extract · Match · Draft]
+    end
+
+    style N fill:#15803d,color:#fff
+    style DB fill:#0ea5e9,color:#fff
+    style AI fill:#f59e0b,color:#fff
+    style P fill:#64748b,color:#fff
+```
+
+## 3. Architecture Decisions
 
 ### 2.1 SSR-First with App Router
 
@@ -41,6 +71,20 @@ Every package edit creates a new `PackageVersion` row. `Package.currentVersionId
 **Why separate from versioning?** The brief's sample data shows the same package (PKG-KL-07) with two price rows for different seasons. Embedding prices in the version JSON would mean a new version every time any season's price changes. Separating them means a price tweak is a price tweak, not a content change.
 
 ### 2.4 Hybrid AI Pipeline (Human-in-the-Loop)
+
+```mermaid
+flowchart LR
+    A[Enquiry<br/>submitted] -->|fire & forget| B[Extract<br/>Gemini 2.0]
+    B -->|structured JSON| C[Match<br/>Deterministic]
+    C -->|ranked packages| D[Draft Reply<br/>Gemini 2.0]
+    D --> E[Admin<br/>Inbox]
+    E -->|human edits &<br/>clicks Send| F[Reply<br/>Sent]
+
+    style B fill:#f59e0b,color:#fff
+    style C fill:#15803d,color:#fff
+    style D fill:#f59e0b,color:#fff
+    style E fill:#64748b,color:#fff
+```
 
 Three stages, matching the brief's AI spec exactly:
 
@@ -68,6 +112,56 @@ All multi-step database operations (package create, update, duplicate, version r
 ---
 
 ## 3. Data Model
+
+```mermaid
+erDiagram
+    User ||--o{ Enquiry : submits
+    User ||--o{ EnquiryNote : writes
+    User ||--o{ EnquiryReply : sends
+    User ||--o{ BlogPost : authors
+    User ||--o{ Quote : creates
+    User ||--o{ ActivityLog : generates
+
+    Package ||--o{ PackageVersion : "has versions"
+    Package ||--|{ SeasonalPrice : "has prices"
+    Package ||--o{ Enquiry : "enquired about"
+
+    Enquiry ||--o{ EnquiryReply : "has replies"
+    Enquiry ||--o{ EnquiryNote : "has notes"
+
+    User {
+        string id PK
+        string email UK
+        string name
+        enum role "ADMIN EDITOR CONSULTANT TRAVELLER"
+    }
+    Package {
+        string id PK
+        string slug UK
+        enum status "DRAFT PUBLISHED ARCHIVED"
+        string currentVersionId FK
+    }
+    PackageVersion {
+        int versionNumber
+        string title
+        string destination
+        int days
+        json itinerary
+    }
+    SeasonalPrice {
+        string seasonName
+        int startMonth
+        int endMonth
+        int pricePerPerson
+    }
+    Enquiry {
+        string id PK
+        enum status "NEW IN_PROGRESS REPLIED CLOSED"
+        json aiExtracted
+        json aiSuggestions
+        string aiDraftReply
+    }
+```
 
 ### Core Entities
 
@@ -99,6 +193,23 @@ ActivityLog (userId, action, entity, entityId, details)
 ---
 
 ## 4. Main Flows
+
+```mermaid
+stateDiagram-v2
+    [*] --> NEW : Traveller submits
+    NEW --> IN_PROGRESS : Staff opens / assigns
+    IN_PROGRESS --> REPLIED : Staff sends reply
+    REPLIED --> IN_PROGRESS : Follow-up received
+    REPLIED --> CLOSED : Resolved
+    IN_PROGRESS --> CLOSED : No response
+
+    state NEW {
+        [*] --> AckEmail : Auto-acknowledge
+        AckEmail --> AIExtract : Fire & forget
+        AIExtract --> AIMatch
+        AIMatch --> AIDraft
+    }
+```
 
 ### Traveller submits an enquiry
 
