@@ -9,9 +9,13 @@ async function main() {
   const consultantPassword = await hash("consultant123", 12);
   const travellerPassword = await hash("traveller123", 12);
 
+  // Migrate old seed emails to new ones (no-op after first run)
+  await prisma.user.updateMany({ where: { email: "arjun@itera.in" }, data: { email: "consultant@itera.in", role: Role.CONSULTANT } });
+  await prisma.user.updateMany({ where: { email: "rahul@example.com" }, data: { email: "traveller@itera.in" } });
+
   const admin = await prisma.user.upsert({
     where: { email: "admin@itera.in" },
-    update: {},
+    update: { role: Role.ADMIN },
     create: {
       name: "Priya Menon",
       email: "admin@itera.in",
@@ -22,23 +26,23 @@ async function main() {
   });
 
   const consultant = await prisma.user.upsert({
-    where: { email: "arjun@itera.in" },
-    update: {},
+    where: { email: "consultant@itera.in" },
+    update: { role: Role.CONSULTANT },
     create: {
       name: "Arjun Nair",
-      email: "arjun@itera.in",
+      email: "consultant@itera.in",
       phone: "+91 94960 67890",
       passwordHash: consultantPassword,
-      role: Role.ADMIN,
+      role: Role.CONSULTANT,
     },
   });
 
   const traveller1 = await prisma.user.upsert({
-    where: { email: "rahul@example.com" },
-    update: {},
+    where: { email: "traveller@itera.in" },
+    update: { role: Role.TRAVELLER },
     create: {
       name: "Rahul Sharma",
-      email: "rahul@example.com",
+      email: "traveller@itera.in",
       phone: "+91 98765 43210",
       passwordHash: travellerPassword,
       role: Role.TRAVELLER,
@@ -106,7 +110,14 @@ async function main() {
           { day: 5, title: "Thekkady to Alleppey – Houseboat", location: "Alleppey", lat: 9.4981, lng: 76.3388, description: "Drive to Alleppey (140 km, ~4 hours). Board a traditional Kerala houseboat (kettuvallam) by noon. Cruise through the backwaters — palm-fringed canals, paddy fields and village life. All meals on board. Sleep on the houseboat under the stars.", activities: ["Houseboat check-in", "Backwater cruise", "Village life viewing", "Sunset from deck"] },
           { day: 6, title: "Alleppey to Kochi – Departure", location: "Kochi", lat: 9.9312, lng: 76.2673, description: "Disembark the houseboat after breakfast. Drive to Kochi (55 km, ~1.5 hours). Optional visit to Fort Kochi — Chinese fishing nets, St. Francis Church, Jew Town. Transfer to airport for departure.", activities: ["Houseboat disembark", "Optional Fort Kochi visit", "Airport drop-off"] },
         ],
-        photos: ["/images/munnar-tea.jpg", "/images/thekkady-lake.jpg", "/images/alleppey-houseboat.jpg", "/images/kerala-backwaters.jpg", "/images/spice-plantation.jpg", "/images/munnar-hills.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1719831738921-972e0ec76337?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1650884986392-984358536050?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1624554305378-0f440dd3a8c1?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1558971499-9b0683596aa2?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1590123732197-e7079d2ceb89?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 9.8, lng: 76.9, zoom: 8 },
       },
       prices: [
@@ -147,7 +158,13 @@ async function main() {
           { day: 4, title: "Rameswaram to Kanyakumari", location: "Kanyakumari", lat: 8.0883, lng: 77.5385, description: "Drive to Kanyakumari (320 km, ~6 hours) along the coastal road. Arrive by late afternoon. Watch the famous sunset at the confluence of three seas — Bay of Bengal, Arabian Sea and Indian Ocean. Overnight in Kanyakumari.", activities: ["Coastal drive", "Sunset at Land's End"] },
           { day: 5, title: "Kanyakumari – Departure", location: "Kanyakumari", lat: 8.0883, lng: 77.5385, description: "Early morning sunrise over the ocean. Ferry to Vivekananda Rock Memorial and Thiruvalluvar Statue. Visit Padmanabhapuram Palace if time permits. Transfer to Trivandrum airport (90 km) for departure.", activities: ["Sunrise viewing", "Vivekananda Rock", "Thiruvalluvar Statue", "Airport transfer"] },
         ],
-        photos: ["/images/meenakshi-temple.jpg", "/images/rameswaram.jpg", "/images/kanyakumari-sunset.jpg", "/images/pamban-bridge.jpg", "/images/dhanushkodi.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1692173248120-59547c3d4653?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1572146462570-2129a547e6dd?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1590160404513-c306c7ad8d45?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1650730005180-2c849af5d6cc?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1668885309844-5bb50f7c2e61?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 9.1, lng: 78.5, zoom: 7 },
       },
       prices: [
@@ -188,7 +205,16 @@ async function main() {
           { day: 7, title: "Alleppey to Kovalam", location: "Kovalam", lat: 8.3988, lng: 76.9780, description: "Disembark after breakfast. Drive to Kovalam beach (160 km, ~4 hours). Afternoon at leisure on Lighthouse Beach. Optional Ayurvedic spa. Overnight in Kovalam.", activities: ["Beach leisure", "Optional Ayurveda spa"] },
           { day: 8, title: "Kovalam – Departure", location: "Trivandrum", lat: 8.5241, lng: 76.9366, description: "Morning at leisure. Optional visit to Padmanabhaswamy Temple in Trivandrum. Transfer to Trivandrum airport for departure.", activities: ["Optional temple visit", "Airport drop-off"] },
         ],
-        photos: ["/images/kochi-chinese-nets.jpg", "/images/munnar-panorama.jpg", "/images/periyar-elephants.jpg", "/images/houseboat-premium.jpg", "/images/kovalam-beach.jpg", "/images/kerala-tea-estates.jpg", "/images/backwaters-village.jpg", "/images/kathakali.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1590123732197-e7079d2ceb89?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1719831738921-972e0ec76337?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1558971499-9b0683596aa2?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1624554305378-0f440dd3a8c1?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1650730005180-2c849af5d6cc?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1677475455506-1e429162f44f?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1650884986392-984358536050?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 9.5, lng: 76.8, zoom: 8 },
       },
       prices: [
@@ -219,7 +245,12 @@ async function main() {
           { day: 2, title: "Kochi to Alleppey Houseboat", location: "Alleppey", lat: 9.4981, lng: 76.3388, description: "Morning drive to Alleppey (55 km). Board houseboat. Full day cruising the backwaters. All meals on board. Overnight on houseboat.", activities: ["Houseboat cruise", "Backwater villages"] },
           { day: 3, title: "Alleppey to Kochi – Departure", location: "Kochi", lat: 9.9312, lng: 76.2673, description: "Disembark after breakfast. Optional visit to Alleppey beach or Marari beach. Drive to Kochi airport for departure.", activities: ["Beach visit", "Airport transfer"] },
         ],
-        photos: ["/images/kochi-harbour.jpg", "/images/alleppey-canal.jpg", "/images/chinese-nets-sunset.jpg", "/images/houseboat-interior.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1590123732197-e7079d2ceb89?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1677475455506-1e429162f44f?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1704365159747-1f7b8913044f?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 9.7, lng: 76.3, zoom: 10 },
       },
       prices: [
@@ -251,7 +282,13 @@ async function main() {
           { day: 4, title: "Wayanad Wildlife & Plantation", location: "Wayanad", lat: 11.6854, lng: 76.1320, description: "Morning jeep safari at Muthanga Wildlife Sanctuary — spot elephants, deer and if lucky, a tiger. Afternoon visit to a coffee and tea plantation. Overnight in Wayanad.", activities: ["Muthanga Safari", "Plantation visit"] },
           { day: 5, title: "Wayanad to Calicut – Departure", location: "Kozhikode", lat: 11.2588, lng: 75.7804, description: "Morning at leisure. Drive back to Calicut airport for departure. Optional stop at Thusharagiri Waterfalls.", activities: ["Optional waterfall stop", "Airport transfer"] },
         ],
-        photos: ["/images/wayanad-hills.jpg", "/images/edakkal-caves.jpg", "/images/kozhikode-beach.jpg", "/images/banasura-dam.jpg", "/images/wayanad-plantation.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1616388969587-8196f32388b4?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1625721838087-c46e51c89558?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1591933635584-d04c937a9a29?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1663647690423-aebc47739cde?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1696241973555-6d2c01ee58d9?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 11.4, lng: 75.9, zoom: 9 },
       },
       prices: [
@@ -284,7 +321,12 @@ async function main() {
           { day: 3, title: "Coorg to Mysore", location: "Mysore", lat: 12.2958, lng: 76.6394, description: "Drive to Mysore (120 km, ~3 hours). Visit the grand Mysore Palace (illuminated on Sundays). Chamundi Hills for panoramic city views. Evening at Devaraja Market for silks, sandalwood and spices. Overnight in Mysore.", activities: ["Mysore Palace", "Chamundi Hills", "Devaraja Market"] },
           { day: 4, title: "Mysore – Departure", location: "Mysore", lat: 12.2958, lng: 76.6394, description: "Morning visit to Brindavan Gardens (if time permits). Transfer to Mysore airport/station for departure.", activities: ["Brindavan Gardens", "Airport transfer"] },
         ],
-        photos: ["/images/coorg-coffee.jpg", "/images/mysore-palace.jpg", "/images/abbey-falls.jpg", "/images/coorg-hills.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1600112356915-089abb8fc71a?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1694537623072-a1172819c577?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1634874634941-78abc0a00298?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1600118569960-ea0f09f92d5b?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 12.3, lng: 76.2, zoom: 9 },
       },
       prices: [
@@ -321,7 +363,14 @@ async function main() {
           { day: 6, title: "Alleppey to Marari Beach", location: "Marari", lat: 9.6122, lng: 76.2890, description: "Disembark after a lazy breakfast. Short drive to Marari Beach — one of Kerala's quietest and prettiest beaches. Check in to a beachside cottage. Afternoon at leisure. Candlelit dinner on the beach.", activities: ["Beach cottage", "Beach candlelit dinner"] },
           { day: 7, title: "Marari – Departure", location: "Kochi", lat: 9.9312, lng: 76.2673, description: "Morning at leisure on the beach. Transfer to Cochin airport (90 km) for departure. Farewell with a small gift.", activities: ["Beach morning", "Airport transfer"] },
         ],
-        photos: ["/images/honeymoon-houseboat.jpg", "/images/munnar-resort.jpg", "/images/marari-beach.jpg", "/images/ayurveda-spa.jpg", "/images/candlelit-dinner.jpg", "/images/tea-tasting.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1711192702535-eac61a78ecb0?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1677475455489-632146a6ae83?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1704365159871-6bf63f00b9c8?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1629468571441-c556429b074e?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1650884986392-984358536050?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 9.7, lng: 76.8, zoom: 8 },
       },
       prices: [
@@ -355,7 +404,13 @@ async function main() {
           { day: 5, title: "North Goa Heritage & Beaches", location: "Goa", lat: 15.5000, lng: 73.8300, description: "Drive to North Goa. Basilica of Bom Jesus (UNESCO), Se Cathedral, Fort Aguada. Afternoon at Calangute or Baga Beach. Evening at leisure.", activities: ["Old Goa churches", "Fort Aguada", "Baga Beach"] },
           { day: 6, title: "Goa – Departure", location: "Goa", lat: 15.3808, lng: 73.8314, description: "Morning at leisure. Optional visit to Anjuna Flea Market (Wednesdays) or Fontainhas Latin Quarter in Panjim. Transfer to Goa airport for departure.", activities: ["Optional market/Fontainhas", "Airport transfer"] },
         ],
-        photos: ["/images/hampi-chariot.jpg", "/images/goa-beach.jpg", "/images/hampi-ruins.jpg", "/images/palolem.jpg", "/images/old-goa-church.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1596018382916-56d2e341d784?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1590393275627-0c48482c60e3?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1583727638625-8ab3ee2b8a25?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1652820330042-92a30b18abc5?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 15.3, lng: 75.5, zoom: 7 },
       },
       prices: [
@@ -388,7 +443,12 @@ async function main() {
           { day: 3, title: "Varkala to Kovalam", location: "Kovalam", lat: 8.3988, lng: 76.9780, description: "Morning at leisure in Varkala. Drive to Kovalam (45 km). Afternoon at Lighthouse Beach — iconic lighthouse, surfing, sunbathing. Evening seafood dinner at a beachside restaurant.", activities: ["Lighthouse Beach", "Surfing", "Seafood dinner"] },
           { day: 4, title: "Kovalam – Departure", location: "Trivandrum", lat: 8.5241, lng: 76.9366, description: "Morning swim or Ayurveda massage on the beach. Transfer to Trivandrum airport (15 km) for departure.", activities: ["Beach morning", "Optional Ayurveda", "Airport transfer"] },
         ],
-        photos: ["/images/varkala-cliff.jpg", "/images/kovalam-lighthouse.jpg", "/images/trivandrum-temple.jpg", "/images/varkala-beach.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1650730005180-2c849af5d6cc?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1668518891186-c07180869132?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1672060519409-8b4f23f52297?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1629468571441-c556429b074e?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 8.5, lng: 76.9, zoom: 10 },
       },
       prices: [
@@ -427,7 +487,12 @@ async function main() {
           { day: 11, title: "Hampi Full Day", location: "Hampi", lat: 15.3350, lng: 76.4600, description: "Vittala Temple. Royal Enclosure. Coracle ride. Overnight.", activities: ["Vittala Temple", "Coracle ride"] },
           { day: 12, title: "Hampi – Departure", location: "Hubli", lat: 15.3647, lng: 75.1240, description: "Drive to Hubli airport. Departure.", activities: ["Airport transfer"] },
         ],
-        photos: ["/images/south-india-collage.jpg", "/images/meenakshi.jpg", "/images/mysore-palace-night.jpg", "/images/hampi-sunset.jpg"],
+        photos: [
+          "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1692173248120-59547c3d4653?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1600112356915-089abb8fc71a?w=800&h=600&fit=crop&auto=format",
+          "https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788?w=800&h=600&fit=crop&auto=format",
+        ],
         mapCenter: { lat: 11.0, lng: 77.0, zoom: 6 },
       },
       prices: [
@@ -438,6 +503,9 @@ async function main() {
   ];
 
   for (const pkg of packages) {
+    const existing = await prisma.package.findUnique({ where: { slug: pkg.slug } });
+    if (existing) continue;
+
     const created = await prisma.package.create({
       data: {
         slug: pkg.slug,
@@ -492,7 +560,7 @@ async function main() {
       packageId: keralaPkg?.id,
       userId: traveller1.id,
       name: "Rahul Sharma",
-      email: "rahul@example.com",
+      email: "traveller@itera.in",
       phone: "+91 98765 43210",
       message: "Hi, 2 adults and 1 kid, Kerala 5-6 nights in December, budget around 1.2 lakh total, houseboat a must",
       adults: 2,
@@ -793,7 +861,11 @@ async function main() {
     },
   ];
 
-  for (const enq of enquiries) {
+  const seedEnquiryExists = await prisma.enquiry.findFirst({
+    where: { message: { startsWith: "Hi, 2 adults and 1 kid, Kerala 5-6 nights" } },
+  });
+
+  for (const enq of seedEnquiryExists ? [] : enquiries) {
     const created = await prisma.enquiry.create({
       data: {
         packageId: enq.packageId || null,
@@ -839,6 +911,55 @@ async function main() {
     }
   }
 
+  // --- Blog Posts ---
+  await prisma.blogPost.createMany({
+    skipDuplicates: true,
+    data: [
+      {
+        slug: "best-time-to-visit-kerala",
+        title: "Best Time to Visit Kerala: A Season-by-Season Guide",
+        excerpt: "Kerala is stunning year-round, but each season offers a different experience. Here's how to pick the perfect time for your trip.",
+        content: `## When Should You Visit Kerala?\n\nKerala's tropical climate means it's warm throughout the year, but rainfall and humidity vary dramatically by season. Your ideal travel window depends on what you want to do.\n\n### Peak Season (October – February)\n\nThis is Kerala's golden window. The monsoon has retreated, leaving everything lush and green. Temperatures hover between 23°C and 32°C with minimal rain.\n\n**Best for:** Backwater cruises, beach holidays, hill station treks, wildlife safaris at Periyar and Wayanad.\n\n**Expect:** Higher hotel rates, especially around Christmas and New Year. Book 2–3 months ahead for houseboats in Alleppey.\n\n### Monsoon Season (June – September)\n\nKerala receives both the southwest and northeast monsoons. The southwest (June–August) is heavy — expect daily downpours, rough seas, and some road closures in the ghats.\n\n**Best for:** Ayurveda treatments (traditionally done in monsoon), budget travel, photography of waterfalls at their peak.\n\n**Avoid:** Beach activities, houseboat trips during heavy rain days, driving mountain roads at night.\n\n**Budget tip:** Hotel rates drop 30–50%. Many resorts offer monsoon Ayurveda packages.\n\n### Summer (March – May)\n\nHot and humid in the lowlands (34–37°C), but Munnar and Wayanad stay pleasant at 20–25°C.\n\n**Best for:** Hill stations, tea plantation walks, Thekkady spice gardens.\n\n**Avoid:** Beach towns in April–May heat. Alleppey backwaters can get uncomfortably warm.\n\n## Our Recommendation\n\nFirst-time visitors: come in October or November. You get post-monsoon greenery, comfortable weather, and slightly lower rates than the December peak. Repeat visitors: try June for a completely different Kerala — dramatic skies, empty beaches, and Ayurveda at its most authentic.`,
+        coverImage: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200",
+        category: "Travel Tips",
+        tags: ["kerala", "weather", "planning", "monsoon", "peak season"],
+        seoTitle: "Best Time to Visit Kerala 2027 — Season Guide | Itera",
+        seoDescription: "Plan your Kerala trip with our season-by-season guide. Learn when to visit for backwaters, beaches, hill stations and Ayurveda.",
+        relatedPackageIds: [],
+        published: true,
+        authorId: admin.id,
+      },
+      {
+        slug: "alleppey-houseboat-guide",
+        title: "Alleppey Houseboats: Everything You Need to Know Before Booking",
+        excerpt: "Houseboats are Kerala's signature experience, but not all are created equal. Here's how to pick the right one and what to expect on board.",
+        content: `## The Alleppey Houseboat Experience\n\nA night on a kettuvallam (traditional rice barge converted into a floating hotel) through Alleppey's backwaters is the single most iconic thing you can do in Kerala. But there's a wide gap between a memorable cruise and a disappointing one.\n\n### Types of Houseboats\n\n**Standard (₹6,000–8,000/night):** Basic AC bedroom, small deck, set menu meals. Clean but no frills. Fine for budget travellers.\n\n**Deluxe (₹10,000–15,000/night):** Larger rooms, upper deck with seating, better food with some customization. The sweet spot for most visitors.\n\n**Premium (₹18,000–30,000+/night):** Multiple bedrooms, private chef, sundeck with loungers, sometimes a plunge pool. Worth it for honeymoons or small groups.\n\n### What's Included\n\nAll houseboats include: AC bedroom(s), all meals (lunch, evening snacks, dinner, breakfast), a captain, and a cook. You board around noon and disembark by 9 AM the next day.\n\n### Tips for a Great Experience\n\n1. **Book through a reputable operator.** Aggregator sites often list boats they haven't inspected. We personally vet every houseboat in our packages.\n2. **Go midweek.** Weekend traffic on the canals is real — Friday and Saturday nights mean more boats, more noise, less wildlife.\n3. **Choose the right route.** The Punnamada Lake route is scenic but touristy. Ask for the narrower Kuttanad canals for a quieter, more authentic experience.\n4. **Bring binoculars.** Kingfishers, cormorants, and egrets are everywhere. You'll spot them from the deck at dawn.\n5. **Skip the AC at sunset.** Open the windows, sit on the deck, and watch the paddy fields turn gold. That's the whole point.\n\n### When to Go\n\nOctober to March is ideal. Monsoon months (June–August) can mean rough waters and cancelled trips. The shoulder months of September and April are fine — fewer tourists, slightly warmer.`,
+        coverImage: "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=1200",
+        category: "Destinations",
+        tags: ["alleppey", "houseboats", "backwaters", "kerala", "guide"],
+        seoTitle: "Alleppey Houseboat Guide — Types, Prices & Tips | Itera",
+        seoDescription: "Everything about Alleppey houseboats: types, pricing, what's included, and tips for the best backwater experience in Kerala.",
+        relatedPackageIds: [],
+        published: true,
+        authorId: admin.id,
+      },
+      {
+        slug: "munnar-tea-plantations-weekend",
+        title: "A Weekend in Munnar: Tea Estates, Mist, and Mountain Air",
+        excerpt: "Munnar's rolling tea plantations and cool mountain air make it the perfect escape from the heat. Here's how to make the most of a 2–3 day trip.",
+        content: `## Why Munnar?\n\nAt 1,600 metres above sea level, Munnar is Kerala's hill station jewel. The town itself is unremarkable — it's what surrounds it that takes your breath away: endless carpets of tea bushes, misty peaks, and some of the last surviving shola grasslands in the Western Ghats.\n\n### Getting There\n\n**From Kochi:** 4–5 hours by road (130 km). The last 2 hours wind through spectacular hairpin bends with valley views. Leave early to arrive by lunch.\n\n**From Madurai:** 4 hours. A less common but equally scenic route through Tamil Nadu's plains and up the ghats.\n\n### Day 1: Arrive and Explore\n\nCheck into your hotel and spend the afternoon at the **Tata Tea Museum**. It's small but fascinating — you'll see the full process from leaf to cup, including a tasting session. End the day at **Pothamedu Viewpoint** for sunset over three valleys of tea, coffee, and cardamom.\n\n### Day 2: Deep into the Hills\n\nStart early for **Eravikulam National Park** (home to the endangered Nilgiri tahr — mountain goats you'll spot on the grassy slopes). The park closes during calving season (February–March), so check ahead.\n\nAfternoon: Drive to **Top Station** (32 km) for panoramic views of the Tamil Nadu plains 1,700 metres below. On clear days you can see Kodaikanal.\n\nEvening: Walk through a **working tea estate**. Several plantations near Munnar allow guided walks where the plucker explains how the two-leaves-and-a-bud method works.\n\n### Day 3: Waterfalls and Spice Gardens\n\nVisit **Attukal Waterfalls** (a short trek) or the more accessible **Lakkam Waterfalls**. On your drive back to Kochi, stop at a **spice garden** in Adimali — you'll see cardamom, pepper, vanilla, and cinnamon growing, and buy spices directly.\n\n### Where to Stay\n\n**Budget:** Clean homestays in Old Munnar (₹1,500–2,500/night). Book one with a valley view.\n\n**Mid-range:** Tea-estate bungalows converted to boutique stays (₹4,000–8,000/night). Our top pick for the experience.\n\n**Luxury:** Windermere Estate or Spicetree Munnar (₹12,000+/night). Stunning properties with private tea-garden access.\n\n### Pro Tips\n\n- Carry a light jacket even in summer — evenings drop to 15°C.\n- Skip weekends if you can. Munnar town jams badly on Saturdays.\n- The best tea to buy: high-grown orthodox tea from the KDHP outlets. Skip the flavoured tourist varieties.`,
+        coverImage: "https://images.unsplash.com/photo-1564507592333-c60657eea523?w=1200",
+        category: "Destinations",
+        tags: ["munnar", "tea plantations", "hill station", "kerala", "weekend trip"],
+        seoTitle: "Weekend in Munnar — Tea Estates & Hill Station Guide | Itera",
+        seoDescription: "Plan a perfect weekend in Munnar: tea plantations, Eravikulam National Park, waterfalls, and where to stay at every budget.",
+        relatedPackageIds: [],
+        published: true,
+        authorId: admin.id,
+      },
+    ],
+  });
+
   console.log("Seed complete:");
   console.log(`  Users: ${await prisma.user.count()}`);
   console.log(`  Packages: ${await prisma.package.count()}`);
@@ -847,6 +968,7 @@ async function main() {
   console.log(`  Enquiries: ${await prisma.enquiry.count()}`);
   console.log(`  Enquiry Notes: ${await prisma.enquiryNote.count()}`);
   console.log(`  Enquiry Replies: ${await prisma.enquiryReply.count()}`);
+  console.log(`  Blog Posts: ${await prisma.blogPost.count()}`);
 }
 
 main()

@@ -19,5 +19,7 @@ export async function GET(
     return NextResponse.json({ error: "Package not found" }, { status: 404 });
   }
 
-  return NextResponse.json(pkg);
+  const response = NextResponse.json(pkg);
+  response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+  return response;
 }

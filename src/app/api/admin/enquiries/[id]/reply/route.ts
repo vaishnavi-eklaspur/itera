@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { authorizeRole } from "@/lib/roles";
 
 const replySchema = z.object({
   content: z.string().min(1, "Reply cannot be empty"),
@@ -15,6 +16,8 @@ export async function POST(
   const { id } = await params;
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = authorizeRole(session.user.role, "ADMIN", "CONSULTANT");
+  if (denied) return denied;
 
   const body = await req.json();
   const parsed = replySchema.safeParse(body);

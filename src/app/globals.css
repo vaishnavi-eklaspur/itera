@@ -1,6 +1,30 @@
 @import "tailwindcss";
 
 @theme inline {
+  /* Forest Green — Primary */
+  --color-forest-50: #f0f7f2;
+  --color-forest-100: #dceee2;
+  --color-forest-200: #bddcc7;
+  --color-forest-300: #8ec4a1;
+  --color-forest-400: #5da878;
+  --color-forest-500: #3d8d5b;
+  --color-forest-600: #2d7148;
+  --color-forest-700: #245a3b;
+  --color-forest-800: #1b4332;
+  --color-forest-900: #14342a;
+  --color-forest-950: #0b2318;
+
+  /* Warm Ivory — Backgrounds */
+  --color-ivory: #faf8f1;
+
+  /* Earthy Accents */
+  --color-terracotta: #b5651d;
+  --color-sand-200: #e8dcc8;
+  --color-sand-300: #d4c5a9;
+  --color-sand-400: #c9a96e;
+  --color-sand-500: #b89a5a;
+
+  /* Keep teal/amber for backward compat during migration */
   --color-teal-50: #f0fdfa;
   --color-teal-100: #ccfbf1;
   --color-teal-200: #99f6e4;
@@ -14,15 +38,21 @@
   --color-amber-400: #fbbf24;
   --color-amber-500: #f59e0b;
   --color-amber-600: #d97706;
+
+  /* Typography */
+  --font-display: var(--font-playfair), Georgia, 'Times New Roman', serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+  font-family: var(--font-sans);
+  background-color: var(--color-ivory);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Skeleton loading animation */
@@ -32,8 +62,73 @@ html {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, #f0ece3 25%, #e5dfd3 50%, #f0ece3 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 0.5rem;
+}
+
+/* Editorial serif for headings */
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Scroll-driven reveal animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+/* Subtle image zoom on card hover */
+.img-zoom {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.group:hover .img-zoom {
+  transform: scale(1.05);
+}
+
+/* Smooth underline link hover */
+.link-slide {
+  position: relative;
+}
+.link-slide::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.link-slide:hover::after {
+  width: 100%;
+}
+
+/* Better focus rings */
+*:focus-visible {
+  outline: 2px solid var(--color-forest-500);
+  outline-offset: 2px;
+}
+
+/* Letterpress-style section labels */
+.section-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-forest-600);
+}
+
+/* Glass card effect */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }

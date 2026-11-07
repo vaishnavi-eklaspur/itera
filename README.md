@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Itera
 
-## Getting Started
+A full-stack travel platform for a Kerala/South India tour operator. Replaces a manual workflow — content updates via vendor (₹3k + 3 days per change), enquiries scattered across WhatsApp, email and phone — with a unified CMS and AI-powered enquiry pipeline.
 
-First, run the development server:
+## What It Does
+
+**For travellers:** Browse curated travel packages with seasonal pricing, day-wise itineraries and interactive maps. Submit enquiries and receive instant acknowledgement.
+
+**For the operator:** Manage packages, blog posts and enquiries from a single admin dashboard. AI extracts travel details from free-text enquiries, matches packages by budget/destination/dates, and drafts personalised replies — all reviewed by staff before sending.
+
+## Stack
+
+Next.js 16 (App Router, SSR) · React 19 · PostgreSQL (Neon) · Prisma 6 · NextAuth v5 · Gemini API · Tailwind CSS 4 · Leaflet · Vitest
+
+## Key Features
+
+- **Append-only package versioning** — every edit creates a new version; instant rollback with full audit trail
+- **Seasonal pricing engine** — per-season per-person pricing with live calculator on public pages
+- **Hybrid AI pipeline** — Gemini extraction → deterministic matching → AI-drafted reply, human approval mandatory
+- **4-role RBAC** — Admin, Editor, Consultant, Traveller with defense-in-depth auth (proxy + route-level)
+- **Blog CMS** — Markdown-based posts with tags, SEO metadata and scheduling
+- **Quote builder** — Generate shareable quote links with per-traveller pricing
+- **Activity log** — Tracks all admin actions for accountability
+
+## Quick Start
 
 ```bash
+git clone https://github.com/vaishnavi-eklaspur/itera.git
+cd itera
+npm install
+cp .env.example .env   # fill in DATABASE_URL, NEXTAUTH_SECRET, etc.
+npx prisma db push
+npx prisma db seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+See [deployment.md](deployment.md) for full setup, environment variables, Vercel/Docker deployment and secret generation.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Test Credentials (from seed)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@itera.in | admin123 |
+| Consultant | consultant@itera.in | consultant123 |
+| Traveller | traveller@itera.in | traveller123 |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── (auth)/          # Login, registration
+│   ├── (public)/        # Packages, blog, enquiries, quotes
+│   ├── admin/           # Dashboard, package editor, enquiry inbox, blog CMS
+│   └── api/             # REST endpoints (admin, public, internal)
+├── components/          # React components (admin, layout, packages, ui)
+├── lib/                 # Auth, DB, validations, rate limiting, roles
+└── proxy.ts             # Request proxy (auth, rate limiting, security headers)
+prisma/
+├── schema.prisma        # Data model
+└── seed.ts              # Sample data (10 packages, 18 enquiries, 3 users)
+tests/                   # Vitest test suites (64 tests)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tests
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm test          # 64 tests across 4 files
+npm run test:watch
+```
 
-## Deploy on Vercel
+## Documentation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [TDD.md](TDD.md) — Architecture decisions, data model, AI pipeline design
+- [deployment.md](deployment.md) — Local dev, Vercel, Docker, cron jobs

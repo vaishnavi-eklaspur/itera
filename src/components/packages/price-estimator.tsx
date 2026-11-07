@@ -35,11 +35,11 @@ export function PriceEstimator({ prices }: { prices: SeasonalPrice[] }) {
     <section className="bg-amber-50 border border-amber-200 rounded-xl p-6">
       <div className="flex items-center gap-2 mb-4">
         <Calculator className="w-5 h-5 text-amber-600" />
-        <h2 className="text-lg font-semibold text-slate-900">Instant Price Estimator</h2>
+        <h2 className="text-lg font-semibold text-stone-900">Instant Price Estimator</h2>
       </div>
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">Travel Month</label>
+          <label className="text-xs text-stone-500 mb-1 block">Travel Month</label>
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
@@ -51,7 +51,7 @@ export function PriceEstimator({ prices }: { prices: SeasonalPrice[] }) {
           </select>
         </div>
         <div>
-          <label className="text-xs text-slate-500 mb-1 block">Travellers</label>
+          <label className="text-xs text-stone-500 mb-1 block">Travellers</label>
           <input
             type="number"
             min={1}
@@ -64,9 +64,9 @@ export function PriceEstimator({ prices }: { prices: SeasonalPrice[] }) {
       </div>
       {estimate && (
         <div className="bg-white rounded-lg p-4 text-center">
-          <p className="text-xs text-slate-400">{estimate.seasonName} season</p>
-          <p className="text-2xl font-bold text-teal-700">{formatPrice(estimate.total)}</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-stone-400">{estimate.seasonName} season</p>
+          <p className="text-2xl font-bold text-forest-700">{formatPrice(estimate.total)}</p>
+          <p className="text-xs text-stone-400">
             {formatPrice(estimate.perPerson)} x {travellers} traveller{travellers !== 1 ? "s" : ""}
           </p>
         </div>

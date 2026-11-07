@@ -23,7 +23,7 @@ export default async function AnalyticsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-900 mb-6">Analytics</h1>
+      <h1 className="text-2xl font-display font-semibold text-stone-900 mb-6">Analytics</h1>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KPI icon={Inbox} label="Total Enquiries" value={total} />
@@ -33,8 +33,8 @@ export default async function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="bg-white rounded-xl border border-slate-200 p-6">
-          <h2 className="font-semibold text-slate-900 mb-4">Status Breakdown</h2>
+        <section className="bg-white rounded-xl border border-stone-200 p-6">
+          <h2 className="font-semibold text-stone-900 mb-4">Status Breakdown</h2>
           <div className="space-y-3">
             {byStatus.map((s) => {
               const pct = total > 0 ? Math.round((s._count / total) * 100) : 0;
@@ -42,14 +42,14 @@ export default async function AnalyticsPage() {
                 s.status === "NEW" ? "bg-amber-500" :
                 s.status === "IN_PROGRESS" ? "bg-blue-500" :
                 s.status === "REPLIED" ? "bg-green-500" :
-                "bg-slate-400";
+                "bg-stone-400";
               return (
                 <div key={s.status}>
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-slate-600">{s.status.replace("_", " ")}</span>
-                    <span className="text-slate-400">{s._count} ({pct}%)</span>
+                    <span className="text-stone-600">{s.status.replace("_", " ")}</span>
+                    <span className="text-stone-400">{s._count} ({pct}%)</span>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
                     <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
                   </div>
                 </div>
@@ -58,31 +58,31 @@ export default async function AnalyticsPage() {
           </div>
         </section>
 
-        <section className="bg-white rounded-xl border border-slate-200 p-6">
-          <h2 className="font-semibold text-slate-900 mb-4">Top Packages by Enquiries</h2>
+        <section className="bg-white rounded-xl border border-stone-200 p-6">
+          <h2 className="font-semibold text-stone-900 mb-4">Top Packages by Enquiries</h2>
           {topPackages.length === 0 ? (
-            <p className="text-sm text-slate-400">No data yet</p>
+            <p className="text-sm text-stone-400">No data yet</p>
           ) : (
             <div className="space-y-3">
               {topPackages.map((tp, i) => (
                 <div key={tp.packageId} className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">
+                  <span className="w-6 h-6 rounded-full bg-forest-100 text-forest-700 text-xs font-bold flex items-center justify-center">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-700 truncate">{tp.title}</p>
+                    <p className="text-sm font-medium text-stone-700 truncate">{tp.title}</p>
                   </div>
-                  <span className="text-sm font-semibold text-slate-900">{tp.count}</span>
+                  <span className="text-sm font-semibold text-stone-900">{tp.count}</span>
                 </div>
               ))}
             </div>
           )}
         </section>
 
-        <section className="bg-white rounded-xl border border-slate-200 p-6 lg:col-span-2">
-          <h2 className="font-semibold text-slate-900 mb-4">Enquiry Volume (Last 30 Days)</h2>
+        <section className="bg-white rounded-xl border border-stone-200 p-6 lg:col-span-2">
+          <h2 className="font-semibold text-stone-900 mb-4">Enquiry Volume (Last 30 Days)</h2>
           {enquiriesLast30.length === 0 ? (
-            <p className="text-sm text-slate-400">No data yet</p>
+            <p className="text-sm text-stone-400">No data yet</p>
           ) : (
             <div className="flex items-end gap-1 h-40">
               {enquiriesLast30.map((d) => {
@@ -91,10 +91,10 @@ export default async function AnalyticsPage() {
                 return (
                   <div key={d.date} className="flex-1 flex flex-col items-center group relative">
                     <div
-                      className="w-full bg-teal-500 rounded-t hover:bg-teal-600 transition min-h-[4px]"
+                      className="w-full bg-forest-500 rounded-t hover:bg-forest-600 transition min-h-[4px]"
                       style={{ height: `${h}%` }}
                     />
-                    <div className="absolute bottom-full mb-1 hidden group-hover:block bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                    <div className="absolute bottom-full mb-1 hidden group-hover:block bg-stone-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
                       {d.date}: {d.count}
                     </div>
                   </div>
@@ -112,10 +112,10 @@ function KPI({ icon: Icon, label, value, accent }: {
   icon: React.ComponentType<{ className?: string }>; label: string; value: string | number; accent?: boolean;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <Icon className={`w-5 h-5 ${accent ? "text-amber-500" : "text-teal-600"} mb-2`} />
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
-      <p className="text-xs text-slate-400">{label}</p>
+    <div className="bg-white rounded-xl border border-stone-200 p-4">
+      <Icon className={`w-5 h-5 ${accent ? "text-amber-500" : "text-forest-600"} mb-2`} />
+      <p className="text-2xl font-bold text-stone-900">{value}</p>
+      <p className="text-xs text-stone-400">{label}</p>
     </div>
   );
 }

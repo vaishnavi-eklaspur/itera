@@ -32,10 +32,10 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
   const expired = new Date(quote.validUntil) < new Date();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden print:shadow-none">
+    <div className="min-h-screen bg-gradient-to-br from-forest-50 via-ivory to-forest-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-stone-100 overflow-hidden print:shadow-none">
         {/* Header */}
-        <div className="bg-gradient-to-r from-teal-600 to-emerald-600 px-8 py-6 text-white">
+        <div className="bg-gradient-to-r from-forest-700 to-forest-600 px-8 py-6 text-white">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold tracking-tight">Itera</span>
             <span className="text-xs bg-white/20 px-3 py-1 rounded-full">Travel Quote</span>
@@ -58,49 +58,49 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-slate-50 rounded-lg p-4">
-              <p className="text-xs text-slate-400 mb-1">Travellers</p>
-              <p className="text-lg font-semibold text-slate-900 flex items-center gap-1.5"><Users className="w-4 h-4 text-teal-500" /> {quote.travellers}</p>
+            <div className="bg-stone-50 rounded-lg p-4">
+              <p className="text-xs text-stone-400 mb-1">Travellers</p>
+              <p className="text-lg font-semibold text-stone-900 flex items-center gap-1.5"><Users className="w-4 h-4 text-forest-500" /> {quote.travellers}</p>
             </div>
-            <div className="bg-slate-50 rounded-lg p-4">
-              <p className="text-xs text-slate-400 mb-1">Travel Date</p>
-              <p className="text-lg font-semibold text-slate-900 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-teal-500" /> {quote.travelDate || "Flexible"}</p>
+            <div className="bg-stone-50 rounded-lg p-4">
+              <p className="text-xs text-stone-400 mb-1">Travel Date</p>
+              <p className="text-lg font-semibold text-stone-900 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-forest-500" /> {quote.travelDate || "Flexible"}</p>
             </div>
           </div>
 
           {/* Pricing */}
-          <div className="border border-slate-200 rounded-lg overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 bg-slate-50 text-sm text-slate-500">
+          <div className="border border-stone-200 rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 bg-stone-50 text-sm text-stone-500">
               <span>Per person</span>
-              <span className="font-semibold text-slate-900">{formatPrice(quote.pricePerPerson)}</span>
+              <span className="font-semibold text-stone-900">{formatPrice(quote.pricePerPerson)}</span>
             </div>
-            <div className="flex items-center justify-between px-5 py-3 text-sm text-slate-500">
+            <div className="flex items-center justify-between px-5 py-3 text-sm text-stone-500">
               <span>Travellers</span>
-              <span className="text-slate-900">&times; {quote.travellers}</span>
+              <span className="text-stone-900">&times; {quote.travellers}</span>
             </div>
-            <div className="flex items-center justify-between px-5 py-4 bg-teal-50 border-t border-slate-200">
-              <span className="font-semibold text-teal-800">Total</span>
-              <span className="text-2xl font-bold text-teal-700">{formatPrice(quote.totalPrice)}</span>
+            <div className="flex items-center justify-between px-5 py-4 bg-forest-50 border-t border-stone-200">
+              <span className="font-semibold text-forest-800">Total</span>
+              <span className="text-2xl font-bold text-forest-700">{formatPrice(quote.totalPrice)}</span>
             </div>
           </div>
 
           {/* Inclusions / Exclusions */}
           {quote.inclusions.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-2">Inclusions</h3>
+              <h3 className="text-sm font-semibold text-stone-900 mb-2">Inclusions</h3>
               <ul className="space-y-1">
                 {quote.inclusions.map((item, i) => (
-                  <li key={i} className="text-sm text-slate-600 flex items-start gap-2"><CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> {item}</li>
+                  <li key={i} className="text-sm text-stone-600 flex items-start gap-2"><CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> {item}</li>
                 ))}
               </ul>
             </div>
           )}
           {quote.exclusions.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-2">Exclusions</h3>
+              <h3 className="text-sm font-semibold text-stone-900 mb-2">Exclusions</h3>
               <ul className="space-y-1">
                 {quote.exclusions.map((item, i) => (
-                  <li key={i} className="text-sm text-slate-400 flex items-start gap-2"><XCircle className="w-4 h-4 text-slate-300 shrink-0 mt-0.5" /> {item}</li>
+                  <li key={i} className="text-sm text-stone-400 flex items-start gap-2"><XCircle className="w-4 h-4 text-stone-300 shrink-0 mt-0.5" /> {item}</li>
                 ))}
               </ul>
             </div>
@@ -111,7 +111,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
           )}
 
           {/* Footer */}
-          <div className="pt-4 border-t border-slate-100 text-xs text-slate-400 flex items-center justify-between">
+          <div className="pt-4 border-t border-stone-100 text-xs text-stone-400 flex items-center justify-between">
             <span>Prepared by {quote.author.name}</span>
             <span>Valid until {new Date(quote.validUntil).toLocaleDateString()}</span>
           </div>

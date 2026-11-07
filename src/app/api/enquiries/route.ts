@@ -3,10 +3,10 @@ import { db } from "@/lib/db";
 import { enquiryFormSchema } from "@/lib/validations";
 import { auth } from "@/lib/auth";
 import { sendAutoAckEmail } from "@/lib/email";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const ip = getClientIp(req);
   if (!rateLimit(ip)) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }

@@ -46,7 +46,7 @@ export function timeAgo(date: Date): string {
 export function responseTimeBadge(createdAt: Date, repliedAt?: Date | null): { label: string; color: "green" | "amber" | "red" | "grey"; className: string } {
   if (repliedAt) {
     const diffMin = Math.floor((repliedAt.getTime() - createdAt.getTime()) / 60000);
-    return { label: `Replied in ${diffMin}m`, color: "grey", className: "bg-slate-100 text-slate-500" };
+    return { label: `Replied in ${diffMin}m`, color: "grey", className: "bg-stone-100 text-stone-500" };
   }
   const diffMin = Math.floor((Date.now() - createdAt.getTime()) / 60000);
   if (diffMin < 30) return { label: `Waiting ${diffMin}m`, color: "green", className: "bg-green-100 text-green-700" };

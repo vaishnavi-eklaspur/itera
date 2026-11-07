@@ -8,3 +8,11 @@ export function rateLimit(key: string, windowMs = 60_000, max = 5): boolean {
   hits.set(key, timestamps);
   return true;
 }
+
+export function getClientIp(req: { headers: { get(name: string): string | null } }): string {
+  return (
+    req.headers.get("x-real-ip")?.trim() ||
+    req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ||
+    "unknown"
+  );
+}

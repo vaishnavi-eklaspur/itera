@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const REDIRECTS: Record<string, string> = {
   "/kerala-tour-packages": "/packages",
@@ -33,6 +34,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(redirect, request.url), 301);
   }
 
+  if (pathname === "/api/auth/callback/credentials" && request.method === "POST") {
+    const ip = getClientIp(request);
+    if (!rateLimit(`login:${ip}`, 900_000, 5)) {
+      return NextResponse.json({ error: "Too many login attempts. Try again later." }, { status: 429 });
+    }
+  }
+
   const isAdminRoute = pathname.startsWith("/admin");
   const isApiAdminRoute = pathname.startsWith("/api/admin");
 
@@ -56,9 +64,20 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  response.headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com https://*.unsplash.com blob:; connect-src 'self'; frame-ancestors 'none'"
+  );
+
+  return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*", "/my-enquiries/:path*", "/kerala-:path*", "/munnar-:path*", "/alleppey-:path*", "/wayanad-:path*", "/thekkady-:path*", "/kovalam-:path*", "/cochin-:path*", "/kumarakom-:path*", "/vagamon-:path*", "/athirappilly-:path*", "/5-days-:path*", "/6-days-:path*", "/7-days-:path*", "/about-us", "/contact-us", "/enquiry", "/testimonials", "/gallery"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

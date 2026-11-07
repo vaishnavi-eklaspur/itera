@@ -34,58 +34,76 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-2xl font-bold text-teal-700">Itera</Link>
-          <p className="text-sm text-slate-500 mt-1">Sign in to your account</p>
+    <div className="min-h-screen flex">
+      {/* Image panel — hidden on mobile */}
+      <div className="hidden lg:block lg:w-1/2 relative">
+        <img
+          src="https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=900&h=1200&fit=crop&auto=format&q=80"
+          alt="Kerala backwaters"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-forest-950/40" />
+        <div className="absolute bottom-10 left-10 right-10">
+          <Link href="/" className="text-3xl font-display font-bold text-white">Itera</Link>
+          <p className="mt-2 text-white/70 text-sm">Handcrafted South India travel</p>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-          <div>
-            <label className="text-sm text-slate-700 font-medium block mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              placeholder="admin@itera.in"
-            />
-          </div>
-          <div>
-            <label className="text-sm text-slate-700 font-medium block mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              placeholder="Enter password"
-            />
+      {/* Form panel */}
+      <div className="flex-1 flex items-center justify-center bg-ivory px-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8 lg:text-left">
+            <Link href="/" className="text-2xl font-display font-bold text-forest-700 lg:hidden">Itera</Link>
+            <h1 className="text-xl font-display font-semibold text-stone-900 mt-4 lg:mt-0">Sign in</h1>
+            <p className="text-sm text-stone-500 mt-1">Welcome back. Enter your credentials to continue.</p>
           </div>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm text-stone-700 font-medium block mb-1">Email</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent bg-white"
+                placeholder="admin@itera.in"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-stone-700 font-medium block mb-1">Password</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent bg-white"
+                placeholder="Enter password"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 transition text-sm disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
-            ) : (
-              <><LogIn className="w-4 h-4" /> Sign In</>
-            )}
-          </button>
-        </form>
+            {error && <p className="text-sm text-red-500">{error}</p>}
 
-        <p className="text-center text-sm text-slate-500 mt-4">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-teal-600 hover:text-teal-700 font-medium">
-            Register
-          </Link>
-        </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-forest-700 text-white py-3 rounded-lg font-medium hover:bg-forest-800 transition text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
+              ) : (
+                <><LogIn className="w-4 h-4" /> Sign In</>
+              )}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-stone-500 mt-6">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="text-forest-600 hover:text-forest-700 font-medium">
+              Register
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

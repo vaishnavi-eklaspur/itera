@@ -37,15 +37,23 @@ export default async function PackagesPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1">
-        {/* Hero */}
-        <div className="relative bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-900 py-20 px-4">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPjwvc3ZnPg==')] opacity-40" />
-          <div className="relative max-w-7xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">Explore South India</h1>
-            <p className="mt-3 text-lg text-teal-200 max-w-2xl mx-auto">
-              {packages.length} handcrafted journeys through Kerala, Tamil Nadu, Karnataka &amp; Goa
-            </p>
+      <main id="main-content" className="flex-1">
+        {/* Hero — photo-led */}
+        <div className="relative h-[44vh] min-h-[300px] overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920&h=700&fit=crop&auto=format&q=85"
+            alt="South India landscape"
+            className="absolute inset-0 w-full h-full object-cover scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/5" />
+          <div className="relative z-10 h-full flex items-end max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+            <div>
+              <p className="section-label text-forest-300/80 mb-3">All Packages</p>
+              <h1 className="text-4xl sm:text-5xl font-display font-bold text-white tracking-tight">Explore South India</h1>
+              <p className="mt-3 text-[15px] text-white/70 max-w-lg">
+                {packages.length} handcrafted journeys through Kerala, Tamil Nadu, Karnataka &amp; Goa
+              </p>
+            </div>
           </div>
         </div>
         <PackageGrid packages={JSON.parse(JSON.stringify(packages))} destinations={destinations} />

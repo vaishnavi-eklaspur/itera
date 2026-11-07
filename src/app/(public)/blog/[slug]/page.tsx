@@ -46,13 +46,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
-        <Link href="/blog" className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 mb-6">
+        <Link href="/blog" className="flex items-center gap-1 text-sm text-forest-600 hover:text-forest-700 mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to Blog
         </Link>
 
-        <span className="text-xs text-teal-600 font-medium">{post.category}</span>
-        <h1 className="text-3xl font-bold text-slate-900 mt-2">{post.title}</h1>
-        <div className="flex items-center gap-3 mt-3 text-sm text-slate-400">
+        <span className="text-xs text-forest-600 font-medium">{post.category}</span>
+        <h1 className="text-3xl font-bold text-stone-900 mt-2">{post.title}</h1>
+        <div className="flex items-center gap-3 mt-3 text-sm text-stone-400">
           <span>{post.author.name}</span>
           <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {new Date(post.createdAt).toLocaleDateString()}</span>
         </div>
@@ -60,12 +60,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {post.tags.length > 0 && (
           <div className="flex gap-2 flex-wrap mt-4">
             {post.tags.map((tag) => (
-              <span key={tag} className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{tag}</span>
+              <span key={tag} className="text-xs bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full">{tag}</span>
             ))}
           </div>
         )}
 
-        <div className="mt-8 prose prose-slate max-w-none prose-headings:text-slate-900 prose-a:text-teal-600">
+        <div className="mt-8 prose prose-slate max-w-none prose-headings:text-stone-900 prose-a:text-forest-600">
           {post.content.split("\n").map((para, i) => {
             if (para.startsWith("# ")) return <h1 key={i}>{para.slice(2)}</h1>;
             if (para.startsWith("## ")) return <h2 key={i}>{para.slice(3)}</h2>;
@@ -77,22 +77,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </div>
 
         {relatedPackages.length > 0 && (
-          <section className="mt-12 pt-8 border-t border-slate-100">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">Related Packages</h2>
+          <section className="mt-12 pt-8 border-t border-stone-100">
+            <h2 className="text-xl font-semibold text-stone-900 mb-4">Related Packages</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {relatedPackages.map((pkg) => {
                 const v = pkg.currentVersion;
                 if (!v) return null;
                 const price = pkg.seasonalPrices[0]?.pricePerPerson;
                 return (
-                  <Link key={pkg.id} href={`/packages/${pkg.slug}`} className="flex gap-4 p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition">
-                    <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-lg flex items-center justify-center shrink-0">
-                      <MapPin className="w-6 h-6 text-teal-300" />
+                  <Link key={pkg.id} href={`/packages/${pkg.slug}`} className="flex gap-4 p-4 bg-stone-50 rounded-lg hover:bg-stone-100 transition">
+                    <div className="w-16 h-16 bg-gradient-to-br from-forest-100 to-forest-200 rounded-lg flex items-center justify-center shrink-0">
+                      <MapPin className="w-6 h-6 text-forest-300" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-slate-900 text-sm">{v.title}</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">{v.destination} · {v.days} Days</p>
-                      {price && <p className="text-sm font-semibold text-teal-700 mt-1">{formatPrice(price)}<span className="text-xs font-normal text-slate-400">/person</span></p>}
+                      <h3 className="font-medium text-stone-900 text-sm">{v.title}</h3>
+                      <p className="text-xs text-stone-500 mt-0.5">{v.destination} · {v.days} Days</p>
+                      {price && <p className="text-sm font-semibold text-forest-700 mt-1">{formatPrice(price)}<span className="text-xs font-normal text-stone-400">/person</span></p>}
                     </div>
                   </Link>
                 );

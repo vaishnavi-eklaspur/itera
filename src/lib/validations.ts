@@ -1,14 +1,14 @@
 import { z } from "zod";
 
 export const enquiryFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters").max(200, "Name is too long"),
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
   travelDates: z.string().optional(),
   adults: z.coerce.number().min(1).max(50).optional(),
   children: z.coerce.number().min(0).max(20).optional(),
   budget: z.string().optional(),
-  message: z.string().min(1, "Please enter your message"),
+  message: z.string().min(1, "Please enter your message").max(5000, "Message is too long"),
   packageId: z.string().optional(),
 });
 

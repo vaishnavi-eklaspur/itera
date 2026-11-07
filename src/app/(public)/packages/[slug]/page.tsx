@@ -73,7 +73,7 @@ export default async function PackageDetailPage({
   const relatedPackages = await db.package.findMany({
     where: { status: "PUBLISHED", slug: { not: slug } },
     include: {
-      currentVersion: { select: { title: true, destination: true, days: true, description: true } },
+      currentVersion: { select: { title: true, destination: true, days: true, description: true, photos: true } },
       seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" }, take: 1 },
     },
     take: 3,
@@ -120,21 +120,30 @@ export default async function PackageDetailPage({
       <Navbar />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      {/* Hero */}
-      <div className="relative h-[40vh] min-h-[300px] bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-900">
-        <div className="absolute inset-0 bg-black/20" />
+      {/* Hero — cinematic photo */}
+      <div className="relative h-[55vh] min-h-[420px] overflow-hidden">
+        {(v.photos as string[])?.[0] ? (
+          <img
+            src={(v.photos as string[])[0]}
+            alt={v.title}
+            className="absolute inset-0 w-full h-full object-cover scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-forest-950 via-forest-900 to-forest-800" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
         <div className="relative z-10 h-full flex items-end">
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-8">
-            <div className="flex items-center gap-2 text-teal-200 text-sm mb-2">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-12">
+            <div className="flex items-center gap-2 text-forest-300/80 mb-3">
               <MapPin className="w-4 h-4" />
-              {v.destination}
+              <span className="section-label text-forest-300/80">{v.destination}</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-white">{v.title}</h1>
-            <div className="flex items-center gap-4 mt-3 text-sm text-teal-100">
-              <span className="flex items-center gap-1">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white tracking-tight">{v.title}</h1>
+            <div className="flex items-center gap-4 mt-4 text-sm text-white/70">
+              <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" /> {v.days} Days / {v.days - 1} Nights
               </span>
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 <Star className="w-4 h-4" /> {v.hotelTier}
               </span>
             </div>
@@ -143,12 +152,12 @@ export default async function PackageDetailPage({
       </div>
 
       {/* Sticky mobile price bar */}
-      <div className="lg:hidden sticky top-16 z-40 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+      <div className="lg:hidden sticky top-[60px] z-40 bg-ivory/90 backdrop-blur-lg border-b border-stone-200/40 px-4 py-3 flex items-center justify-between">
         <div>
-          <span className="text-xs text-slate-400">From</span>
-          <p className="text-lg font-semibold text-teal-700">{formatPrice(minPrice)}<span className="text-xs font-normal text-slate-400">/person</span></p>
+          <span className="text-[10px] text-stone-400 uppercase tracking-wider">From</span>
+          <p className="text-lg font-display font-bold text-forest-700">{formatPrice(minPrice)}<span className="text-xs font-normal text-stone-400 ml-0.5">/person</span></p>
         </div>
-        <a href="#enquiry-form" className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition">
+        <a href="#enquiry-form" className="bg-forest-700 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-forest-800 transition">
           Enquire Now
         </a>
       </div>
@@ -159,24 +168,26 @@ export default async function PackageDetailPage({
           <div className="lg:col-span-2 space-y-8">
             {/* Description */}
             <section>
-              <p className="text-slate-600 leading-relaxed">{v.description}</p>
+              <p className="text-stone-600 leading-relaxed">{v.description}</p>
             </section>
 
             {/* Photo Gallery */}
             <PhotoGallery photos={v.photos} />
 
             {/* Quick facts */}
-            <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { icon: Calendar, label: "Duration", value: `${v.days} Days` },
                 { icon: Star, label: "Hotels", value: v.hotelTier },
-                { icon: Users, label: "Group Size", value: "2-20 pax" },
+                { icon: Users, label: "Group Size", value: "2–20 pax" },
                 { icon: MapPin, label: "Destinations", value: `${new Set(itinerary.map(d => d.location)).size} places` },
               ].map((fact) => (
-                <div key={fact.label} className="bg-slate-50 rounded-lg p-4 text-center">
-                  <fact.icon className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                  <p className="text-xs text-slate-400">{fact.label}</p>
-                  <p className="text-sm font-medium text-slate-700">{fact.value}</p>
+                <div key={fact.label} className="bg-white rounded-xl border border-stone-200/50 p-4 text-center">
+                  <div className="w-9 h-9 rounded-lg bg-forest-50 flex items-center justify-center mx-auto mb-2">
+                    <fact.icon className="w-4 h-4 text-forest-600" />
+                  </div>
+                  <p className="text-[10px] text-stone-400 uppercase tracking-wider">{fact.label}</p>
+                  <p className="text-sm font-semibold text-stone-800 mt-0.5">{fact.value}</p>
                 </div>
               ))}
             </section>
@@ -188,15 +199,15 @@ export default async function PackageDetailPage({
 
             {/* Seasonal Pricing Table */}
             <section>
-              <h2 className="text-xl font-semibold text-slate-900 mb-4">Seasonal Pricing</h2>
+              <h2 className="text-xl font-semibold text-stone-900 mb-4">Seasonal Pricing</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 text-slate-500 font-medium">Season</th>
-                      <th className="text-left py-3 text-slate-500 font-medium">Months</th>
-                      <th className="text-right py-3 text-slate-500 font-medium">Price/Person</th>
-                      <th className="text-right py-3 text-slate-500 font-medium">Basis</th>
+                    <tr className="border-b border-sand-200">
+                      <th className="text-left py-3 text-stone-500 font-medium">Season</th>
+                      <th className="text-left py-3 text-stone-500 font-medium">Months</th>
+                      <th className="text-right py-3 text-stone-500 font-medium">Price/Person</th>
+                      <th className="text-right py-3 text-stone-500 font-medium">Basis</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -207,11 +218,11 @@ export default async function PackageDetailPage({
                         : `${months[price.seasonStartMonth - 1]} – ${months[price.seasonEndMonth - 1]}`;
 
                       return (
-                        <tr key={price.id} className="border-b border-slate-50">
-                          <td className="py-3 font-medium text-slate-700">{price.seasonName}</td>
-                          <td className="py-3 text-slate-500">{range}</td>
-                          <td className="py-3 text-right font-semibold text-teal-700">{formatPrice(price.pricePerPerson)}</td>
-                          <td className="py-3 text-right text-slate-400 text-xs">{price.basis}{price.gstInclusive ? ", GST incl." : ""}</td>
+                        <tr key={price.id} className="border-b border-sand-200/40">
+                          <td className="py-3 font-medium text-stone-700">{price.seasonName}</td>
+                          <td className="py-3 text-stone-500">{range}</td>
+                          <td className="py-3 text-right font-semibold text-forest-700">{formatPrice(price.pricePerPerson)}</td>
+                          <td className="py-3 text-right text-stone-400 text-xs">{price.basis}{price.gstInclusive ? ", GST incl." : ""}</td>
                         </tr>
                       );
                     })}
@@ -226,22 +237,22 @@ export default async function PackageDetailPage({
             {/* Inclusions / Exclusions */}
             <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-3">Inclusions</h2>
+                <h2 className="text-xl font-semibold text-stone-900 mb-3">Inclusions</h2>
                 <ul className="space-y-2">
                   {v.inclusions.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                      <Check className="w-4 h-4 text-teal-500 mt-0.5 shrink-0" />
+                    <li key={i} className="flex items-start gap-2 text-sm text-stone-600">
+                      <Check className="w-4 h-4 text-forest-500 mt-0.5 shrink-0" />
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-3">Exclusions</h2>
+                <h2 className="text-xl font-semibold text-stone-900 mb-3">Exclusions</h2>
                 <ul className="space-y-2">
                   {v.exclusions.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-400">
-                      <XIcon className="w-4 h-4 text-slate-300 mt-0.5 shrink-0" />
+                    <li key={i} className="flex items-start gap-2 text-sm text-stone-400">
+                      <XIcon className="w-4 h-4 text-stone-300 mt-0.5 shrink-0" />
                       {item}
                     </li>
                   ))}
@@ -254,15 +265,15 @@ export default async function PackageDetailPage({
           <div className="lg:col-span-1 mt-8 lg:mt-0">
             <div className="sticky top-20 space-y-6">
               {/* Price Card */}
-              <div className="hidden lg:block bg-white rounded-xl border border-slate-200 p-6">
-                <div className="text-center mb-4">
-                  <span className="text-xs text-slate-400">Starting from</span>
-                  <p className="text-2xl font-bold text-teal-700">{formatPrice(minPrice)}</p>
-                  <span className="text-xs text-slate-400">per person, twin sharing</span>
+              <div className="hidden lg:block bg-white rounded-2xl border border-stone-200/50 p-6">
+                <div className="text-center mb-5">
+                  <span className="text-[10px] text-stone-400 uppercase tracking-wider">Starting from</span>
+                  <p className="text-3xl font-display font-bold text-forest-700 mt-1">{formatPrice(minPrice)}</p>
+                  <span className="text-xs text-stone-400">per person, twin sharing</span>
                 </div>
                 <a
                   href="#enquiry-form"
-                  className="block w-full bg-teal-600 text-white text-center py-3 rounded-lg font-medium hover:bg-teal-700 transition text-sm"
+                  className="block w-full bg-forest-700 text-white text-center py-3.5 rounded-full font-medium hover:bg-forest-800 transition text-sm"
                 >
                   Enquire Now
                 </a>
@@ -293,22 +304,26 @@ export default async function PackageDetailPage({
 
       {/* Related Packages */}
       {relatedPackages.length > 0 && (
-        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 border-t border-slate-100">
-          <h2 className="text-2xl font-semibold text-slate-900 mb-6">You Might Also Like</h2>
+        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 border-t border-sand-200/60">
+          <h2 className="text-2xl font-display font-semibold text-stone-900 mb-6">You Might Also Like</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {relatedPackages.map((rp) => {
               const rv = rp.currentVersion;
               if (!rv) return null;
               const rpPrice = rp.seasonalPrices[0]?.pricePerPerson;
               return (
-                <Link key={rp.id} href={`/packages/${rp.slug}`} className="group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg hover:border-slate-200 transition-all">
-                  <div className="aspect-[16/10] bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center">
-                    <MapPin className="w-10 h-10 text-teal-300" />
+                <Link key={rp.id} href={`/packages/${rp.slug}`} className="group bg-white rounded-xl border border-sand-200/60 overflow-hidden hover:shadow-lg hover:border-sand-300 transition-all">
+                  <div className="aspect-[16/10] relative overflow-hidden bg-gradient-to-br from-forest-100 to-forest-200">
+                    {(rv.photos as string[])?.[0] ? (
+                      <img src={(rv.photos as string[])[0]} alt={rv.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center"><MapPin className="w-10 h-10 text-forest-300" /></div>
+                    )}
                   </div>
                   <div className="p-5">
-                    <h3 className="font-semibold text-slate-900 group-hover:text-teal-700 transition line-clamp-1">{rv.title}</h3>
-                    <p className="text-xs text-slate-500 mt-1">{rv.destination} · {rv.days} Days</p>
-                    {rpPrice && <p className="mt-2 text-sm font-semibold text-teal-700">{formatPrice(rpPrice)}<span className="text-xs font-normal text-slate-400">/person</span></p>}
+                    <h3 className="font-semibold text-stone-900 group-hover:text-forest-700 transition line-clamp-1">{rv.title}</h3>
+                    <p className="text-xs text-stone-500 mt-1">{rv.destination} · {rv.days} Days</p>
+                    {rpPrice && <p className="mt-2 text-sm font-semibold text-forest-700">{formatPrice(rpPrice)}<span className="text-xs font-normal text-stone-400">/person</span></p>}
                   </div>
                 </Link>
               );

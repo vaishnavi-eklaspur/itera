@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const enquiry = await db.enquiry.findUnique({ where: { id: enquiryId } });
   if (!enquiry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     await db.enquiry.update({
       where: { id: enquiryId },
@@ -45,22 +45,20 @@ export async function POST(req: NextRequest) {
 
   try {
     // Step 1: Extract fields
-    const extractionResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 500,
-        messages: [{ role: "user", content: EXTRACTION_PROMPT + enquiry.message }],
-      }),
-    });
+    const extractionResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: EXTRACTION_PROMPT + enquiry.message }] }],
+          generationConfig: { maxOutputTokens: 500, temperature: 0.1, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
+        }),
+      }
+    );
 
     const extractionData = await extractionResponse.json();
-    const rawText = extractionData.content?.[0]?.text || "{}";
+    const rawText = extractionData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
 
     let extracted;
     try {
@@ -166,22 +164,20 @@ Top packages: ${JSON.stringify(topPackages)}
 
 Write a warm reply (under 200 words) that addresses their requirements, recommends 1-2 packages with real prices, and invites them to discuss further. Sign off as "Itera Travel Team".`;
 
-      const replyResponse = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 500,
-          messages: [{ role: "user", content: replyPrompt }],
-        }),
-      });
+      const replyResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: replyPrompt }] }],
+            generationConfig: { maxOutputTokens: 500, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
+          }),
+        }
+      );
 
       const replyData = await replyResponse.json();
-      draftReply = replyData.content?.[0]?.text || null;
+      draftReply = replyData.candidates?.[0]?.content?.parts?.[0]?.text || null;
     }
 
     await db.enquiry.update({

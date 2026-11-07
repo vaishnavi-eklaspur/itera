@@ -10,21 +10,21 @@ export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100">
+    <nav aria-label="Main navigation" className="sticky top-0 z-50 bg-ivory/90 backdrop-blur-lg border-b border-sand-200/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-[60px]">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-semibold tracking-tight text-teal-700">
+            <span className="text-[1.35rem] font-display font-bold tracking-tight text-forest-800">
               Itera
             </span>
           </Link>
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/packages" className="text-sm text-slate-600 hover:text-teal-700 transition">
+            <Link href="/packages" className="text-[13px] text-stone-500 hover:text-forest-700 transition link-slide">
               Packages
             </Link>
-            <Link href="/blog" className="text-sm text-slate-600 hover:text-teal-700 transition">
+            <Link href="/blog" className="text-[13px] text-stone-500 hover:text-forest-700 transition link-slide">
               Blog
             </Link>
             {session?.user ? (
@@ -32,7 +32,7 @@ export function Navbar() {
                 {["ADMIN", "EDITOR", "CONSULTANT"].includes(session.user.role as string) && (
                   <Link
                     href="/admin/enquiries"
-                    className="text-sm text-slate-600 hover:text-teal-700 transition flex items-center gap-1"
+                    className="text-sm text-stone-600 hover:text-forest-700 transition flex items-center gap-1"
                   >
                     <LayoutDashboard className="w-4 h-4" />
                     Admin
@@ -41,18 +41,19 @@ export function Navbar() {
                 {session.user.role === "TRAVELLER" && (
                   <Link
                     href="/my-enquiries"
-                    className="text-sm text-slate-600 hover:text-teal-700 transition"
+                    className="text-sm text-stone-600 hover:text-forest-700 transition"
                   >
                     My Enquiries
                   </Link>
                 )}
-                <div className="flex items-center gap-2 text-sm text-slate-500">
+                <div className="flex items-center gap-2 text-sm text-stone-500">
                   <User className="w-4 h-4" />
                   {session.user.name}
                 </div>
                 <button
+                  aria-label="Sign out"
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="text-sm text-slate-400 hover:text-red-500 transition"
+                  className="text-sm text-stone-400 hover:text-red-500 transition"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -60,7 +61,7 @@ export function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="text-sm bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition"
+                className="text-sm bg-forest-700 text-white px-4 py-2 rounded-lg hover:bg-forest-800 transition"
               >
                 Sign In
               </Link>
@@ -69,7 +70,9 @@ export function Navbar() {
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden p-2 text-slate-600"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            className="md:hidden p-2 text-stone-600"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -79,10 +82,10 @@ export function Navbar() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden pb-4 space-y-2">
-            <Link href="/packages" className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg" onClick={() => setMenuOpen(false)}>
+            <Link href="/packages" className="block px-3 py-2 text-sm text-stone-600 hover:bg-forest-50 rounded-lg" onClick={() => setMenuOpen(false)}>
               Packages
             </Link>
-            <Link href="/blog" className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg" onClick={() => setMenuOpen(false)}>
+            <Link href="/blog" className="block px-3 py-2 text-sm text-stone-600 hover:bg-forest-50 rounded-lg" onClick={() => setMenuOpen(false)}>
               Blog
             </Link>
             {session?.user ? (
@@ -90,7 +93,7 @@ export function Navbar() {
                 {["ADMIN", "EDITOR", "CONSULTANT"].includes(session.user.role as string) && (
                   <Link
                     href="/admin/enquiries"
-                    className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg"
+                    className="block px-3 py-2 text-sm text-stone-600 hover:bg-forest-50 rounded-lg"
                     onClick={() => setMenuOpen(false)}
                   >
                     Admin Dashboard
@@ -99,7 +102,7 @@ export function Navbar() {
                 {session.user.role === "TRAVELLER" && (
                   <Link
                     href="/my-enquiries"
-                    className="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg"
+                    className="block px-3 py-2 text-sm text-stone-600 hover:bg-forest-50 rounded-lg"
                     onClick={() => setMenuOpen(false)}
                   >
                     My Enquiries
@@ -115,7 +118,7 @@ export function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="block px-3 py-2 text-sm text-teal-600 font-medium hover:bg-teal-50 rounded-lg"
+                className="block px-3 py-2 text-sm text-forest-700 font-medium hover:bg-forest-50 rounded-lg"
                 onClick={() => setMenuOpen(false)}
               >
                 Sign In

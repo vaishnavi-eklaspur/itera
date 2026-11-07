@@ -4,7 +4,7 @@
 
 **Itera** is a full-stack travel platform for a Kerala/South India tour operator. It replaces a manual workflow (content updates via vendor at ₹3k + 3 days per change, enquiries across WhatsApp/email/phone) with a unified CMS + AI-powered enquiry pipeline.
 
-**Stack:** Next.js 16 (App Router, SSR), React 19, PostgreSQL (Neon), Prisma 6, NextAuth v5, Claude API, Tailwind CSS 4, Leaflet.
+**Stack:** Next.js 16 (App Router, SSR), React 19, PostgreSQL (Neon), Prisma 6, NextAuth v5, Gemini API, Tailwind CSS 4, Leaflet.
 
 ---
 
@@ -27,9 +27,9 @@ Every package edit creates a new `PackageVersion` row. `Package.currentVersionId
 ### 2.4 Hybrid AI Pipeline (Human-in-the-Loop)
 
 Three stages:
-1. **Extract** — Claude parses free-text enquiry into structured fields (dates, travellers, budget, destination).
+1. **Extract** — Gemini parses free-text enquiry into structured fields (dates, travellers, budget, destination).
 2. **Match** — Deterministic scoring algorithm ranks packages. No AI here — pure math for transparency.
-3. **Draft** — Claude generates a reply using matched packages and extracted data.
+3. **Draft** — Gemini generates a reply using matched packages and extracted data.
 
 Nothing reaches the traveller until staff reviews and explicitly accepts. The extraction prompt rejects embedded instructions, output is Zod-validated, and human approval is mandatory.
 
@@ -115,28 +115,65 @@ ActivityLog (userId, action, entity, entityId, details)
 
 ## 5. Security
 
-- **Passwords:** bcrypt cost 12
+- **Passwords:** bcrypt hashed, never stored in plain text
 - **Sessions:** JWT via NextAuth v5, httpOnly cookies
-- **Validation:** Zod schemas on every mutation
+- **Validation:** Zod schemas on every mutation (message capped at 5000 chars, adults 1–50, children 0–20)
 - **SQL injection:** Prisma parameterized queries (no raw SQL)
 - **XSS:** React default escaping, no dangerouslySetInnerHTML on user content
 - **Rate limiting:** In-memory sliding window, 5 req/min per IP on enquiry POST
 - **Internal routes:** Shared-secret header checks (INTERNAL_API_SECRET, CRON_SECRET)
-- **AI safety:** Extraction prompt rejects embedded instructions, Zod validates output, human approval required
+- **AI safety:** Extraction prompt rejects embedded instructions, Zod validates output, human approval required (Gemini 2.0 Flash)
+- **HTTP security headers** (set in middleware for all routes):
+  - `Content-Security-Policy` — restricts script/style/img sources, `frame-ancestors 'none'`
+  - `X-Frame-Options: DENY` — prevents clickjacking
+  - `X-Content-Type-Options: nosniff` — prevents MIME-type sniffing
+  - `Referrer-Policy: strict-origin-when-cross-origin` — limits referrer leakage
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=()` — disables unused browser APIs
 
 ---
 
 ## 6. Testing
 
-**Framework:** Vitest 5
+**Framework:** Vitest 5  
+**Test count:** 53 tests across 4 files  
+**Run:** `npm test`
 
-**Current:** 20 tests covering input validation schemas (enquiry form, registration, package form, AI extraction output) including edge cases for gibberish input and prompt injection payloads.
+| File | Tests | Coverage |
+|------|-------|----------|
+| `validations.test.ts` | 18 | All Zod schemas: enquiry, register, package, AI extraction |
+| `rate-limit.test.ts` | 5 | Window expiry, key isolation, default params, blocking at limit |
+| `utils.test.ts` | 18 | formatPrice, slugify, getSeasonForMonth (year-wrap), timeAgo, responseTimeBadge |
+| `security.test.ts` | 12 | XSS payloads, SQL injection in email, empty/boundary inputs, max-length enforcement |
 
-**Expansion priorities:** Package versioning logic, auth access control, AI extraction parsing, enquiry status transitions.
+**What the tests verify:**
+- **Boundary values:** adults=51 rejected, message at exactly 5000 chars accepted, 5001 rejected
+- **Wrap-around logic:** `getSeasonForMonth(1, peakOct-Feb)` correctly returns Peak season
+- **Rate limiter timing:** Fake timers verify the sliding window resets after configured interval
+- **Security payloads:** Script tags in name pass validation (React escapes on render), SQL injection in email rejected by `.email()`
 
 ---
 
-## 7. Features Beyond Core
+## 7. Performance
+
+- **SSR-first** — no client-side data waterfalls. Pages render with data on first paint.
+- **`fetchPriority="high"`** on hero images, `loading="lazy"` on below-fold images.
+- **API caching:** Package routes return `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`.
+- **Font optimisation:** `next/font/google` inlines font declarations (Inter + Playfair Display).
+- **Minimal client JS:** Only 5 components use `"use client"` — the rest are server components.
+
+---
+
+## 8. Accessibility
+
+- **Skip-to-content link** — visible on keyboard focus, targets `#main-content`.
+- **ARIA labels** on navigation, footer, admin header, mobile toggle (`aria-expanded`), icon-only buttons.
+- **Semantic HTML:** `<nav>`, `<main>`, `<footer>`, `<section>`, `<header>` landmarks throughout.
+- **Focus-visible rings** on all interactive elements via global CSS.
+- **Colour contrast:** Forest green (#15803d) on ivory (#FAFAF5) exceeds WCAG AA ratio.
+
+---
+
+## 9. Features Beyond Core
 
 | Feature | Purpose |
 |---------|---------|
@@ -152,7 +189,7 @@ ActivityLog (userId, action, entity, entityId, details)
 
 ---
 
-## 8. Trade-offs and Upgrade Paths
+## 10. Trade-offs and Upgrade Paths
 
 | Decision | Trade-off | Upgrade path |
 |----------|-----------|--------------|
@@ -165,7 +202,7 @@ ActivityLog (userId, action, entity, entityId, details)
 
 ---
 
-## 9. Seed Data
+## 11. Seed Data
 
 `prisma/seed.ts` creates:
 - **3 users:** admin (admin@itera.in), consultant, traveller
@@ -176,7 +213,7 @@ ActivityLog (userId, action, entity, entityId, details)
 
 ---
 
-## 10. What I'd Do Next
+## 12. What I'd Do Next
 
 1. **Image pipeline** — S3 upload with presigned URLs, Cloudinary transforms, `next/image`
 2. **Email delivery** — Resend for auto-ack and reply emails

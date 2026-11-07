@@ -73,18 +73,18 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold text-stone-900">
           {isNew ? "New Blog Post" : `Edit: ${post?.title}`}
         </h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setPublished(!published)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg ${published ? "border-green-200 text-green-700 bg-green-50" : "border-slate-200 text-slate-600"}`}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg ${published ? "border-green-200 text-green-700 bg-green-50" : "border-stone-200 text-stone-600"}`}
           >
             {published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             {published ? "Published" : "Draft"}
           </button>
-          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-sm bg-forest-700 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save
           </button>
@@ -95,59 +95,59 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <section className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+          <section className="bg-white rounded-xl border border-stone-200 p-6 space-y-4">
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Title</label>
-              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <label className="text-sm text-stone-600 mb-1 block">Title</label>
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Excerpt</label>
-              <textarea rows={2} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" />
+              <label className="text-sm text-stone-600 mb-1 block">Excerpt</label>
+              <textarea rows={2} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none" />
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Content (Markdown supported)</label>
-              <textarea rows={16} value={content} onChange={(e) => setContent(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500 resize-y" />
+              <label className="text-sm text-stone-600 mb-1 block">Content (Markdown supported)</label>
+              <textarea rows={16} value={content} onChange={(e) => setContent(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-forest-500 resize-y" />
             </div>
           </section>
         </div>
 
         <div className="space-y-6">
-          <section className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-            <h2 className="font-semibold text-slate-900">Metadata</h2>
+          <section className="bg-white rounded-xl border border-stone-200 p-6 space-y-4">
+            <h2 className="font-semibold text-stone-900">Metadata</h2>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Category</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <label className="text-sm text-stone-600 mb-1 block">Category</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
                 {["Destinations", "Travel Tips", "Food & Culture", "Adventure", "Honeymoon", "Family", "Budget"].map((c) => (
                   <option key={c}>{c}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Tags (comma-separated)</label>
-              <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Kerala, Houseboat, Backwaters" />
+              <label className="text-sm text-stone-600 mb-1 block">Tags (comma-separated)</label>
+              <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" placeholder="Kerala, Houseboat, Backwaters" />
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Cover Image URL</label>
-              <input type="text" value={coverImage} onChange={(e) => setCoverImage(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <label className="text-sm text-stone-600 mb-1 block">Cover Image URL</label>
+              <input type="text" value={coverImage} onChange={(e) => setCoverImage(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
             </div>
           </section>
 
-          <section className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-            <h2 className="font-semibold text-slate-900">SEO</h2>
+          <section className="bg-white rounded-xl border border-stone-200 p-6 space-y-4">
+            <h2 className="font-semibold text-stone-900">SEO</h2>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">SEO Title</label>
-              <input type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <label className="text-sm text-stone-600 mb-1 block">SEO Title</label>
+              <input type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">SEO Description</label>
-              <textarea rows={2} value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" />
+              <label className="text-sm text-stone-600 mb-1 block">SEO Description</label>
+              <textarea rows={2} value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none" />
             </div>
           </section>
 
-          <section className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-            <h2 className="font-semibold text-slate-900">Related Packages</h2>
+          <section className="bg-white rounded-xl border border-stone-200 p-6 space-y-4">
+            <h2 className="font-semibold text-stone-900">Related Packages</h2>
             {packages.map((pkg) => (
-              <label key={pkg.id} className="flex items-center gap-2 text-sm text-slate-700">
+              <label key={pkg.id} className="flex items-center gap-2 text-sm text-stone-700">
                 <input
                   type="checkbox"
                   checked={relatedPackageIds.includes(pkg.id)}
@@ -156,7 +156,7 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
                       e.target.checked ? [...prev, pkg.id] : prev.filter((id) => id !== pkg.id)
                     );
                   }}
-                  className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  className="rounded border-stone-300 text-forest-600 focus:ring-forest-500"
                 />
                 {pkg.title}
               </label>

@@ -81,7 +81,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
         itinerary,
         seasonalPrices: prices,
         photos: photos.filter(Boolean),
-        slug: isNew ? slugify(title) : undefined,
+        slug: isNew ? slugify(title) : pkg.slug,
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       };
 
@@ -193,13 +193,13 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold text-stone-900">
           {isNew ? "New Package" : `Edit: ${v?.title}`}
         </h1>
         <div className="flex items-center gap-2">
           {!isNew && (
             <>
-              <button onClick={handleDuplicate} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">
+              <button onClick={handleDuplicate} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50">
                 <Copy className="w-4 h-4" /> Duplicate
               </button>
               {pkg.status !== "PUBLISHED" && (
@@ -217,7 +217,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
           <button
             onClick={handlePreview}
             disabled={previewing}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50 disabled:opacity-50"
           >
             {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
             Preview
@@ -225,7 +225,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-forest-700 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isNew ? "Create" : "Save (New Version)"}
@@ -239,21 +239,21 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
         {/* Main form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Basic info */}
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="font-semibold text-slate-900 mb-4">Basic Information</h2>
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
+            <h2 className="font-semibold text-stone-900 mb-4">Basic Information</h2>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-slate-600 mb-1 block">Title</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <label className="text-sm text-stone-600 mb-1 block">Title</label>
+                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-slate-600 mb-1 block">Destination</label>
-                  <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                  <label className="text-sm text-stone-600 mb-1 block">Destination</label>
+                  <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600 mb-1 block">Hotel Tier</label>
-                  <select value={hotelTier} onChange={(e) => setHotelTier(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  <label className="text-sm text-stone-600 mb-1 block">Hotel Tier</label>
+                  <select value={hotelTier} onChange={(e) => setHotelTier(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500">
                     <option>Budget</option>
                     <option>3-Star</option>
                     <option>4-Star</option>
@@ -264,46 +264,46 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
                 </div>
               </div>
               <div>
-                <label className="text-sm text-slate-600 mb-1 block">Description</label>
-                <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" />
+                <label className="text-sm text-stone-600 mb-1 block">Description</label>
+                <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none" />
               </div>
             </div>
           </section>
 
           {/* Itinerary */}
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-900">Itinerary ({itinerary.length} days)</h2>
-              <button onClick={addDay} className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700">
+              <h2 className="font-semibold text-stone-900">Itinerary ({itinerary.length} days)</h2>
+              <button onClick={addDay} className="flex items-center gap-1 text-sm text-forest-600 hover:text-forest-700">
                 <Plus className="w-4 h-4" /> Add Day
               </button>
             </div>
             <div className="space-y-4">
               {itinerary.map((day, i) => (
-                <div key={i} className="border border-slate-100 rounded-lg p-4">
+                <div key={i} className="border border-stone-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-teal-700">Day {day.day}</span>
+                    <span className="text-sm font-semibold text-forest-700">Day {day.day}</span>
                     {itinerary.length > 1 && (
-                      <button onClick={() => removeDay(i)} className="text-slate-400 hover:text-red-500">
+                      <button onClick={() => removeDay(i)} className="text-stone-400 hover:text-red-500">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <input placeholder="Title" value={day.title} onChange={(e) => updateItineraryDay(i, "title", e.target.value)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                    <input placeholder="Location" value={day.location} onChange={(e) => updateItineraryDay(i, "location", e.target.value)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    <input placeholder="Title" value={day.title} onChange={(e) => updateItineraryDay(i, "title", e.target.value)} className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
+                    <input placeholder="Location" value={day.location} onChange={(e) => updateItineraryDay(i, "location", e.target.value)} className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
                   </div>
-                  <textarea placeholder="Description" rows={2} value={day.description} onChange={(e) => updateItineraryDay(i, "description", e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none mb-3" />
+                  <textarea placeholder="Description" rows={2} value={day.description} onChange={(e) => updateItineraryDay(i, "description", e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none mb-3" />
                   <div className="grid grid-cols-2 gap-3">
-                    <input type="number" step="0.0001" placeholder="Latitude" value={day.lat} onChange={(e) => updateItineraryDay(i, "lat", parseFloat(e.target.value) || 0)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
-                    <input type="number" step="0.0001" placeholder="Longitude" value={day.lng} onChange={(e) => updateItineraryDay(i, "lng", parseFloat(e.target.value) || 0)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    <input type="number" step="0.0001" placeholder="Latitude" value={day.lat} onChange={(e) => updateItineraryDay(i, "lat", parseFloat(e.target.value) || 0)} className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
+                    <input type="number" step="0.0001" placeholder="Longitude" value={day.lng} onChange={(e) => updateItineraryDay(i, "lng", parseFloat(e.target.value) || 0)} className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
                   </div>
                   <div className="mt-3">
-                    <label className="text-xs text-slate-400 mb-1 block">Activities (comma-separated)</label>
+                    <label className="text-xs text-stone-400 mb-1 block">Activities (comma-separated)</label>
                     <input
                       value={day.activities.join(", ")}
                       onChange={(e) => updateItineraryDay(i, "activities", e.target.value.split(",").map(a => a.trim()).filter(Boolean))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500"
                       placeholder="Houseboat cruise, Temple visit, Tea tasting"
                     />
                   </div>
@@ -313,7 +313,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
           </section>
 
           {/* Inclusions / Exclusions */}
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <ListEditor label="Inclusions" items={inclusions} onChange={setInclusions} />
               <ListEditor label="Exclusions" items={exclusions} onChange={setExclusions} />
@@ -324,19 +324,19 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Seasonal Pricing */}
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-900">Pricing</h2>
+              <h2 className="font-semibold text-stone-900">Pricing</h2>
               <button
                 onClick={() => setPrices(prev => [...prev, { seasonName: "", seasonStartMonth: 1, seasonEndMonth: 12, pricePerPerson: 0, basis: "Per person, twin sharing", gstInclusive: true }])}
-                className="text-sm text-teal-600 hover:text-teal-700"
+                className="text-sm text-forest-600 hover:text-forest-700"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
             <div className="space-y-4">
               {prices.map((price, i) => (
-                <div key={i} className="border border-slate-100 rounded-lg p-3 space-y-2">
+                <div key={i} className="border border-stone-100 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <input placeholder="Season name" value={price.seasonName} onChange={(e) => {
                       const next = [...prices];
@@ -344,7 +344,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
                       setPrices(next);
                     }} className="text-sm font-medium border-0 focus:outline-none p-0 flex-1" />
                     {prices.length > 1 && (
-                      <button onClick={() => setPrices(prev => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500">
+                      <button onClick={() => setPrices(prev => prev.filter((_, j) => j !== i))} className="text-stone-400 hover:text-red-500">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     )}
@@ -354,7 +354,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
                       const next = [...prices];
                       next[i] = { ...next[i], seasonStartMonth: Number(e.target.value) };
                       setPrices(next);
-                    }} className="px-2 py-1.5 border border-slate-200 rounded text-xs">
+                    }} className="px-2 py-1.5 border border-stone-200 rounded text-xs">
                       {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, mi) => (
                         <option key={mi} value={mi + 1}>{m}</option>
                       ))}
@@ -363,7 +363,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
                       const next = [...prices];
                       next[i] = { ...next[i], seasonEndMonth: Number(e.target.value) };
                       setPrices(next);
-                    }} className="px-2 py-1.5 border border-slate-200 rounded text-xs">
+                    }} className="px-2 py-1.5 border border-stone-200 rounded text-xs">
                       {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, mi) => (
                         <option key={mi} value={mi + 1}>{m}</option>
                       ))}
@@ -378,7 +378,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
                       next[i] = { ...next[i], pricePerPerson: Number(e.target.value) };
                       setPrices(next);
                     }}
-                    className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm"
+                    className="w-full px-2 py-1.5 border border-stone-200 rounded text-sm"
                   />
                 </div>
               ))}
@@ -387,20 +387,20 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
 
           {/* Version History */}
           {pkg && pkg.versions.length > 0 && (
-            <section className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+            <section className="bg-white rounded-xl border border-stone-200 p-6">
+              <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
                 <History className="w-4 h-4" /> Version History
               </h2>
               <div className="space-y-2">
                 {pkg.versions.map((ver) => (
                   <div key={ver.id} className="flex items-center justify-between text-sm">
                     <div>
-                      <span className="font-medium text-slate-700">v{ver.versionNumber}</span>
-                      <p className="text-xs text-slate-400">{new Date(ver.createdAt).toLocaleDateString()}</p>
+                      <span className="font-medium text-stone-700">v{ver.versionNumber}</span>
+                      <p className="text-xs text-stone-400">{new Date(ver.createdAt).toLocaleDateString()}</p>
                     </div>
                     <button
                       onClick={() => handleRestoreVersion(ver.id)}
-                      className="text-xs text-teal-600 hover:text-teal-700"
+                      className="text-xs text-forest-600 hover:text-forest-700"
                     >
                       Restore
                     </button>
@@ -411,57 +411,57 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
           )}
 
           {/* Photos */}
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-900">Photos</h2>
-              <button onClick={() => setPhotos(prev => [...prev, ""])} className="text-sm text-teal-600 hover:text-teal-700">
+              <h2 className="font-semibold text-stone-900">Photos</h2>
+              <button onClick={() => setPhotos(prev => [...prev, ""])} className="text-sm text-forest-600 hover:text-forest-700">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
             {photos.length === 0 ? (
-              <p className="text-sm text-slate-400">No photos added. Click + to add image URLs.</p>
+              <p className="text-sm text-stone-400">No photos added. Click + to add image URLs.</p>
             ) : (
               <div className="space-y-3">
                 {photos.map((url, i) => (
                   <div key={i} className="flex gap-2 items-start">
                     {url && /^https?:\/\/.+/i.test(url) && (
-                      <img src={url} alt="" className="w-16 h-12 object-cover rounded border border-slate-200 shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      <img src={url} alt="" className="w-16 h-12 object-cover rounded border border-stone-200 shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                     )}
-                    <input placeholder="Image URL" value={url} onChange={(e) => { const next = [...photos]; next[i] = e.target.value; setPhotos(next); }} className="flex-1 px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    <input placeholder="Image URL" value={url} onChange={(e) => { const next = [...photos]; next[i] = e.target.value; setPhotos(next); }} className="flex-1 px-2 py-1.5 border border-stone-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-forest-500" />
                     <div className="flex flex-col gap-0.5 shrink-0">
-                      <button disabled={i === 0} onClick={() => { const next = [...photos]; [next[i - 1], next[i]] = [next[i], next[i - 1]]; setPhotos(next); }} className="text-slate-400 hover:text-slate-600 disabled:opacity-30"><ChevronUp className="w-3.5 h-3.5" /></button>
-                      <button disabled={i === photos.length - 1} onClick={() => { const next = [...photos]; [next[i], next[i + 1]] = [next[i + 1], next[i]]; setPhotos(next); }} className="text-slate-400 hover:text-slate-600 disabled:opacity-30"><ChevronDown className="w-3.5 h-3.5" /></button>
+                      <button disabled={i === 0} onClick={() => { const next = [...photos]; [next[i - 1], next[i]] = [next[i], next[i - 1]]; setPhotos(next); }} className="text-stone-400 hover:text-stone-600 disabled:opacity-30"><ChevronUp className="w-3.5 h-3.5" /></button>
+                      <button disabled={i === photos.length - 1} onClick={() => { const next = [...photos]; [next[i], next[i + 1]] = [next[i + 1], next[i]]; setPhotos(next); }} className="text-stone-400 hover:text-stone-600 disabled:opacity-30"><ChevronDown className="w-3.5 h-3.5" /></button>
                     </div>
-                    <button onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500 shrink-0 mt-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))} className="text-stone-400 hover:text-red-500 shrink-0 mt-1"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
                 {photos.filter(Boolean).length > 0 && (
-                  <p className="text-xs text-slate-400">First photo is used as the hero image. Drag to reorder.</p>
+                  <p className="text-xs text-stone-400">First photo is used as the hero image. Drag to reorder.</p>
                 )}
               </div>
             )}
           </section>
 
           {/* Scheduling */}
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="font-semibold text-slate-900 mb-4">Publish Schedule</h2>
-            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            {scheduledAt && <p className="text-xs text-slate-400 mt-2">Will auto-publish at {new Date(scheduledAt).toLocaleString()}</p>}
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
+            <h2 className="font-semibold text-stone-900 mb-4">Publish Schedule</h2>
+            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
+            {scheduledAt && <p className="text-xs text-stone-400 mt-2">Will auto-publish at {new Date(scheduledAt).toLocaleString()}</p>}
             {scheduledAt && <button onClick={() => setScheduledAt("")} className="text-xs text-red-500 mt-1">Clear schedule</button>}
           </section>
 
           {/* Status */}
           {pkg && (
-            <section className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="font-semibold text-slate-900 mb-2">Status</h2>
+            <section className="bg-white rounded-xl border border-stone-200 p-6">
+              <h2 className="font-semibold text-stone-900 mb-2">Status</h2>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                 pkg.status === "PUBLISHED" ? "bg-green-100 text-green-700" :
                 pkg.status === "DRAFT" ? "bg-amber-100 text-amber-700" :
-                "bg-slate-100 text-slate-500"
+                "bg-stone-100 text-stone-500"
               }`}>
                 {pkg.status}
               </span>
-              <p className="text-xs text-slate-400 mt-2">Slug: /{pkg.slug}</p>
+              <p className="text-xs text-stone-400 mt-2">Slug: /{pkg.slug}</p>
             </section>
           )}
         </div>
@@ -474,8 +474,8 @@ function ListEditor({ label, items, onChange }: { label: string; items: string[]
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium text-slate-700">{label}</h3>
-        <button onClick={() => onChange([...items, ""])} className="text-teal-600 hover:text-teal-700">
+        <h3 className="text-sm font-medium text-stone-700">{label}</h3>
+        <button onClick={() => onChange([...items, ""])} className="text-forest-600 hover:text-forest-700">
           <Plus className="w-4 h-4" />
         </button>
       </div>
@@ -485,10 +485,10 @@ function ListEditor({ label, items, onChange }: { label: string; items: string[]
             <input
               value={item}
               onChange={(e) => { const next = [...items]; next[i] = e.target.value; onChange(next); }}
-              className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500"
             />
             {items.length > 1 && (
-              <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500">
+              <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="text-stone-400 hover:text-red-500">
                 <Trash2 className="w-4 h-4" />
               </button>
             )}

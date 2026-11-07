@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { packageFormSchema } from "@/lib/validations";
 import { logActivity } from "@/lib/activity";
+import { authorizeRole } from "@/lib/roles";
 
 export async function GET(
   req: NextRequest,
@@ -37,6 +38,8 @@ export async function PUT(
   const { id } = await params;
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = authorizeRole(session.user.role, "ADMIN", "EDITOR");
+  if (denied) return denied;
 
   const body = await req.json();
   const parsed = packageFormSchema.safeParse(body);
@@ -110,6 +113,8 @@ export async function DELETE(
 ) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = authorizeRole(session.user.role, "ADMIN");
+  if (denied) return denied;
 
   const { id } = await params;
 

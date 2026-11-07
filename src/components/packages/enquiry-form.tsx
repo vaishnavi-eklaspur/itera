@@ -36,19 +36,19 @@ export function EnquiryForm({
 
   if (status === "sent") {
     return (
-      <div className="bg-teal-50 border border-teal-200 rounded-xl p-6 text-center">
-        <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-3">
-          <Send className="w-5 h-5 text-teal-600" />
+      <div className="bg-forest-50 border border-forest-200 rounded-xl p-6 text-center">
+        <div className="w-12 h-12 bg-forest-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <Send className="w-5 h-5 text-forest-600" />
         </div>
-        <h3 className="font-semibold text-teal-800">Enquiry Sent!</h3>
-        <p className="text-sm text-teal-600 mt-1">We&apos;ll get back to you within the hour.</p>
+        <h3 className="font-semibold text-forest-800">Enquiry Sent!</h3>
+        <p className="text-sm text-forest-600 mt-1">We&apos;ll get back to you within the hour.</p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6">
-      <h3 className="font-semibold text-slate-900 mb-4">Send an Enquiry</h3>
+    <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-stone-200 p-6">
+      <h3 className="font-semibold text-stone-900 mb-4">Send an Enquiry</h3>
       <div className="space-y-3">
         <input
           type="text"
@@ -56,7 +56,7 @@ export function EnquiryForm({
           placeholder="Your Name"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+          className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
         />
         <input
           type="email"
@@ -64,14 +64,14 @@ export function EnquiryForm({
           placeholder="Email Address"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+          className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
         />
         <input
           type="tel"
           placeholder="Phone (optional)"
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+          className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
         />
         <textarea
           required
@@ -79,7 +79,7 @@ export function EnquiryForm({
           placeholder="Tell us about your trip..."
           value={form.message}
           onChange={(e) => setForm({ ...form, message: e.target.value })}
-          className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+          className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent resize-none"
         />
       </div>
       {status === "error" && (
@@ -88,7 +88,7 @@ export function EnquiryForm({
       <button
         type="submit"
         disabled={status === "sending"}
-        className="w-full mt-4 bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 transition text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full mt-4 bg-forest-700 text-white py-3 rounded-lg font-medium hover:bg-forest-700 transition text-sm disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {status === "sending" ? (
           <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>

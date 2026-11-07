@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useMemo } from "react";
-import { MapPin, Calendar, Star, Search, SlidersHorizontal, X } from "lucide-react";
+import { MapPin, Calendar, Star, Search, SlidersHorizontal, X, ArrowRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 type Package = {
@@ -14,6 +14,7 @@ type Package = {
     days: number;
     description: string;
     hotelTier: string;
+    photos?: string[];
   } | null;
   seasonalPrices: { pricePerPerson: number; seasonName: string }[];
   _count: { enquiries: number };
@@ -79,18 +80,18 @@ export function PackageGrid({
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-8">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input
             type="text"
             placeholder="Search packages..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2.5 border border-sand-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
             >
               <X className="w-4 h-4" />
             </button>
@@ -98,7 +99,7 @@ export function PackageGrid({
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="sm:hidden flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-600"
+          className="sm:hidden flex items-center gap-2 px-4 py-2.5 border border-sand-200 rounded-lg text-sm text-stone-600"
         >
           <SlidersHorizontal className="w-4 h-4" /> Filters
         </button>
@@ -106,7 +107,7 @@ export function PackageGrid({
           <select
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
-            className="px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2.5 border border-sand-200 rounded-lg text-sm text-stone-600 bg-white focus:outline-none focus:ring-2 focus:ring-forest-500"
           >
             <option value="">All Destinations</option>
             {destinations.map((d) => (
@@ -118,12 +119,12 @@ export function PackageGrid({
             placeholder="Max budget/person"
             value={maxBudget}
             onChange={(e) => setMaxBudget(e.target.value)}
-            className="w-40 px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-40 px-3 py-2.5 border border-sand-200 rounded-lg text-sm text-stone-600 bg-white focus:outline-none focus:ring-2 focus:ring-forest-500"
           />
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2.5 border border-sand-200 rounded-lg text-sm text-stone-600 bg-white focus:outline-none focus:ring-2 focus:ring-forest-500"
           >
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
@@ -134,17 +135,17 @@ export function PackageGrid({
       </div>
 
       {/* Results count */}
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-stone-500 mb-4">
         {filtered.length} package{filtered.length !== 1 ? "s" : ""} found
       </p>
 
       {/* Grid */}
       {filtered.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-slate-500">No packages match your search.</p>
+          <p className="text-stone-500">No packages match your search.</p>
           <button
             onClick={() => { setSearch(""); setDestination(""); setMaxBudget(""); }}
-            className="mt-3 text-sm text-teal-600 hover:text-teal-700 font-medium"
+            className="mt-3 text-sm text-forest-700 hover:text-forest-800 font-medium"
           >
             Clear filters
           </button>
@@ -154,28 +155,33 @@ export function PackageGrid({
           {filtered.map((pkg) => {
             const v = pkg.currentVersion!;
             const minPrice = Math.min(...pkg.seasonalPrices.map((p) => p.pricePerPerson));
+            const photo = v.photos?.[0];
 
             return (
               <Link
                 key={pkg.id}
                 href={`/packages/${pkg.slug}`}
-                className="group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg hover:border-slate-200 transition-all duration-200"
+                className="group bg-white rounded-2xl border border-stone-200/50 overflow-hidden hover:shadow-xl transition-all duration-500"
               >
-                <div className="aspect-[16/10] bg-gradient-to-br from-teal-100 to-emerald-100 relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center text-teal-300">
-                    <MapPin className="w-12 h-12" />
-                  </div>
-                  <div className="absolute bottom-3 left-3 flex gap-2">
-                    <span className="bg-white/90 backdrop-blur-sm text-xs font-medium text-teal-700 px-2.5 py-1 rounded-full">
+                <div className="aspect-[16/10] relative overflow-hidden">
+                  {photo ? (
+                    <img src={photo} alt={v.title} className="absolute inset-0 w-full h-full object-cover img-zoom" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-forest-100 to-forest-200 flex items-center justify-center text-forest-300">
+                      <MapPin className="w-12 h-12" />
+                    </div>
+                  )}
+                  <div className="absolute top-3 left-3">
+                    <span className="glass text-xs font-medium text-forest-800 px-2.5 py-1 rounded-full border border-white/20">
                       {v.destination}
                     </span>
                   </div>
                 </div>
                 <div className="p-5">
-                  <h3 className="font-semibold text-slate-900 group-hover:text-teal-700 transition line-clamp-1">
+                  <h3 className="font-display font-semibold text-stone-900 group-hover:text-forest-700 transition line-clamp-1 text-[15px]">
                     {v.title}
                   </h3>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-3 mt-2 text-xs text-stone-400">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5" /> {v.days} Days
                     </span>
@@ -183,19 +189,19 @@ export function PackageGrid({
                       <Star className="w-3.5 h-3.5" /> {v.hotelTier}
                     </span>
                   </div>
-                  <p className="mt-3 text-sm text-slate-500 line-clamp-2 leading-relaxed">
+                  <p className="mt-3 text-sm text-stone-500 line-clamp-2 leading-relaxed">
                     {v.description}
                   </p>
-                  <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
+                  <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-slate-400">From</span>
-                      <p className="text-lg font-semibold text-teal-700">
+                      <span className="text-[10px] text-stone-400 uppercase tracking-wider">From</span>
+                      <p className="text-lg font-display font-bold text-forest-700">
                         {formatPrice(minPrice)}
-                        <span className="text-xs font-normal text-slate-400">/person</span>
+                        <span className="text-xs font-normal text-stone-400 ml-0.5">/person</span>
                       </p>
                     </div>
-                    <span className="text-xs text-teal-600 font-medium group-hover:underline">
-                      View Details →
+                    <span className="text-xs text-forest-600 font-medium group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                      View Details <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
                 </div>

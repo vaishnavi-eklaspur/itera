@@ -64,19 +64,19 @@ export default function QuotesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900">Quotes</h1>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+        <h1 className="text-2xl font-display font-semibold text-stone-900">Quotes</h1>
+        <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-4 py-2 text-sm bg-forest-700 text-white rounded-lg hover:bg-forest-700">
           <Plus className="w-4 h-4" /> New Quote
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">Create Quote</h2>
+        <div className="bg-white rounded-xl border border-stone-200 p-6 mb-6 space-y-4">
+          <h2 className="font-semibold text-stone-900">Create Quote</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Package</label>
-              <select value={packageId} onChange={(e) => setPackageId(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm">
+              <label className="text-sm text-stone-600 mb-1 block">Package</label>
+              <select value={packageId} onChange={(e) => setPackageId(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm">
                 <option value="">Select package...</option>
                 {packages.filter((p) => p.currentVersion).map((p) => (
                   <option key={p.id} value={p.id}>{p.currentVersion!.title}</option>
@@ -84,46 +84,46 @@ export default function QuotesPage() {
               </select>
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Travellers</label>
-              <input type="number" min={1} value={travellers} onChange={(e) => setTravellers(Number(e.target.value))} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm" />
+              <label className="text-sm text-stone-600 mb-1 block">Travellers</label>
+              <input type="number" min={1} value={travellers} onChange={(e) => setTravellers(Number(e.target.value))} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm" />
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Travel Date</label>
-              <input type="text" placeholder="e.g. Dec 15-20, 2025" value={travelDate} onChange={(e) => setTravelDate(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm" />
+              <label className="text-sm text-stone-600 mb-1 block">Travel Date</label>
+              <input type="text" placeholder="e.g. Dec 15-20, 2025" value={travelDate} onChange={(e) => setTravelDate(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm" />
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Price/person</label>
-              <p className="px-3 py-2.5 text-sm font-semibold text-teal-700">{formatPrice(basePrice)}</p>
+              <label className="text-sm text-stone-600 mb-1 block">Price/person</label>
+              <p className="px-3 py-2.5 text-sm font-semibold text-forest-700">{formatPrice(basePrice)}</p>
             </div>
           </div>
           <div>
-            <label className="text-sm text-slate-600 mb-1 block">Notes</label>
-            <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm resize-none" />
+            <label className="text-sm text-stone-600 mb-1 block">Notes</label>
+            <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm resize-none" />
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-lg font-semibold text-slate-900">Total: {formatPrice(totalPrice)}</p>
+            <p className="text-lg font-semibold text-stone-900">Total: {formatPrice(totalPrice)}</p>
             <div className="flex gap-2">
-              <button onClick={() => setShowForm(false)} className="px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-600">Cancel</button>
-              <button onClick={handleCreate} disabled={!packageId || saving} className="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">Create Quote</button>
+              <button onClick={() => setShowForm(false)} className="px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600">Cancel</button>
+              <button onClick={handleCreate} disabled={!packageId || saving} className="px-4 py-2 text-sm bg-forest-700 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50">Create Quote</button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-stone-200">
         {quotes.length === 0 ? (
-          <div className="px-6 py-12 text-center text-slate-400">
-            <ClipboardList className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+          <div className="px-6 py-12 text-center text-stone-400">
+            <ClipboardList className="w-8 h-8 mx-auto mb-2 text-stone-300" />
             No quotes yet
           </div>
         ) : (
           quotes.map((q) => (
-            <div key={q.id} className="flex items-center justify-between px-6 py-4 border-b border-slate-50">
+            <div key={q.id} className="flex items-center justify-between px-6 py-4 border-b border-stone-50">
               <div>
-                <p className="font-medium text-slate-900 text-sm">{q.package.currentVersion?.title ?? "Unknown"}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{q.travellers} pax · {formatPrice(q.totalPrice)} · Valid until {new Date(q.validUntil).toLocaleDateString()}</p>
+                <p className="font-medium text-stone-900 text-sm">{q.package.currentVersion?.title ?? "Unknown"}</p>
+                <p className="text-xs text-stone-400 mt-0.5">{q.travellers} pax · {formatPrice(q.totalPrice)} · Valid until {new Date(q.validUntil).toLocaleDateString()}</p>
               </div>
-              <a href={`/quote/${q.token}`} target="_blank" className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700">
+              <a href={`/quote/${q.token}`} target="_blank" className="flex items-center gap-1 text-xs text-forest-600 hover:text-forest-700">
                 <ExternalLink className="w-3.5 h-3.5" /> Share Link
               </a>
             </div>

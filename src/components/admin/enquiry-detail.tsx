@@ -54,17 +54,17 @@ function EditableField({ label, value, onSave, lowConfidence }: {
   const isEmpty = !value || value === "—";
   return (
     <div className={`rounded-lg p-3 ${lowConfidence ? "bg-amber-50 ring-1 ring-amber-200" : "bg-white"}`}>
-      <p className="text-xs text-slate-400 capitalize mb-1">{label}</p>
+      <p className="text-xs text-stone-400 capitalize mb-1">{label}</p>
       {editing ? (
         <div className="flex items-center gap-1">
-          <input value={draft} onChange={e => setDraft(e.target.value)} className="flex-1 text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500" autoFocus />
+          <input value={draft} onChange={e => setDraft(e.target.value)} className="flex-1 text-sm border border-stone-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-forest-500" autoFocus />
           <button onClick={() => { onSave(draft); setEditing(false); }} className="text-green-600 hover:text-green-700"><Check className="w-4 h-4" /></button>
-          <button onClick={() => { setDraft(value); setEditing(false); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+          <button onClick={() => { setDraft(value); setEditing(false); }} className="text-stone-400 hover:text-stone-600"><X className="w-4 h-4" /></button>
         </div>
       ) : (
         <div className="flex items-center justify-between group">
-          <p className={`text-sm font-medium ${isEmpty ? "text-slate-300 italic" : "text-slate-700"}`}>{isEmpty ? "Not detected" : value}</p>
-          <button onClick={() => setEditing(true)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-teal-600 transition-opacity"><Pencil className="w-3.5 h-3.5" /></button>
+          <p className={`text-sm font-medium ${isEmpty ? "text-stone-300 italic" : "text-stone-700"}`}>{isEmpty ? "Not detected" : value}</p>
+          <button onClick={() => setEditing(true)} className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-forest-600 transition-opacity"><Pencil className="w-3.5 h-3.5" /></button>
         </div>
       )}
     </div>
@@ -130,10 +130,8 @@ export function EnquiryDetail({
   async function retryAI() {
     setRetrying(true);
     try {
-      await fetch("/api/internal/ai", {
+      await fetch(`/api/admin/enquiries/${enquiry.id}/extract`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enquiryId: enquiry.id }),
       });
       router.refresh();
     } finally {
@@ -188,14 +186,14 @@ export function EnquiryDetail({
 
   return (
     <div>
-      <Link href="/admin/enquiries" className="flex items-center gap-1 text-sm text-slate-500 hover:text-teal-700 mb-4">
+      <Link href="/admin/enquiries" className="flex items-center gap-1 text-sm text-stone-500 hover:text-forest-700 mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Enquiries
       </Link>
 
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{enquiry.name}</h1>
-          <p className="text-sm text-slate-400">{enquiry.email} {enquiry.phone && `· ${enquiry.phone}`}</p>
+          <h1 className="text-2xl font-semibold text-stone-900">{enquiry.name}</h1>
+          <p className="text-sm text-stone-400">{enquiry.email} {enquiry.phone && `· ${enquiry.phone}`}</p>
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-xs px-2 py-0.5 rounded-full ${badge.className}`}>{badge.label}</span>
@@ -203,7 +201,7 @@ export function EnquiryDetail({
             enquiry.status === "NEW" ? "bg-amber-100 text-amber-700" :
             enquiry.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
             enquiry.status === "REPLIED" ? "bg-green-100 text-green-700" :
-            "bg-slate-100 text-slate-500"
+            "bg-stone-100 text-stone-500"
           }`}>
             {enquiry.status}
           </span>
@@ -213,13 +211,13 @@ export function EnquiryDetail({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Original message */}
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
             <div className="flex items-center gap-2 mb-3">
-              <User className="w-4 h-4 text-slate-400" />
-              <span className="text-sm font-medium text-slate-700">Original Message</span>
-              <span className="text-xs text-slate-400">{timeAgo(new Date(enquiry.createdAt))}</span>
+              <User className="w-4 h-4 text-stone-400" />
+              <span className="text-sm font-medium text-stone-700">Original Message</span>
+              <span className="text-xs text-stone-400">{timeAgo(new Date(enquiry.createdAt))}</span>
             </div>
-            <p className="text-sm text-slate-600 whitespace-pre-wrap">{enquiry.message}</p>
+            <p className="text-sm text-stone-600 whitespace-pre-wrap">{enquiry.message}</p>
           </section>
 
           {/* AI Extraction — inline editable */}
@@ -260,16 +258,16 @@ export function EnquiryDetail({
 
           {/* Suggested Packages */}
           {suggestedPackages.length > 0 && (
-            <section className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-teal-600" /> AI Suggested Packages
+            <section className="bg-white rounded-xl border border-stone-200 p-6">
+              <h2 className="text-sm font-semibold text-stone-900 mb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-forest-600" /> AI Suggested Packages
               </h2>
               <div className="space-y-2">
                 {suggestedPackages.map((sp) => (
-                  <div key={sp.id} className="flex items-center justify-between bg-teal-50 rounded-lg px-4 py-2">
+                  <div key={sp.id} className="flex items-center justify-between bg-forest-50 rounded-lg px-4 py-2">
                     <div>
-                      <p className="text-sm font-medium text-teal-800">{sp.currentVersion?.title}</p>
-                      <p className="text-xs text-teal-600">{sp.currentVersion?.destination} · {sp.currentVersion?.days} days</p>
+                      <p className="text-sm font-medium text-forest-800">{sp.currentVersion?.title}</p>
+                      <p className="text-xs text-forest-600">{sp.currentVersion?.destination} · {sp.currentVersion?.days} days</p>
                     </div>
                   </div>
                 ))}
@@ -278,21 +276,21 @@ export function EnquiryDetail({
           )}
 
           {/* Reply composer */}
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-sm font-semibold text-slate-900 mb-3">
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
+            <h2 className="text-sm font-semibold text-stone-900 mb-3">
               {enquiry.aiDraftReply ? "AI Draft Reply (edit before sending)" : "Reply"}
             </h2>
             <textarea
               rows={6}
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+              className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none"
               placeholder="Write your reply..."
             />
             <button
               onClick={sendReply}
               disabled={sending || !replyContent.trim()}
-              className="mt-3 flex items-center gap-1.5 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition"
+              className="mt-3 flex items-center gap-1.5 bg-forest-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-forest-700 disabled:opacity-50 transition"
             >
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Send Reply
@@ -302,7 +300,7 @@ export function EnquiryDetail({
           {/* Replies */}
           {enquiry.replies.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold text-slate-900">Sent Replies</h2>
+              <h2 className="text-sm font-semibold text-stone-900">Sent Replies</h2>
               {enquiry.replies.map((r) => (
                 <div key={r.id} className="bg-green-50 border border-green-200 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -318,13 +316,13 @@ export function EnquiryDetail({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <section className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+          <section className="bg-white rounded-xl border border-stone-200 p-6 space-y-4">
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Status</label>
+              <label className="text-xs text-stone-500 mb-1 block">Status</label>
               <select
                 value={enquiry.status}
                 onChange={(e) => updateStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500"
               >
                 <option value="NEW">New</option>
                 <option value="IN_PROGRESS">In Progress</option>
@@ -333,11 +331,11 @@ export function EnquiryDetail({
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Assigned To</label>
+              <label className="text-xs text-stone-500 mb-1 block">Assigned To</label>
               <select
                 value={enquiry.assignedToId ?? ""}
                 onChange={(e) => assignTo(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500"
               >
                 <option value="">Unassigned</option>
                 {admins.map((a) => (
@@ -347,30 +345,30 @@ export function EnquiryDetail({
             </div>
           </section>
 
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
+            <h2 className="text-sm font-semibold text-stone-900 mb-3 flex items-center gap-2">
               <StickyNote className="w-4 h-4" /> Internal Notes
             </h2>
             <div className="space-y-2 mb-3">
               {enquiry.notes.map((n) => (
                 <div key={n.id} className="bg-amber-50 rounded-lg p-3">
                   <p className="text-xs text-amber-600 mb-1">{n.author.name} · {timeAgo(new Date(n.createdAt))}</p>
-                  <p className="text-sm text-slate-600">{n.content}</p>
+                  <p className="text-sm text-stone-600">{n.content}</p>
                 </div>
               ))}
-              {enquiry.notes.length === 0 && <p className="text-xs text-slate-400">No notes yet</p>}
+              {enquiry.notes.length === 0 && <p className="text-xs text-stone-400">No notes yet</p>}
             </div>
             <textarea
               rows={2}
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+              className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none"
               placeholder="Add a note..."
             />
             <button
               onClick={addNote}
               disabled={addingNote || !noteContent.trim()}
-              className="mt-2 text-sm text-teal-600 hover:text-teal-700 font-medium disabled:opacity-50"
+              className="mt-2 text-sm text-forest-600 hover:text-forest-700 font-medium disabled:opacity-50"
             >
               {addingNote ? "Adding..." : "Add Note"}
             </button>

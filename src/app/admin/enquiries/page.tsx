@@ -23,7 +23,7 @@ export default async function AdminEnquiriesPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-900 mb-6">Enquiries</h1>
+      <h1 className="text-2xl font-display font-semibold text-stone-900 mb-6">Enquiries</h1>
       <EnquiryList enquiries={JSON.parse(JSON.stringify(enquiries))} currentStatus={status} />
     </div>
   );
