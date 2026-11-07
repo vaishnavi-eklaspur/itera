@@ -27,6 +27,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
+function renderInline(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**"))
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*"))
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    return <span key={i}>{part}</span>;
+  });
+}
+
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const post = await getPost(slug);
@@ -67,12 +78,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
         <div className="mt-8 prose prose-slate max-w-none prose-headings:text-stone-900 prose-a:text-forest-600">
           {post.content.split("\n").map((para, i) => {
-            if (para.startsWith("# ")) return <h1 key={i}>{para.slice(2)}</h1>;
-            if (para.startsWith("## ")) return <h2 key={i}>{para.slice(3)}</h2>;
-            if (para.startsWith("### ")) return <h3 key={i}>{para.slice(4)}</h3>;
-            if (para.startsWith("- ")) return <li key={i}>{para.slice(2)}</li>;
+            if (para.startsWith("# ")) return <h1 key={i}>{renderInline(para.slice(2))}</h1>;
+            if (para.startsWith("## ")) return <h2 key={i}>{renderInline(para.slice(3))}</h2>;
+            if (para.startsWith("### ")) return <h3 key={i}>{renderInline(para.slice(4))}</h3>;
+            if (para.startsWith("- ")) return <li key={i}>{renderInline(para.slice(2))}</li>;
             if (para.trim() === "") return <br key={i} />;
-            return <p key={i}>{para}</p>;
+            return <p key={i}>{renderInline(para)}</p>;
           })}
         </div>
 

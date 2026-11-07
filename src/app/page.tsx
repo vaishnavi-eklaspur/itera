@@ -38,7 +38,7 @@ export default async function HomePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/5" />
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-          <p className="section-label text-forest-300/90 mb-4">
+          <p className="text-[0.6875rem] font-semibold tracking-[0.15em] uppercase text-white/70 mb-4">
             Kerala · Tamil Nadu · Karnataka · Goa
           </p>
           <h1 className="text-[2.75rem] sm:text-6xl lg:text-7xl font-display font-bold text-white leading-[1.05] max-w-2xl tracking-tight">

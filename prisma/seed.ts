@@ -15,7 +15,7 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@itera.in" },
-    update: { role: Role.ADMIN },
+    update: { role: Role.ADMIN, name: "Vaishnavi Eklaspur" },
     create: {
       name: "Vaishnavi Eklaspur",
       email: "admin@itera.in",
@@ -948,7 +948,7 @@ async function main() {
         title: "A Weekend in Munnar: Tea Estates, Mist, and Mountain Air",
         excerpt: "Munnar's rolling tea plantations and cool mountain air make it the perfect escape from the heat. Here's how to make the most of a 2–3 day trip.",
         content: `## Why Munnar?\n\nAt 1,600 metres above sea level, Munnar is Kerala's hill station jewel. The town itself is unremarkable — it's what surrounds it that takes your breath away: endless carpets of tea bushes, misty peaks, and some of the last surviving shola grasslands in the Western Ghats.\n\n### Getting There\n\n**From Kochi:** 4–5 hours by road (130 km). The last 2 hours wind through spectacular hairpin bends with valley views. Leave early to arrive by lunch.\n\n**From Madurai:** 4 hours. A less common but equally scenic route through Tamil Nadu's plains and up the ghats.\n\n### Day 1: Arrive and Explore\n\nCheck into your hotel and spend the afternoon at the **Tata Tea Museum**. It's small but fascinating — you'll see the full process from leaf to cup, including a tasting session. End the day at **Pothamedu Viewpoint** for sunset over three valleys of tea, coffee, and cardamom.\n\n### Day 2: Deep into the Hills\n\nStart early for **Eravikulam National Park** (home to the endangered Nilgiri tahr — mountain goats you'll spot on the grassy slopes). The park closes during calving season (February–March), so check ahead.\n\nAfternoon: Drive to **Top Station** (32 km) for panoramic views of the Tamil Nadu plains 1,700 metres below. On clear days you can see Kodaikanal.\n\nEvening: Walk through a **working tea estate**. Several plantations near Munnar allow guided walks where the plucker explains how the two-leaves-and-a-bud method works.\n\n### Day 3: Waterfalls and Spice Gardens\n\nVisit **Attukal Waterfalls** (a short trek) or the more accessible **Lakkam Waterfalls**. On your drive back to Kochi, stop at a **spice garden** in Adimali — you'll see cardamom, pepper, vanilla, and cinnamon growing, and buy spices directly.\n\n### Where to Stay\n\n**Budget:** Clean homestays in Old Munnar (₹1,500–2,500/night). Book one with a valley view.\n\n**Mid-range:** Tea-estate bungalows converted to boutique stays (₹4,000–8,000/night). Our top pick for the experience.\n\n**Luxury:** Windermere Estate or Spicetree Munnar (₹12,000+/night). Stunning properties with private tea-garden access.\n\n### Pro Tips\n\n- Carry a light jacket even in summer — evenings drop to 15°C.\n- Skip weekends if you can. Munnar town jams badly on Saturdays.\n- The best tea to buy: high-grown orthodox tea from the KDHP outlets. Skip the flavoured tourist varieties.`,
-        coverImage: "https://images.unsplash.com/photo-1564507592333-c60657eea523?w=1200",
+        coverImage: "https://images.unsplash.com/photo-1624554305378-0f440dd3a8c1?w=1200",
         category: "Destinations",
         tags: ["munnar", "tea plantations", "hill station", "kerala", "weekend trip"],
         seoTitle: "Weekend in Munnar — Tea Estates & Hill Station Guide | Itera",
