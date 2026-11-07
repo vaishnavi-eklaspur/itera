@@ -14,9 +14,10 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-[60px]">
           <Link href="/" className="flex items-center gap-2">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M16 2C16 2 8 10 8 18a8 8 0 0 0 16 0c0-8-8-16-8-16Z" fill="currentColor" className="text-forest-700" />
-              <path d="M16 8v14M12 14c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+            <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M16 1C9.92 1 5 5.92 5 12c0 9 11 19 11 19s11-10 11-19c0-6.08-4.92-11-11-11z" className="fill-forest-700" />
+              <circle cx="16" cy="11.5" r="4.5" fill="white" />
+              <path d="M12.5 11c1-1.2 2.5-1.2 3.5 0s2.5 1.2 3.5 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="text-forest-700" />
             </svg>
             <span className="text-[1.35rem] font-display font-bold tracking-tight text-forest-800">
               Itera

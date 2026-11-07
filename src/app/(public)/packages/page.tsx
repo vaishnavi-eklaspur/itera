@@ -48,7 +48,7 @@ export default async function PackagesPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/5" />
           <div className="relative z-10 h-full flex items-end max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
             <div>
-              <p className="section-label text-forest-300/80 mb-3">All Packages</p>
+              <p className="text-[0.6875rem] font-semibold tracking-[0.15em] uppercase text-white/70 mb-3">All Packages</p>
               <h1 className="text-4xl sm:text-5xl font-display font-bold text-white tracking-tight">Explore South India</h1>
               <p className="mt-3 text-[15px] text-white/70 max-w-lg">
                 {packages.length} handcrafted journeys through Kerala, Tamil Nadu, Karnataka &amp; Goa

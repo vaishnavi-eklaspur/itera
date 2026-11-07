@@ -134,9 +134,9 @@ export default async function PackageDetailPage({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
         <div className="relative z-10 h-full flex items-end">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-12">
-            <div className="flex items-center gap-2 text-forest-300/80 mb-3">
+            <div className="flex items-center gap-2 text-white/70 mb-3">
               <MapPin className="w-4 h-4" />
-              <span className="section-label text-forest-300/80">{v.destination}</span>
+              <span className="text-[0.6875rem] font-semibold tracking-[0.15em] uppercase text-white/70">{v.destination}</span>
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white tracking-tight">{v.title}</h1>
             <div className="flex items-center gap-4 mt-4 text-sm text-white/70">
