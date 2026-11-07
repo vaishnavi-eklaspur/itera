@@ -43,7 +43,7 @@
 | Enquiry list view | **PASS** | Shows all enquiries with status, time, source |
 | Enquiry detail view | **PASS** | Original message, AI fields, status, assignment, notes, reply |
 | Status change | **PASS** | Dropdown updates to IN_PROGRESS |
-| Assignment to consultant | **PASS** | Dropdown assigns to Priya Menon |
+| Assignment to consultant | **PASS** | Dropdown assigns to Vaishnavi Eklaspur |
 | Internal note creation | **PASS** | Note added with author and timestamp |
 | Reply sending | **PASS** | POST /api/admin/enquiries/:id/reply returns 201 |
 

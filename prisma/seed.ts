@@ -17,7 +17,7 @@ async function main() {
     where: { email: "admin@itera.in" },
     update: { role: Role.ADMIN },
     create: {
-      name: "Priya Menon",
+      name: "Vaishnavi Eklaspur",
       email: "admin@itera.in",
       phone: "+91 98470 12345",
       passwordHash: adminPassword,
