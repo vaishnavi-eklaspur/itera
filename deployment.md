@@ -1,10 +1,24 @@
 # Deployment Guide — Itera
 
+## For Reviewers — Quick Start
+
+The app is live at **https://itera-5nq4.vercel.app**
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@itera.in | admin123 |
+| Consultant | consultant@itera.in | consultant123 |
+| Traveller | traveller@itera.in | traveller123 |
+
+Log in as Admin to see the full CMS, enquiry inbox and AI pipeline. Submit an enquiry from any package page to see the auto-acknowledgement and AI extraction in action. Emails are mocked (logged server-side, not actually sent) as specified in the brief.
+
+---
+
 ## Prerequisites
 
 - Node.js 20+
 - PostgreSQL database (Neon recommended for serverless)
-- Anthropic API key (for AI features — optional, degrades gracefully)
+- Google Gemini API key (for AI features — optional, degrades gracefully)
 
 ---
 
