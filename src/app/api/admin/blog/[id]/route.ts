@@ -43,6 +43,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const parsed = blogUpdateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
 
+  const packageCount = await db.package.count({
+    where: { id: { in: parsed.data.relatedPackageIds }, currentVersionId: { not: null } },
+  });
+  if (packageCount !== new Set(parsed.data.relatedPackageIds).size) {
+    return NextResponse.json({ error: "One or more related packages are invalid" }, { status: 400 });
+  }
+
   const post = await db.blogPost.update({ where: { id }, data: parsed.data });
   await logActivity(session.user.id, "updated", "blog", post.id, post.title);
 

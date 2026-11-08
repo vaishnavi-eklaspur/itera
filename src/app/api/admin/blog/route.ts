@@ -44,6 +44,13 @@ export async function POST(req: NextRequest) {
   const parsed = blogSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
 
+  const packageCount = await db.package.count({
+    where: { id: { in: parsed.data.relatedPackageIds }, currentVersionId: { not: null } },
+  });
+  if (packageCount !== new Set(parsed.data.relatedPackageIds).size) {
+    return NextResponse.json({ error: "One or more related packages are invalid" }, { status: 400 });
+  }
+
   const existing = await db.blogPost.findUnique({ where: { slug: parsed.data.slug } });
   if (existing) return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
 

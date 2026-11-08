@@ -373,7 +373,7 @@ export default async function PackageDetailPage({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {relatedBlogPosts.map((post) => (
               <Link key={post.id} href={`/blog/${post.slug}`} className="group bg-white rounded-xl border border-sand-200/60 overflow-hidden hover:shadow-lg transition-all">
-                <div className="aspect-[16/9] bg-gradient-to-br from-forest-100 to-forest-200 overflow-hidden">
+                <div className="relative aspect-[16/9] bg-gradient-to-br from-forest-100 to-forest-200 overflow-hidden">
                   {post.coverImage ? (
                     isSeoImageUrl(post.coverImage) ? (
                       <Image src={post.coverImage} alt={`${post.title} cover`} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />

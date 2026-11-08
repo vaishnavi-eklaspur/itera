@@ -18,7 +18,7 @@ export type PublicBlogPost = {
 export function BlogPostCard({ post }: { post: PublicBlogPost }) {
   return (
     <Link href={`/blog/${post.slug}`} className="group bg-white rounded-2xl border border-stone-200/50 overflow-hidden hover:shadow-xl transition-all duration-500">
-      <div className="aspect-[16/10] bg-gradient-to-br from-forest-100 to-forest-200 flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-[16/10] bg-gradient-to-br from-forest-100 to-forest-200 flex items-center justify-center overflow-hidden">
         {post.coverImage ? (
           isSeoImageUrl(post.coverImage) ? (
             <Image src={post.coverImage} alt={`${post.title} cover`} fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 400px" className="object-cover img-zoom" />
