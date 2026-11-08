@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Send, Loader2 } from "lucide-react";
 
 export function EnquiryForm({
@@ -10,6 +11,7 @@ export function EnquiryForm({
   packageId: string;
   packageTitle: string;
 }) {
+  const { data: session } = useSession();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -18,6 +20,9 @@ export function EnquiryForm({
   });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
+  const name = form.name || session?.user?.name || "";
+  const email = form.email || session?.user?.email || "";
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("sending");
@@ -25,7 +30,7 @@ export function EnquiryForm({
       const res = await fetch("/api/enquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, packageId }),
+        body: JSON.stringify({ ...form, name, email, packageId }),
       });
       if (!res.ok) throw new Error();
       setStatus("sent");
@@ -55,7 +60,8 @@ export function EnquiryForm({
           type="text"
           required
           placeholder="Your Name"
-          value={form.name}
+          autoComplete="name"
+          value={name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
         />
@@ -63,7 +69,8 @@ export function EnquiryForm({
           type="email"
           required
           placeholder="Email Address"
-          value={form.email}
+          autoComplete="email"
+          value={email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
         />
