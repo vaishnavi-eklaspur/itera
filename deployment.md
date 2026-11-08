@@ -40,7 +40,8 @@ Edit `.env` with your values:
 DATABASE_URL=postgresql://user:pass@host/dbname?sslmode=require
 NEXTAUTH_SECRET=<random-32-char-string>
 NEXTAUTH_URL=http://localhost:3000
-GEMINI_API_KEY=AIza...                 # optional — AI features disabled without it
+GROQ_API_KEY=gsk_...                   # preferred — fast AI extraction
+GEMINI_API_KEY=AIza...                 # optional fallback for AI extraction
 INTERNAL_API_SECRET=<random-string>   # protects internal AI route
 CRON_SECRET=<random-string>           # protects scheduled publish endpoint
 ```
@@ -95,7 +96,8 @@ Set these in Vercel → Project → Settings → Environment Variables:
 | `DATABASE_URL` | `postgresql://...` | Neon connection string (pooled, with `?sslmode=require`) |
 | `NEXTAUTH_SECRET` | `<random-32-chars>` | **Must be different from dev** |
 | `NEXTAUTH_URL` | `https://your-domain.vercel.app` | Your production URL |
-| `GEMINI_API_KEY` | `AIza...` | Optional — AI features disabled without it |
+| `GROQ_API_KEY` | `gsk_...` | Preferred fast AI extraction provider |
+| `GEMINI_API_KEY` | `AIza...` | Optional fallback for AI extraction |
 | `INTERNAL_API_SECRET` | `<random-string>` | Protects `/api/internal/ai` |
 | `CRON_SECRET` | `<random-string>` | Protects `/api/cron/publish` |
 
@@ -228,7 +230,7 @@ itera/
 |-------|----------|
 | `PrismaClientInitializationError` | Check `DATABASE_URL` — ensure `?sslmode=require` for Neon |
 | Login fails silently | Verify `NEXTAUTH_SECRET` is set and `NEXTAUTH_URL` matches the actual domain |
-| AI extraction not running | Check `GEMINI_API_KEY` is set. The feature degrades gracefully — enquiries still work without it |
+| AI extraction not running | Check `GROQ_API_KEY` (or fallback `GEMINI_API_KEY`) is set. The feature degrades gracefully — enquiries still work without it |
 | `ERR_MODULE_NOT_FOUND` on deploy | Run `npx prisma generate` before build (the `postinstall` script handles this) |
 | Security headers not appearing | Headers are set in `proxy.ts` middleware — verify the middleware matcher covers the route |
 | Tests fail on CI | Ensure `vitest` is in `devDependencies` and CI runs `npm ci` before `npm test` |

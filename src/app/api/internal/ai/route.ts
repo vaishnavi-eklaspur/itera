@@ -20,6 +20,28 @@ If a field cannot be determined, set it to null. Set confidence based on how cle
 
 Customer message: `;
 
+const EMPTY_EXTRACTION = {
+  dates: null,
+  additionalDays: null,
+  adults: null,
+  children: null,
+  destination: null,
+  budget: null,
+  requirements: [],
+  confidence: 0,
+};
+
+function parseExtraction(rawText: string) {
+  try {
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
+    const validated = aiExtractedSchema.safeParse(parsed);
+    return validated.success ? validated.data : EMPTY_EXTRACTION;
+  } catch {
+    return EMPTY_EXTRACTION;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-internal-secret");
   if (secret !== process.env.INTERNAL_API_SECRET) {
@@ -34,12 +56,13 @@ export async function POST(req: NextRequest) {
   });
   if (!enquiry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const groqKey = process.env.GROQ_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!groqKey && !geminiKey) {
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
-        aiExtracted: { dates: null, additionalDays: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 },
+        aiExtracted: EMPTY_EXTRACTION,
         aiSuggestions: [],
         aiDraftReply: null,
       },
@@ -48,37 +71,59 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Step 1: Extract fields
-    const extractionResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${EXTRACTION_PROMPT}${enquiry.message}\n\nStructured enquiry details: ${JSON.stringify({
-            selectedDates: enquiry.travelDates,
-            packageDays: enquiry.package?.currentVersion?.days ?? null,
-            packageTitle: enquiry.package?.currentVersion?.title ?? null,
-          })}` }] }],
-          generationConfig: { maxOutputTokens: 500, temperature: 0.1, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
-        }),
+    const extractionPrompt = `${EXTRACTION_PROMPT}${enquiry.message}\n\nStructured enquiry details: ${JSON.stringify({
+      selectedDates: enquiry.travelDates,
+      adults: enquiry.adults,
+      children: enquiry.children,
+      packageDays: enquiry.package?.currentVersion?.days ?? null,
+      packageTitle: enquiry.package?.currentVersion?.title ?? null,
+    })}`;
+
+    let extracted: ReturnType<typeof parseExtraction> | null = null;
+    if (groqKey) {
+      try {
+        const extractionResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
+          body: JSON.stringify({
+            model: "llama-3.1-8b-instant",
+            messages: [
+              { role: "system", content: "Return only valid JSON. Do not include markdown fences." },
+              { role: "user", content: extractionPrompt },
+            ],
+            temperature: 0,
+            max_tokens: 400,
+            response_format: { type: "json_object" },
+          }),
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!extractionResponse.ok) throw new Error(`Groq extraction failed: ${extractionResponse.status}`);
+        const extractionData = await extractionResponse.json();
+        extracted = parseExtraction(extractionData.choices?.[0]?.message?.content || "{}");
+      } catch (error) {
+        if (!geminiKey) throw error;
+        console.error("[AI] Groq extraction failed; using Gemini fallback:", error);
       }
-    );
-
-    const extractionData = await extractionResponse.json();
-    const rawText = extractionData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-
-    let extracted;
-    try {
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
-      const validated = aiExtractedSchema.safeParse(parsed);
-      extracted = validated.success
-        ? validated.data
-        : { dates: null, additionalDays: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 };
-    } catch {
-      extracted = { dates: null, additionalDays: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 };
     }
+
+    if (!extracted && geminiKey) {
+      const extractionResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: extractionPrompt }] }],
+            generationConfig: { maxOutputTokens: 400, temperature: 0.1, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
+          }),
+          signal: AbortSignal.timeout(10000),
+        }
+      );
+      if (!extractionResponse.ok) throw new Error(`Gemini extraction failed: ${extractionResponse.status}`);
+      const extractionData = await extractionResponse.json();
+      extracted = parseExtraction(extractionData.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+    }
+    if (!extracted) throw new Error("No AI extraction provider configured");
 
     const selectedDateMatch = enquiry.travelDates?.match(/^(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})$/);
     if (selectedDateMatch) {
@@ -89,6 +134,8 @@ export async function POST(req: NextRequest) {
         raw: enquiry.travelDates,
       };
     }
+    if (enquiry.adults != null) extracted.adults = enquiry.adults;
+    if (enquiry.children != null) extracted.children = enquiry.children;
 
     if (extracted.dates?.start && extracted.dates.end && enquiry.package?.currentVersion?.days) {
       const requestedDays = Math.round(
@@ -166,51 +213,12 @@ export async function POST(req: NextRequest) {
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
 
-    // Step 3: Generate draft reply if we have enough info
-    let draftReply: string | null = null;
-    if (extracted.confidence > 0.3 && suggestions.length > 0) {
-      const topPackages = suggestions.slice(0, 2).map((s) => {
-        const pkg = allPackages.find((p) => p.slug === s.packageSlug);
-        return {
-          title: pkg?.currentVersion?.title,
-          days: pkg?.currentVersion?.days,
-          prices: pkg?.seasonalPrices.map((p) => `${p.seasonName}: ₹${p.pricePerPerson.toLocaleString("en-IN")}/person (${p.basis})`),
-        };
-      });
-
-      const replyPrompt = `You are a warm, professional travel consultant for Itera Travel. Draft a reply to this enquiry.
-
-Use ONLY the package details provided. Never invent prices. Reference actual prices from the data below.
-
-Customer: ${enquiry.name}
-Message: ${enquiry.message}
-Extracted: ${JSON.stringify(extracted)}
-Top packages: ${JSON.stringify(topPackages)}
-
-Write a warm reply (under 200 words) that addresses their requirements, recommends 1-2 packages with real prices, and invites them to discuss further. Sign off as "Itera Travel Team".`;
-
-      const replyResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: replyPrompt }] }],
-            generationConfig: { maxOutputTokens: 500, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
-          }),
-        }
-      );
-
-      const replyData = await replyResponse.json();
-      draftReply = replyData.candidates?.[0]?.content?.parts?.[0]?.text || null;
-    }
-
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
         aiExtracted: extracted,
         aiSuggestions: suggestions,
-        aiDraftReply: draftReply,
+        aiDraftReply: null,
       },
     });
 
@@ -220,7 +228,7 @@ Write a warm reply (under 200 words) that addresses their requirements, recommen
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
-        aiExtracted: { dates: null, additionalDays: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 },
+        aiExtracted: EMPTY_EXTRACTION,
         aiSuggestions: [],
         aiDraftReply: null,
       },
