@@ -351,7 +351,21 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                   <textarea placeholder="Description" rows={2} value={day.description} onChange={(e) => updateItineraryDay(i, "description", e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none mb-3" />
                   <details className="mt-2">
                     <summary className="cursor-pointer text-xs text-stone-500">Advanced map settings</summary>
-                    <div className="grid grid-cols-2 gap-3 mt-2">
+                    <div className="mt-2 rounded-lg border border-stone-100 bg-stone-50 p-3">
+                      <p className="text-xs text-stone-500">
+                        Place used by the map: <strong className="text-stone-700">{day.location.trim() || "Not set"}</strong>
+                      </p>
+                      {findLocationCoordinates(day.location) ? (
+                        <p className="mt-1 text-[11px] text-emerald-700">
+                          Map location recognized. Coordinates are updated automatically.
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-[11px] text-amber-700">
+                          Map cannot recognize this place. Enter a recognizable place name above or set the coordinates manually below.
+                        </p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mt-3">
                       <label className="text-xs text-stone-500">
                         Latitude
                         <input type="number" step="0.0001" value={day.lat} onChange={(e) => updateItineraryDay(i, "lat", parseFloat(e.target.value) || 0)} className="mt-1 w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
