@@ -99,24 +99,13 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
   const [photoStatus, setPhotoStatus] = useState<Record<number, "valid" | "invalid">>({});
 
   function getPhotoUrls() {
-    return photos.map((photo) => photo.trim()).filter(Boolean);
+    return photos
+      .map((photo) => photo.trim().replace(/&amp;/gi, "&").replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
   }
 
   function validatePhotoUrls() {
     const urls = getPhotoUrls();
-    const invalidUrl = urls.find((photo) => {
-      try {
-        const url = new URL(photo);
-        return !["http:", "https:"].includes(url.protocol);
-      } catch {
-        return true;
-      }
-    });
-    if (invalidUrl) {
-      setError("Each photo must be a direct http(s) image address. Use “Copy image address”, not a webpage URL.");
-      return null;
-    }
-
     return urls;
   }
 
@@ -518,7 +507,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                       <span className="w-16 shrink-0 pt-1 text-[10px] leading-3 text-red-500">Cannot load this image. Replace the URL.</span>
                     )}
                     <input
-                      type="url"
+                      type="text"
                       placeholder="Direct image address (https://...)"
                       value={url}
                       onChange={(e) => {
