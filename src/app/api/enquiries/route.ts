@@ -59,12 +59,19 @@ export async function POST(req: NextRequest) {
     console.error("[EMAIL] Auto-ack failed:", e);
   }
 
-  // Trigger AI extraction asynchronously (fire-and-forget)
-  fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3001"}/api/internal/ai`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-internal-secret": process.env.INTERNAL_API_SECRET || "" },
-    body: JSON.stringify({ enquiryId: enquiry.id }),
-  }).catch(() => {});
+  // Complete extraction before confirming submission so serverless runtimes do not terminate it.
+  try {
+    const extractionResponse = await fetch(`${req.nextUrl.origin}/api/internal/ai`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-internal-secret": process.env.INTERNAL_API_SECRET || "" },
+      body: JSON.stringify({ enquiryId: enquiry.id }),
+    });
+    if (!extractionResponse.ok) {
+      console.error(`[AI] Extraction failed for enquiry ${enquiry.id}: ${extractionResponse.status}`);
+    }
+  } catch (error) {
+    console.error(`[AI] Extraction request failed for enquiry ${enquiry.id}:`, error);
+  }
 
   return NextResponse.json({
     success: true,

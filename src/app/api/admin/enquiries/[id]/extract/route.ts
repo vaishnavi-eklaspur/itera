@@ -9,9 +9,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (denied) return denied;
 
   const { id } = await params;
-  const base = process.env.NEXTAUTH_URL || "http://localhost:3001";
-
-  const res = await fetch(`${base}/api/internal/ai`, {
+  const res = await fetch(`${req.nextUrl.origin}/api/internal/ai`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
