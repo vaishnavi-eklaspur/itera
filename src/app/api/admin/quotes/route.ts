@@ -7,6 +7,25 @@ import { logActivity } from "@/lib/activity";
 import { authorizeRole } from "@/lib/roles";
 import { calculateGst } from "@/lib/gst";
 
+function replaceGeneratedQuoteBlock(draft: string | null | undefined, quoteBlock: string) {
+  const lines = (draft ?? "").split(/\r?\n/);
+  const kept: string[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (
+      lines[index].startsWith("Your verified quote is ready:") &&
+      lines[index + 1]?.startsWith("Download the branded PDF:") &&
+      lines[index + 2]?.startsWith("Please review the details and let us know if you would like to proceed.")
+    ) {
+      index += 2;
+      continue;
+    }
+    kept.push(lines[index]);
+  }
+
+  return [kept.join("\n").trim(), quoteBlock].filter(Boolean).join("\n\n");
+}
+
 const quoteSchema = z.object({
   packageId: z.string(),
   enquiryId: z.string().optional(),
@@ -95,10 +114,7 @@ export async function POST(req: NextRequest) {
     const quoteLink = `${req.nextUrl.origin}/quote/${quote.token}`;
     const pdfLink = `${req.nextUrl.origin}/api/quotes/${quote.token}/pdf`;
     const quoteLine = `Your verified quote is ready: ${quoteLink}\nDownload the branded PDF: ${pdfLink}\nPlease review the details and let us know if you would like to proceed.`;
-    const cleanedDraft = enquiry?.aiDraftReply
-      ?.replace(/Your verified quote is ready:\s*\S+\s*\nDownload the branded PDF:\s*\S+\s*\nPlease review the details and let us know if you would like to proceed\.\s*/g, "")
-      .trim();
-    const updatedDraft = [cleanedDraft, quoteLine].filter(Boolean).join("\n\n");
+    const updatedDraft = replaceGeneratedQuoteBlock(enquiry?.aiDraftReply, quoteLine);
     if (enquiry && enquiry.aiDraftReply !== updatedDraft) {
       await db.enquiry.update({
         where: { id: parsed.data.enquiryId },
