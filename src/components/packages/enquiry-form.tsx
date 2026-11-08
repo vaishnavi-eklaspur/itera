@@ -1,27 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
 import { Send, Loader2 } from "lucide-react";
 
 export function EnquiryForm({
   packageId,
   packageTitle,
+  initialName = "",
+  initialEmail = "",
 }: {
   packageId: string;
   packageTitle: string;
+  initialName?: string;
+  initialEmail?: string;
 }) {
-  const { data: session } = useSession();
   const [form, setForm] = useState({
-    name: "",
-    email: "",
+    name: initialName,
+    email: initialEmail,
     phone: "",
     message: `Hi, I'd like to know more about the "${packageTitle}" package.`,
   });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-
-  const name = form.name || session?.user?.name || "";
-  const email = form.email || session?.user?.email || "";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,7 +29,7 @@ export function EnquiryForm({
       const res = await fetch("/api/enquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, name, email, packageId }),
+        body: JSON.stringify({ ...form, packageId }),
       });
       if (!res.ok) throw new Error();
       setStatus("sent");
@@ -61,7 +60,7 @@ export function EnquiryForm({
           required
           placeholder="Your Name"
           autoComplete="name"
-          value={name}
+          value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
         />
@@ -70,7 +69,7 @@ export function EnquiryForm({
           required
           placeholder="Email Address"
           autoComplete="email"
-          value={email}
+          value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
         />

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { formatPrice } from "@/lib/utils";
 import { EnquiryForm } from "@/components/packages/enquiry-form";
 import { PriceEstimator } from "@/components/packages/price-estimator";
@@ -78,6 +79,7 @@ export default async function PackageDetailPage({
   if (!pkg?.currentVersion) notFound();
 
   const v = pkg.currentVersion;
+  const session = await auth();
   const minPrice = Math.min(...pkg.seasonalPrices.map((p) => p.pricePerPerson));
   const itinerary = v.itinerary as {
     day: number;
@@ -295,6 +297,8 @@ export default async function PackageDetailPage({
                 <EnquiryForm
                   packageId={pkg.id}
                   packageTitle={v.title}
+                  initialName={session?.user?.name || ""}
+                  initialEmail={session?.user?.email || ""}
                 />
               </div>
 
