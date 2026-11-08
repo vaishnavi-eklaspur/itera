@@ -79,6 +79,10 @@ export function EnquiryList({
   };
 
   const statuses = ["ALL", "NEW", "IN_PROGRESS", "REPLIED", "CLOSED"];
+  const overdueCount = enquiries.filter((enquiry) => {
+    if (enquiry.replies.length > 0) return false;
+    return Date.now() - new Date(enquiry.createdAt).getTime() >= 60 * 60 * 1000;
+  }).length;
   const withFilters = (status?: string, assignedTo = currentAssignedTo) => {
     const params = new URLSearchParams();
     if (status && status !== "ALL") params.set("status", status);
@@ -97,6 +101,11 @@ export function EnquiryList({
           <Plus className="h-4 w-4" /> Add enquiry
         </button>
       </div>
+      {overdueCount > 0 && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          SLA alert: {overdueCount} unanswered {overdueCount === 1 ? "enquiry has" : "enquiries have"} exceeded the 60-minute response target.
+        </div>
+      )}
       {/* Status filter tabs */}
       <div className="flex gap-1 mb-6 overflow-x-auto">
         {statuses.map((s) => (

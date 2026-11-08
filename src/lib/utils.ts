@@ -51,5 +51,5 @@ export function responseTimeBadge(createdAt: Date, repliedAt?: Date | null): { l
   const diffMin = Math.floor((Date.now() - createdAt.getTime()) / 60000);
   if (diffMin < 30) return { label: `Waiting ${diffMin}m`, color: "green", className: "bg-green-100 text-green-700" };
   if (diffMin < 60) return { label: `Waiting ${diffMin}m`, color: "amber", className: "bg-amber-100 text-amber-700" };
-  return { label: `Waiting ${diffMin}m`, color: "red", className: "bg-red-100 text-red-700" };
+  return { label: `SLA breached · Waiting ${diffMin}m`, color: "red", className: "bg-red-100 text-red-700" };
 }

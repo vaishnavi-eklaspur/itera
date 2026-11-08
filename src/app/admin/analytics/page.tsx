@@ -3,17 +3,19 @@ import { connection } from "next/server";
 import { Inbox, Clock, TrendingUp, CheckCircle } from "lucide-react";
 import { requireAdminRole } from "@/lib/admin-access";
 import { AnalyticsVolume } from "@/components/admin/analytics-volume";
+import { ResponseTimeChart } from "@/components/admin/response-time-chart";
 
 export const instant = false;
 
 export default async function AnalyticsPage() {
   await requireAdminRole("ADMIN", "CONSULTANT");
   await connection();
-  const [total, byStatus, responseStats, enquiriesLast30, topPackages] = await Promise.all([
+  const [total, byStatus, responseStats, enquiriesLast30, responseTrend, topPackages] = await Promise.all([
     db.enquiry.count(),
     db.enquiry.groupBy({ by: ["status"], _count: true }),
     getResponseStats(),
     getEnquiriesLast30Days(),
+    getResponseTrend(),
     getTopPackages(),
   ]);
 
@@ -84,6 +86,11 @@ export default async function AnalyticsPage() {
         </section>
 
         <section className="bg-white rounded-xl border border-stone-200 p-6 lg:col-span-2">
+          <h2 className="font-semibold text-stone-900 mb-4">Average Response Time (Last 7 Days)</h2>
+          <ResponseTimeChart initialData={responseTrend} />
+        </section>
+
+        <section className="bg-white rounded-xl border border-stone-200 p-6 lg:col-span-2">
           <h2 className="font-semibold text-stone-900 mb-4">Enquiry Volume (Last 30 Days)</h2>
           <AnalyticsVolume initialData={enquiriesLast30} />
         </section>
@@ -102,6 +109,34 @@ function KPI({ icon: Icon, label, value, accent }: {
       <p className="text-xs text-stone-400">{label}</p>
     </div>
   );
+}
+
+async function getResponseTrend() {
+  const since = new Date();
+  since.setDate(since.getDate() - 6);
+  const enquiries = await db.enquiry.findMany({
+    where: { createdAt: { gte: since }, replies: { some: {} } },
+    select: {
+      createdAt: true,
+      replies: { orderBy: { sentAt: "asc" }, take: 1, select: { sentAt: true } },
+    },
+  });
+  const days: Record<string, number[]> = {};
+  for (let i = 0; i < 7; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    days[date.toISOString().split("T")[0]] = [];
+  }
+  enquiries.forEach((enquiry) => {
+    const key = enquiry.createdAt.toISOString().split("T")[0];
+    if (key in days) {
+      days[key].push(Math.floor((enquiry.replies[0].sentAt.getTime() - enquiry.createdAt.getTime()) / 60000));
+    }
+  });
+  return Object.entries(days).map(([date, values]) => ({
+    date,
+    averageMinutes: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null,
+  }));
 }
 
 async function getResponseStats() {

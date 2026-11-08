@@ -74,6 +74,20 @@ export async function GET() {
     if (day in dailyEnquiries) dailyEnquiries[day]++;
   });
 
+  const responseTrend: { date: string; averageMinutes: number | null }[] = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    const key = date.toISOString().split("T")[0];
+    const values = enquiries
+      .filter((enquiry) => enquiry.createdAt.toISOString().split("T")[0] === key && enquiry.replies.length > 0)
+      .map((enquiry) => Math.floor((enquiry.replies[0].sentAt.getTime() - enquiry.createdAt.getTime()) / 60000));
+    responseTrend.push({
+      date: key,
+      averageMinutes: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null,
+    });
+  }
+
   // Top packages by enquiry count
   const packageCounts = await db.enquiry.groupBy({
     by: ["packageId"],
@@ -101,6 +115,7 @@ export async function GET() {
     slaRate,
     consultantStats,
     dailyEnquiries,
+    responseTrend,
     topPackages: topPackageData,
   });
 }
