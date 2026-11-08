@@ -34,7 +34,7 @@ export async function POST(
         versionNumber: 1,
         title: `${v.title} (Copy)`,
         destination: v.destination,
-        days: v.days,
+        days: Array.isArray(v.itinerary) ? v.itinerary.length : v.days,
         description: v.description,
         inclusions: v.inclusions,
         exclusions: v.exclusions,

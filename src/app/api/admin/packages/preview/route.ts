@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
   await db.previewCache.create({
-    data: { token, data: parsed.data as object, expiresAt },
+    data: { token, data: { ...parsed.data, days: parsed.data.itinerary.length } as object, expiresAt },
   });
 
   return NextResponse.json({ token });

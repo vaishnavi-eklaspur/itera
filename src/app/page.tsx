@@ -94,7 +94,7 @@ export default async function HomePage() {
               </div>
               <div className="p-8 lg:p-14 flex flex-col justify-center">
                 <span className="text-xs font-medium text-forest-700 bg-forest-50 px-3 py-1 rounded-full w-fit tracking-wide">
-                  {hero.currentVersion.destination} · {hero.currentVersion.days} Days
+                  {hero.currentVersion.destination} · {(Array.isArray(hero.currentVersion.itinerary) ? hero.currentVersion.itinerary.length : hero.currentVersion.days)} Days
                 </span>
                 <h3 className="mt-5 text-2xl lg:text-[2rem] font-display font-semibold text-stone-900 group-hover:text-forest-700 transition leading-snug">
                   {hero.currentVersion.title}
@@ -175,7 +175,7 @@ export default async function HomePage() {
                             <MapPin className="w-3.5 h-3.5" /> {v.destination}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" /> {v.days} Days
+                            <Calendar className="w-3.5 h-3.5" /> {(Array.isArray(v.itinerary) ? v.itinerary.length : v.days)} Days
                           </span>
                           <span className="flex items-center gap-1">
                             <Star className="w-3.5 h-3.5" /> {v.hotelTier}

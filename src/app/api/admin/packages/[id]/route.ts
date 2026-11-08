@@ -69,7 +69,7 @@ export async function PUT(
         versionNumber: nextVersionNumber,
         title: data.title,
         destination: data.destination,
-        days: data.days,
+        days: data.itinerary.length,
         description: data.description,
         inclusions: data.inclusions,
         exclusions: data.exclusions,

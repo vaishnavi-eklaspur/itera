@@ -37,7 +37,7 @@ async function getRelatedPackages(slug: string) {
   return db.package.findMany({
     where: { status: "PUBLISHED", slug: { not: slug } },
     include: {
-      currentVersion: { select: { title: true, destination: true, days: true, description: true, photos: true } },
+      currentVersion: { select: { title: true, destination: true, days: true, description: true, photos: true, itinerary: true } },
       seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" }, take: 1 },
     },
     take: 3,
@@ -66,13 +66,15 @@ export async function generateMetadata({
   const pkg = await getPackage(slug);
   if (!pkg?.currentVersion) return { title: "Package Not Found" };
   const v = pkg.currentVersion;
+  const metadataItinerary = Array.isArray(v.itinerary) ? v.itinerary : [];
+  const durationDays = metadataItinerary.length || v.days;
   const minPrice = pkg.seasonalPrices.length ? Math.min(...pkg.seasonalPrices.map((p) => p.pricePerPerson)) : 0;
   return {
     title: v.title,
     description: v.description.slice(0, 160),
     alternates: { canonical: `/packages/${pkg.slug}` },
     openGraph: {
-      title: `${v.title} — ${v.days} Days in ${v.destination}`,
+      title: `${v.title} — ${durationDays} Days in ${v.destination}`,
       description: v.description.slice(0, 160),
       type: "website",
     },
@@ -105,12 +107,13 @@ export default async function PackageDetailPage({
     description: string;
     activities: string[];
   }[];
+  const durationDays = itinerary.length || v.days;
 
   const relatedPackages = await getRelatedPackages(slug);
   const relatedBlogPosts = await getRelatedBlogPosts(pkg.id);
 
   const whatsappMessage = encodeURIComponent(
-    `Hi, I'm interested in the "${v.title}" package (${v.days} days). Could you share more details?`
+    `Hi, I'm interested in the "${v.title}" package (${durationDays} days). Could you share more details?`
   );
 
   const base = process.env.NEXTAUTH_URL || "https://itera.vercel.app";
@@ -122,7 +125,7 @@ export default async function PackageDetailPage({
     touristType: "Leisure",
     itinerary: {
       "@type": "ItemList",
-      numberOfItems: v.days,
+      numberOfItems: durationDays,
       itemListElement: itinerary.map((day) => ({
         "@type": "ListItem",
         position: day.day,
@@ -170,7 +173,7 @@ export default async function PackageDetailPage({
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white tracking-tight">{v.title}</h1>
             <div className="flex items-center gap-4 mt-4 text-sm text-white/70">
               <span className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4" /> {v.days} Days / {v.days - 1} Nights
+                <Calendar className="w-4 h-4" /> {durationDays} Days / {Math.max(0, durationDays - 1)} Nights
               </span>
               <span className="flex items-center gap-1.5">
                 <Star className="w-4 h-4" /> {v.hotelTier}
@@ -206,7 +209,7 @@ export default async function PackageDetailPage({
             {/* Quick facts */}
             <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { icon: Calendar, label: "Duration", value: `${v.days} Days` },
+                { icon: Calendar, label: "Duration", value: `${durationDays} Days` },
                 { icon: Star, label: "Hotels", value: v.hotelTier },
                 { icon: Users, label: "Group Size", value: "2–20 pax" },
                 { icon: MapPin, label: "Destinations", value: `${new Set(itinerary.map(d => d.location)).size} places` },
@@ -313,7 +316,7 @@ export default async function PackageDetailPage({
                 <EnquiryForm
                   packageId={pkg.id}
                   packageTitle={v.title}
-                  packageDays={v.days}
+                  packageDays={durationDays}
                   initialName={session?.user?.name || ""}
                   initialEmail={session?.user?.email || ""}
                 />
@@ -354,7 +357,7 @@ export default async function PackageDetailPage({
                   </div>
                   <div className="p-5">
                     <h3 className="font-semibold text-stone-900 group-hover:text-forest-700 transition line-clamp-1">{rv.title}</h3>
-                    <p className="text-xs text-stone-500 mt-1">{rv.destination} · {rv.days} Days</p>
+                    <p className="text-xs text-stone-500 mt-1">{rv.destination} · {(Array.isArray(rv.itinerary) ? rv.itinerary.length : rv.days)} Days</p>
                     {rpPrice && <p className="mt-2 text-sm font-semibold text-forest-700">{formatPrice(rpPrice)}<span className="text-xs font-normal text-stone-400">/person</span></p>}
                   </div>
                 </Link>

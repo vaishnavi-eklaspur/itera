@@ -34,6 +34,7 @@ export default async function PreviewPage({
   const minPrice = data.seasonalPrices.length
     ? Math.min(...data.seasonalPrices.map((p) => p.pricePerPerson))
     : 0;
+  const durationDays = data.itinerary.length || data.days;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -59,7 +60,7 @@ export default async function PreviewPage({
             <h1 className="text-3xl sm:text-4xl font-display font-semibold text-white">{data.title}</h1>
             <div className="flex items-center gap-4 mt-3 text-sm text-forest-100">
               <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" /> {data.days} Days / {data.days - 1} Nights
+                <Calendar className="w-4 h-4" /> {durationDays} Days / {Math.max(0, durationDays - 1)} Nights
               </span>
               <span className="flex items-center gap-1">
                 <Star className="w-4 h-4" /> {data.hotelTier}
@@ -78,7 +79,7 @@ export default async function PreviewPage({
 
             <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { icon: Calendar, label: "Duration", value: `${data.days} Days` },
+                { icon: Calendar, label: "Duration", value: `${durationDays} Days` },
                 { icon: Star, label: "Hotels", value: data.hotelTier },
                 { icon: Users, label: "Group Size", value: "2-20 pax" },
                 { icon: MapPin, label: "Destinations", value: `${new Set(data.itinerary.map((d) => d.location)).size} places` },

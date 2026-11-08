@@ -13,6 +13,7 @@ type Package = {
     title: string;
     destination: string;
     days: number;
+    itinerary: unknown;
     description: string;
     hotelTier: string;
     photos?: string[];
@@ -165,7 +166,7 @@ export function PackageGrid({
                   </h3>
                   <div className="flex items-center gap-3 mt-2 text-xs text-stone-400">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" /> {v.days} Days
+                      <Calendar className="w-3.5 h-3.5" /> {(Array.isArray(v.itinerary) ? v.itinerary.length : v.days)} Days
                     </span>
                     <span className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5" /> {v.hotelTier}

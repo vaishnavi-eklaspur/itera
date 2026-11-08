@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         versionNumber: 1,
         title: data.title,
         destination: data.destination,
-        days: data.days,
+        days: data.itinerary.length,
         description: data.description,
         inclusions: data.inclusions,
         exclusions: data.exclusions,

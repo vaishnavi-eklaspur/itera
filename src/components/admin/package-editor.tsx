@@ -79,7 +79,6 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
 
   const [title, setTitle] = useState(v?.title ?? "");
   const [destination, setDestination] = useState(v?.destination ?? "");
-  const [days, setDays] = useState(v?.days ?? 5);
   const [description, setDescription] = useState(v?.description ?? "");
   const [hotelTier, setHotelTier] = useState(v?.hotelTier ?? "3-Star");
   const [inclusions, setInclusions] = useState<string[]>(v?.inclusions ?? [""]);
@@ -116,7 +115,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
       const photoUrls = validatePhotoUrls();
       if (!photoUrls) return;
       const body = {
-        title, destination, days, description, hotelTier,
+        title, destination, days: itinerary.length, description, hotelTier,
         inclusions: inclusions.filter(Boolean),
         exclusions: exclusions.filter(Boolean),
         itinerary,
@@ -172,7 +171,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
       const photoUrls = validatePhotoUrls();
       if (!photoUrls) return;
       const body = {
-        title, destination, days, description, hotelTier,
+        title, destination, days: itinerary.length, description, hotelTier,
         inclusions: inclusions.filter(Boolean),
         exclusions: exclusions.filter(Boolean),
         itinerary,
@@ -233,12 +232,10 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     setItinerary(prev => [...prev, {
       day: prev.length + 1, title: "", location: "", lat: 10.0, lng: 76.0, description: "", activities: [],
     }]);
-    setDays(prev => prev + 1);
   }
 
   function removeDay(index: number) {
     setItinerary(prev => prev.filter((_, i) => i !== index).map((d, i) => ({ ...d, day: i + 1 })));
-    setDays(prev => Math.max(1, prev - 1));
   }
 
   return (
