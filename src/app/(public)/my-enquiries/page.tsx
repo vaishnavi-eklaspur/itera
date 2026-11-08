@@ -40,7 +40,7 @@ export default async function MyEnquiriesPage() {
               const firstReplyAt = e.replies[0]?.sentAt ?? null;
               const badge = responseTimeBadge(e.createdAt, firstReplyAt);
               return (
-                <div key={e.id} className="bg-white rounded-xl border border-stone-200 p-5">
+                <Link href={`/my-enquiries/${e.id}`} key={e.id} className="block bg-white rounded-xl border border-stone-200 p-5 hover:border-forest-300 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       {e.package?.currentVersion && (
@@ -67,7 +67,7 @@ export default async function MyEnquiriesPage() {
                       <p className="text-sm text-green-700 line-clamp-3">{e.replies[0].content}</p>
                     </div>
                   )}
-                </div>
+                </Link>
               );
             })}
           </div>
