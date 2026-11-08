@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { authorizeRole } from "@/lib/roles";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -9,6 +10,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (denied) return denied;
 
   const { id } = await params;
+  if (session.user.role === "CONSULTANT") {
+    const enquiry = await db.enquiry.findUnique({
+      where: { id },
+      select: { assignedToId: true },
+    });
+    if (!enquiry) return NextResponse.json({ error: "Enquiry not found" }, { status: 404 });
+    if (enquiry.assignedToId !== session.user.id) {
+      return NextResponse.json({ error: "Enquiry is not assigned to you" }, { status: 403 });
+    }
+  }
   const res = await fetch(`${req.nextUrl.origin}/api/internal/ai`, {
     method: "POST",
     headers: {

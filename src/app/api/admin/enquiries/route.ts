@@ -8,6 +8,8 @@ import { logActivity } from "@/lib/activity";
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = authorizeRole(session.user.role, "ADMIN", "CONSULTANT");
+  if (denied) return denied;
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const assignedTo = searchParams.get("assignedTo");
@@ -15,6 +17,7 @@ export async function GET(req: NextRequest) {
 
   const enquiries = await db.enquiry.findMany({
     where: {
+      ...(session.user.role === "CONSULTANT" ? { assignedToId: session.user.id } : {}),
       ...(status && status !== "all" && { status: status as "NEW" | "IN_PROGRESS" | "REPLIED" | "CLOSED" }),
       ...(assignedTo && { assignedToId: assignedTo }),
       ...(q && {

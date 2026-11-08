@@ -26,6 +26,17 @@ export async function POST(
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
   }
+  const enquiry = await db.enquiry.findUnique({
+    where: { id },
+    select: { assignedToId: true, whatsappConsentAt: true },
+  });
+  if (!enquiry) return NextResponse.json({ error: "Enquiry not found" }, { status: 404 });
+  if (session.user.role === "CONSULTANT" && enquiry.assignedToId !== session.user.id) {
+    return NextResponse.json({ error: "Enquiry is not assigned to you" }, { status: 403 });
+  }
+  if (parsed.data.channel === "WHATSAPP" && !enquiry.whatsappConsentAt) {
+    return NextResponse.json({ error: "WhatsApp consent is required before sending this reply" }, { status: 400 });
+  }
 
   const [reply] = await db.$transaction([
     db.enquiryReply.create({

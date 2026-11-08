@@ -44,8 +44,13 @@ const quoteSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = authorizeRole(session.user.role, "ADMIN", "CONSULTANT");
+  if (denied) return denied;
 
   const quotes = await db.quote.findMany({
+    where: session.user.role === "CONSULTANT"
+      ? { enquiry: { assignedToId: session.user.id } }
+      : undefined,
     select: {
       id: true,
       token: true,
@@ -76,6 +81,16 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const parsed = quoteSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
+  if (session.user.role === "CONSULTANT" && parsed.data.enquiryId) {
+    const enquiry = await db.enquiry.findUnique({
+      where: { id: parsed.data.enquiryId },
+      select: { assignedToId: true },
+    });
+    if (!enquiry) return NextResponse.json({ error: "Enquiry not found" }, { status: 404 });
+    if (enquiry.assignedToId !== session.user.id) {
+      return NextResponse.json({ error: "Enquiry is not assigned to you" }, { status: 403 });
+    }
+  }
 
   const token = randomUUID();
   const validUntil = new Date(Date.now() + (parsed.data.validDays ?? 7) * 24 * 60 * 60 * 1000);
