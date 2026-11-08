@@ -7,12 +7,20 @@ import { requireAdminRole } from "@/lib/admin-access";
 export const instant = false;
 
 export default async function AdminDashboard() {
-  await requireAdminRole("ADMIN", "CONSULTANT");
-  const [packageCount, enquiryCount, newEnquiries, recentEnquiries] = await Promise.all([
+  const session = await requireAdminRole("ADMIN", "CONSULTANT");
+  const consultantFilter = session.user.role === "CONSULTANT" ? { assignedToId: session.user.id } : {};
+  const [packageCount, enquiryCount, newEnquiries, assignedEnquiries, recentEnquiries] = await Promise.all([
     db.package.count(),
-    db.enquiry.count(),
-    db.enquiry.count({ where: { status: "NEW" } }),
+    db.enquiry.count({ where: consultantFilter }),
+    db.enquiry.count({ where: { ...consultantFilter, status: "NEW" } }),
+    db.enquiry.count({
+      where: {
+        ...consultantFilter,
+        status: { in: ["NEW", "IN_PROGRESS", "REPLIED"] },
+      },
+    }),
     db.enquiry.findMany({
+      where: consultantFilter,
       take: 5,
       orderBy: { createdAt: "desc" },
       select: { id: true, name: true, email: true, status: true, createdAt: true },
@@ -25,17 +33,21 @@ export default async function AdminDashboard() {
       <div className="bg-gradient-to-br from-forest-800 to-forest-900 rounded-2xl p-6 sm:p-8 mb-8 text-white">
         <h1 className="text-xl font-display font-semibold tracking-tight">Good to see you</h1>
         <p className="text-forest-300 text-sm mt-1">
-          {newEnquiries > 0
-            ? `You have ${newEnquiries} new enquir${newEnquiries === 1 ? "y" : "ies"} to review.`
-            : "All caught up — no new enquiries."}
+          {session.user.role === "CONSULTANT"
+            ? assignedEnquiries > 0
+              ? `You have ${assignedEnquiries} assigned enquir${assignedEnquiries === 1 ? "y" : "ies"} requiring review or follow-up.`
+              : "All caught up — no assigned enquiries."
+            : newEnquiries > 0
+              ? `You have ${newEnquiries} new enquir${newEnquiries === 1 ? "y" : "ies"} to review.`
+              : "All caught up — no new enquiries."}
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={Package} label="Packages" value={packageCount} href="/admin/packages" />
-        <StatCard icon={Inbox} label="Total Enquiries" value={enquiryCount} href="/admin/enquiries" />
-        <StatCard icon={Clock} label="New Enquiries" value={newEnquiries} href="/admin/enquiries?status=NEW" accent />
+        <StatCard icon={Inbox} label={session.user.role === "CONSULTANT" ? "My Enquiries" : "Total Enquiries"} value={enquiryCount} href="/admin/enquiries" />
+        <StatCard icon={Clock} label={session.user.role === "CONSULTANT" ? "Needs Follow-up" : "New Enquiries"} value={session.user.role === "CONSULTANT" ? assignedEnquiries : newEnquiries} href="/admin/enquiries" accent />
         <StatCard icon={BarChart3} label="Analytics" value="View" href="/admin/analytics" />
       </div>
 
@@ -64,6 +76,9 @@ export default async function AdminDashboard() {
                   {e.status}
                 </span>
                 <p className="text-xs text-stone-400 mt-1">{timeAgo(e.createdAt)}</p>
+                {session.user.role === "CONSULTANT" && e.status === "REPLIED" && (
+                  <p className="text-xs text-amber-600 mt-1">Consultant follow-up needed</p>
+                )}
               </div>
             </Link>
           ))}

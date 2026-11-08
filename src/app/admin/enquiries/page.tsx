@@ -9,10 +9,13 @@ export default async function AdminEnquiriesPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireAdminRole("ADMIN", "CONSULTANT");
+  const session = await requireAdminRole("ADMIN", "CONSULTANT");
   const { status } = await searchParams;
 
-  const where = status ? { status: status as "NEW" | "IN_PROGRESS" | "REPLIED" | "CLOSED" } : {};
+  const where = {
+    ...(status ? { status: status as "NEW" | "IN_PROGRESS" | "REPLIED" | "CLOSED" } : {}),
+    ...(session.user.role === "CONSULTANT" ? { assignedToId: session.user.id } : {}),
+  };
   const enquiries = await db.enquiry.findMany({
     where,
     include: {
@@ -25,7 +28,14 @@ export default async function AdminEnquiriesPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-semibold text-stone-900 mb-6">Enquiries</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-display font-semibold text-stone-900">Enquiries</h1>
+          {session.user.role === "CONSULTANT" && (
+            <p className="text-sm text-stone-500 mt-1">Enquiries assigned to you, including those awaiting your follow-up.</p>
+          )}
+        </div>
+      </div>
       <EnquiryList enquiries={JSON.parse(JSON.stringify(enquiries))} currentStatus={status} />
     </div>
   );
