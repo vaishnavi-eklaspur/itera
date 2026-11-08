@@ -102,7 +102,7 @@ export default async function PreviewPage({
                     <tr className="border-b border-stone-200">
                       <th className="text-left py-3 text-stone-500 font-medium">Season</th>
                       <th className="text-left py-3 text-stone-500 font-medium">Months</th>
-                      <th className="text-right py-3 text-stone-500 font-medium">Price/Person</th>
+                      <th className="text-right py-3 text-stone-500 font-medium">Price per person, twin sharing</th>
                       <th className="text-right py-3 text-stone-500 font-medium">Basis</th>
                     </tr>
                   </thead>
@@ -118,7 +118,7 @@ export default async function PreviewPage({
                           <td className="py-3 text-stone-500">{range}</td>
                           <td className="py-3 text-right font-semibold text-forest-700">
                             {formatPrice(price.pricePerPerson)}
-                            <span className="block text-[10px] font-normal text-stone-400">Per person</span>
+                            <span className="block text-[10px] font-normal text-stone-400">Per person, twin sharing</span>
                           </td>
                           <td className="py-3 text-right text-stone-400 text-xs">{price.basis}{price.gstInclusive ? ", GST incl." : ""}</td>
                         </tr>
@@ -163,8 +163,7 @@ export default async function PreviewPage({
                 <div className="text-center mb-4">
                   <span className="text-xs text-stone-400">Starting from</span>
                   <p className="text-2xl font-bold text-forest-700">{formatPrice(minPrice)}</p>
-                  <span className="text-xs text-stone-400">Per person</span>
-                  <span className="text-xs text-stone-400">per person, twin sharing</span>
+                  <span className="text-xs text-stone-400">Per person, twin sharing</span>
                 </div>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center text-sm text-amber-700">
                   Preview only — enquiry form disabled

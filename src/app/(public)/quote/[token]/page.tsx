@@ -74,7 +74,10 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
           {/* Pricing */}
           <div className="border border-stone-200 rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-5 py-3 bg-stone-50 text-sm text-stone-500">
-              <span>{quote.basis}{quote.gstInclusive ? " · GST inclusive" : " · GST extra"}</span>
+              <span>
+                {quote.basis.toLowerCase().includes("twin sharing") ? quote.basis : `${quote.basis} · Per person, twin sharing`}
+                {quote.gstInclusive ? " · GST inclusive" : " · GST extra"}
+              </span>
               <span className="font-semibold text-stone-900">{formatPrice(quote.pricePerPerson)}</span>
             </div>
             <div className="flex items-center justify-between px-5 py-3 text-sm text-stone-500">

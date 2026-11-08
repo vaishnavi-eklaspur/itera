@@ -187,7 +187,8 @@ export default async function PackageDetailPage({
       <div className="relative z-20 lg:hidden sticky top-[60px] bg-ivory/90 backdrop-blur-lg border-b border-stone-200/40 px-4 py-3 flex items-center justify-between">
         <div>
           <span className="text-[10px] text-stone-400 uppercase tracking-wider">From</span>
-          <p className="text-lg font-display font-bold text-forest-700">{formatPrice(minPrice)}<span className="text-xs font-normal text-stone-400 ml-0.5">/person</span></p>
+          <p className="text-lg font-display font-bold text-forest-700">{formatPrice(minPrice)}</p>
+          <span className="text-xs font-normal text-stone-400">Per person, twin sharing</span>
         </div>
         <a href="#enquiry-name" className="bg-forest-700 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-forest-800 transition">
           Enquire Now
@@ -238,7 +239,7 @@ export default async function PackageDetailPage({
                     <tr className="border-b border-sand-200">
                       <th className="text-left py-3 text-stone-500 font-medium">Season</th>
                       <th className="text-left py-3 text-stone-500 font-medium">Months</th>
-                      <th className="text-right py-3 text-stone-500 font-medium">Price/Person</th>
+                      <th className="text-right py-3 text-stone-500 font-medium">Price per person, twin sharing</th>
                       <th className="text-right py-3 text-stone-500 font-medium">Basis</th>
                     </tr>
                   </thead>
@@ -255,7 +256,7 @@ export default async function PackageDetailPage({
                           <td className="py-3 text-stone-500">{range}</td>
                           <td className="py-3 text-right font-semibold text-forest-700">
                             {formatPrice(price.pricePerPerson)}
-                            <span className="block text-[10px] font-normal text-stone-400">Per person</span>
+                            <span className="block text-[10px] font-normal text-stone-400">Per person, twin sharing</span>
                           </td>
                           <td className="py-3 text-right text-stone-400 text-xs">{price.basis}{price.gstInclusive ? ", GST incl." : ""}</td>
                         </tr>
@@ -361,7 +362,7 @@ export default async function PackageDetailPage({
                   <div className="p-5">
                     <h3 className="font-semibold text-stone-900 group-hover:text-forest-700 transition line-clamp-1">{rv.title}</h3>
                     <p className="text-xs text-stone-500 mt-1">{rv.destination} · {(Array.isArray(rv.itinerary) ? rv.itinerary.length : rv.days)} Days</p>
-                    {rpPrice && <p className="mt-2 text-sm font-semibold text-forest-700">{formatPrice(rpPrice)}<span className="text-xs font-normal text-stone-400">/person</span></p>}
+                    {rpPrice && <p className="mt-2 text-sm font-semibold text-forest-700">{formatPrice(rpPrice)}<span className="block text-xs font-normal text-stone-400">Per person, twin sharing</span></p>}
                   </div>
                 </Link>
               );

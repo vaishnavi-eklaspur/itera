@@ -68,7 +68,7 @@ export function PriceEstimator({ prices }: { prices: SeasonalPrice[] }) {
           <p className="text-2xl font-bold text-forest-700">{formatPrice(estimate.total)}</p>
           <p className="text-xs text-stone-400">Total estimated price</p>
           <p className="text-xs text-stone-400">
-            {formatPrice(estimate.perPerson)} per person x {travellers} traveller{travellers !== 1 ? "s" : ""}
+            {formatPrice(estimate.perPerson)} per person, twin sharing x {travellers} traveller{travellers !== 1 ? "s" : ""}
           </p>
         </div>
       )}
