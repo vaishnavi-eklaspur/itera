@@ -67,14 +67,17 @@ function buildDraft(
   packageTitle: string | null,
   extracted: ReturnType<typeof parseExtraction>,
   suggestions: { packageSlug: string; pricePerPerson: number | null; seasonName: string | null }[] = [],
-  packageTitles: Map<string, string> = new Map()
+  packageTitles: Map<string, string> = new Map(),
+  selectedPackage: { title: string; destination: string; days: number } | null = null
 ) {
   const confidence = extracted.confidence;
-  const opening = confidence >= 0.75
-    ? "We have noted the following details from your enquiry:"
-    : confidence >= 0.4
-      ? "We have tentatively noted the following details. Please confirm anything that needs updating:"
-      : "We could only identify a few details so far. Please confirm or add the missing information:";
+  const isHighConfidence = confidence >= 0.75;
+  const isMediumConfidence = confidence >= 0.4;
+  const opening = isHighConfidence
+    ? "We have confirmed the following details from your enquiry:"
+    : isMediumConfidence
+      ? "We have provisionally noted the following details. Please confirm anything that needs updating:"
+      : "We could only identify a few details so far, so we will not confirm an itinerary or price yet.";
   const missing = [
     !extracted.dates ? "preferred travel dates" : null,
     extracted.adults == null ? "number of adults" : null,
@@ -93,7 +96,9 @@ function buildDraft(
     extracted.budget?.total != null ? `- Budget: ${extracted.budget.currency || "INR"} ${extracted.budget.total.toLocaleString("en-IN")}` : null,
     extracted.requirements.length ? `- Requirements: ${extracted.requirements.join(", ")}` : null,
     missing.length ? `To prepare an accurate plan, please share your ${missing.join(", ")}.` : null,
-    suggestions.length
+    isHighConfidence && selectedPackage
+      ? `The "${selectedPackage.title}" package covers ${selectedPackage.destination} and is designed for ${selectedPackage.days} day(s). We will verify availability for your requested dates before confirming the booking.`
+      : isHighConfidence && suggestions.length
       ? `Based on this information, possible options include: ${suggestions.map((suggestion) => {
           const title = packageTitles.get(suggestion.packageSlug) ?? suggestion.packageSlug;
           const price = suggestion.pricePerPerson != null
@@ -101,11 +106,18 @@ function buildDraft(
             : "";
           return `${title}${price}`;
         }).join("; ")}.`
-      : packageTitle
-        ? `We will review the "${packageTitle}" package against these requirements and confirm availability.`
-        : "Our travel team will review these details and suggest suitable options.",
+      : isMediumConfidence && suggestions.length
+        ? `These are preliminary options only: ${suggestions.map((suggestion) => packageTitles.get(suggestion.packageSlug) ?? suggestion.packageSlug).join("; ")}. A consultant will verify the itinerary, availability and current price.`
+        : isMediumConfidence && packageTitle
+          ? `We will review the "${packageTitle}" package and confirm availability after the missing details are clarified.`
+          : "A consultant will review your enquiry and contact you with suitable options after confirming the missing details.",
+    !isHighConfidence
+      ? "Please do not treat this message as a booking confirmation. Our consultant will get back to you with the appropriate itinerary and quotation."
+      : null,
     "",
-    "A consultant will confirm availability and prepare the final itinerary and quotation.",
+    isHighConfidence
+      ? "A consultant will confirm availability and prepare the final itinerary and quotation."
+      : "Once we receive the required clarification, our consultant will confirm availability and prepare the final itinerary and quotation.",
     "",
     "Warm regards,",
     "Itera Travel Team",
@@ -236,7 +248,14 @@ export async function POST(req: NextRequest) {
       data: {
         aiExtracted: fallback,
         aiSuggestions: [],
-        aiDraftReply: buildDraft(enquiry.name, enquiry.package?.currentVersion?.title ?? null, fallback),
+        aiDraftReply: buildDraft(
+          enquiry.name,
+          enquiry.package?.currentVersion?.title ?? null,
+          fallback,
+          [],
+          new Map(),
+          enquiry.package?.currentVersion ?? null
+        ),
       },
     });
     return NextResponse.json({ success: true, fallback: true });
@@ -431,7 +450,14 @@ export async function POST(req: NextRequest) {
       data: {
         aiExtracted: finalExtraction,
         aiSuggestions: suggestions,
-        aiDraftReply: buildDraft(enquiry.name, enquiry.package?.currentVersion?.title ?? null, finalExtraction, suggestions, packageTitles),
+        aiDraftReply: buildDraft(
+          enquiry.name,
+          enquiry.package?.currentVersion?.title ?? null,
+          finalExtraction,
+          suggestions,
+          packageTitles,
+          enquiry.package?.currentVersion ?? null
+        ),
       },
     });
 
@@ -444,7 +470,14 @@ export async function POST(req: NextRequest) {
       data: {
         aiExtracted: fallback,
         aiSuggestions: [],
-        aiDraftReply: buildDraft(enquiry.name, enquiry.package?.currentVersion?.title ?? null, fallback),
+        aiDraftReply: buildDraft(
+          enquiry.name,
+          enquiry.package?.currentVersion?.title ?? null,
+          fallback,
+          [],
+          new Map(),
+          enquiry.package?.currentVersion ?? null
+        ),
       },
     });
     return NextResponse.json({ success: true, fallback: true });
