@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { aiExtractedSchema } from "@/lib/validations";
 import { randomUUID } from "crypto";
+import { calculateGst } from "@/lib/gst";
 
 const EXTRACTION_PROMPT = `You are an assistant for a travel operator. Extract travel details from the customer message below.
 
@@ -196,7 +197,8 @@ async function createHighConfidenceQuote(
       pricePerPerson: price,
       basis: seasonalPrice.basis,
       gstInclusive: seasonalPrice.gstInclusive,
-      totalPrice: price * travellers,
+      gstRate: 18,
+      totalPrice: calculateGst(price, travellers, 18, seasonalPrice.gstInclusive).total,
       inclusions: selected.currentVersion.inclusions,
       exclusions: selected.currentVersion.exclusions,
       notes: "Indicative quote generated from high-confidence enquiry details. Availability must be confirmed before booking.",

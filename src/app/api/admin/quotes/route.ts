@@ -5,6 +5,7 @@ import { z } from "zod";
 import { randomUUID } from "crypto";
 import { logActivity } from "@/lib/activity";
 import { authorizeRole } from "@/lib/roles";
+import { calculateGst } from "@/lib/gst";
 
 const quoteSchema = z.object({
   packageId: z.string(),
@@ -14,7 +15,7 @@ const quoteSchema = z.object({
   pricePerPerson: z.number().min(0),
   basis: z.string().min(1).default("Per person, twin sharing"),
   gstInclusive: z.boolean().default(true),
-  totalPrice: z.number().min(0),
+  gstRate: z.number().min(0).max(100),
   inclusions: z.array(z.string()),
   exclusions: z.array(z.string()),
   notes: z.string().optional(),
@@ -33,6 +34,8 @@ export async function GET() {
       travelDate: true,
       pricePerPerson: true,
       basis: true,
+      gstInclusive: true,
+      gstRate: true,
       totalPrice: true,
       validUntil: true,
       createdAt: true,
@@ -57,6 +60,12 @@ export async function POST(req: NextRequest) {
 
   const token = randomUUID();
   const validUntil = new Date(Date.now() + (parsed.data.validDays ?? 7) * 24 * 60 * 60 * 1000);
+  const gst = calculateGst(
+    parsed.data.pricePerPerson,
+    parsed.data.travellers,
+    parsed.data.gstRate,
+    parsed.data.gstInclusive,
+  );
 
   const quote = await db.quote.create({
     data: {
@@ -68,7 +77,8 @@ export async function POST(req: NextRequest) {
       pricePerPerson: parsed.data.pricePerPerson,
       basis: parsed.data.basis,
       gstInclusive: parsed.data.gstInclusive,
-      totalPrice: parsed.data.totalPrice,
+      gstRate: parsed.data.gstRate,
+      totalPrice: gst.total,
       inclusions: parsed.data.inclusions,
       exclusions: parsed.data.exclusions,
       notes: parsed.data.notes,

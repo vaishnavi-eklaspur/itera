@@ -4,6 +4,7 @@ import { formatPrice } from "@/lib/utils";
 import { Calendar, Users, MapPin, CheckCircle, XCircle, Clock } from "lucide-react";
 import type { Metadata } from "next";
 import { QuoteActions } from "@/components/quote/quote-actions";
+import { calculateGst } from "@/lib/gst";
 
 export const instant = false;
 
@@ -31,6 +32,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
 
   const v = quote.package.currentVersion;
   const expired = new Date(quote.validUntil) < new Date();
+  const gst = calculateGst(quote.pricePerPerson, quote.travellers, quote.gstRate, quote.gstInclusive);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-forest-50 via-ivory to-forest-50 flex items-center justify-center px-4 py-12">
@@ -76,9 +78,15 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
             <div className="flex items-center justify-between px-5 py-3 bg-stone-50 text-sm text-stone-500">
               <span>
                 {quote.basis.toLowerCase().includes("twin sharing") ? quote.basis : `${quote.basis} · Per person, twin sharing`}
-                {quote.gstInclusive ? " · GST inclusive" : " · GST extra"}
+                {quote.gstInclusive ? ` · GST ${quote.gstRate}% inclusive` : ` · GST ${quote.gstRate}% extra`}
               </span>
               <span className="font-semibold text-stone-900">{formatPrice(quote.pricePerPerson)}</span>
+            </div>
+            <div className="flex items-center justify-between px-5 py-3 text-sm text-stone-500">
+              <span>Subtotal</span><span>{formatPrice(gst.subtotal)}</span>
+            </div>
+            <div className="flex items-center justify-between px-5 py-3 text-sm text-stone-500">
+              <span>GST ({quote.gstRate}%)</span><span>{formatPrice(gst.gstAmount)}</span>
             </div>
             <div className="flex items-center justify-between px-5 py-3 text-sm text-stone-500">
               <span>Travellers</span>
@@ -86,7 +94,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
             </div>
             <div className="flex items-center justify-between px-5 py-4 bg-forest-50 border-t border-stone-200">
               <span className="font-semibold text-forest-800">Total</span>
-              <span className="text-2xl font-bold text-forest-700">{formatPrice(quote.totalPrice)}</span>
+              <span className="text-2xl font-bold text-forest-700">{formatPrice(gst.total)}</span>
             </div>
           </div>
 

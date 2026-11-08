@@ -371,7 +371,7 @@ export function EnquiryDetail({
                 </div>
               </div>
               <p className="mt-3 text-xs text-forest-700">
-                {enquiry.quotes[0].basis}{enquiry.quotes[0].gstInclusive ? " · GST inclusive" : " · GST extra"} · {enquiry.quotes[0].travellers} traveller(s)
+                {enquiry.quotes[0].basis}{enquiry.quotes[0].gstInclusive ? " · GST 18% inclusive" : " · GST 18% extra"} · {enquiry.quotes[0].travellers} traveller(s)
               </p>
             </section>
           )}

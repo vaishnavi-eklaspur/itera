@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Plus, ExternalLink, ClipboardList } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { calculateGst } from "@/lib/gst";
 
 type Quote = {
   id: string;
@@ -12,6 +13,8 @@ type Quote = {
   travelDate: string | null;
   pricePerPerson: number;
   basis: string;
+  gstInclusive: boolean;
+  gstRate: number;
   totalPrice: number;
   validUntil: string;
   createdAt: string;
@@ -85,7 +88,9 @@ export default function QuotesPage() {
 
   const selectedPkg = packages.find((p) => p.id === packageId);
   const basePrice = selectedPkg?.seasonalPrices?.[0]?.pricePerPerson ?? 0;
-  const totalPrice = basePrice * travellers;
+  const [gstInclusive, setGstInclusive] = useState(true);
+  const [gstRate, setGstRate] = useState(18);
+  const gst = calculateGst(basePrice, travellers, gstRate, gstInclusive);
 
   async function handleCreate() {
     setSaving(true);
@@ -94,8 +99,8 @@ export default function QuotesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         packageId, enquiryId, travellers, travelDate: travelDate || undefined,
-        pricePerPerson: basePrice, totalPrice,
-        basis: "Per person, twin sharing", gstInclusive: true,
+        pricePerPerson: basePrice, gstRate, gstInclusive,
+        basis: "Per person, twin sharing",
         inclusions: [], exclusions: [], notes: notes || undefined, validDays: 7,
       }),
     });
@@ -142,7 +147,19 @@ export default function QuotesPage() {
             <div>
               <label className="text-sm text-stone-600 mb-1 block">Price/person</label>
               <p className="px-3 py-2.5 text-sm font-semibold text-forest-700">{formatPrice(basePrice)}</p>
-              <p className="text-xs text-stone-400">Per person, twin sharing · GST inclusive</p>
+              <p className="text-xs text-stone-400">Per person, twin sharing</p>
+            </div>
+            <div>
+              <label className="text-sm text-stone-600 mb-1 block">GST rate (%)</label>
+              <input type="number" min={0} max={100} step={0.01} value={gstRate} onChange={(e) => setGstRate(Number(e.target.value))} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm" />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-stone-600 sm:pt-8">
+              <input type="checkbox" checked={gstInclusive} onChange={(e) => setGstInclusive(e.target.checked)} className="rounded border-stone-300 text-forest-600" />
+              GST inclusive
+            </label>
+            <div className="sm:col-span-2 rounded-lg bg-stone-50 px-3 py-2 text-sm">
+              <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(gst.subtotal)}</span></div>
+              <div className="flex justify-between"><span>GST ({gstRate}%)</span><span>{formatPrice(gst.gstAmount)}</span></div>
             </div>
           </div>
           <div>
@@ -150,7 +167,7 @@ export default function QuotesPage() {
             <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm resize-none" />
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-lg font-semibold text-stone-900">Total: {formatPrice(totalPrice)}</p>
+            <p className="text-lg font-semibold text-stone-900">Total: {formatPrice(gst.total)}</p>
             <div className="flex gap-2">
               <button onClick={() => setShowForm(false)} className="px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600">Cancel</button>
               <button onClick={handleCreate} disabled={!packageId || saving} className="px-4 py-2 text-sm bg-forest-700 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50">Create Quote</button>
@@ -170,7 +187,7 @@ export default function QuotesPage() {
             <div key={q.id} className="flex items-center justify-between px-6 py-4 border-b border-stone-50">
               <div>
                 <p className="font-medium text-stone-900 text-sm">{q.package.currentVersion?.title ?? "Unknown"}</p>
-                <p className="text-xs text-stone-400 mt-0.5">{q.travellers} pax · {formatPrice(q.totalPrice)} · {q.basis} · Valid until {new Date(q.validUntil).toLocaleDateString()}</p>
+                <p className="text-xs text-stone-400 mt-0.5">{q.travellers} pax · {formatPrice(q.totalPrice)} · {q.basis} · GST {q.gstRate}% {q.gstInclusive ? "inclusive" : "extra"} · Valid until {new Date(q.validUntil).toLocaleDateString()}</p>
               </div>
               <a href={`/quote/${q.token}`} target="_blank" className="flex items-center gap-1 text-xs text-forest-600 hover:text-forest-700">
                 <ExternalLink className="w-3.5 h-3.5" /> Share Link

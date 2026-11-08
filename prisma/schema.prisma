@@ -220,6 +220,7 @@ model Quote {
   pricePerPerson Int
   basis       String   @default("Per person, twin sharing")
   gstInclusive Boolean  @default(true)
+  gstRate      Float    @default(18)
   totalPrice Int
   inclusions  String[]
   exclusions  String[]
