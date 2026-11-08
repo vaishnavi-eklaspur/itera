@@ -18,7 +18,10 @@ export function EnquiryForm({
     name: initialName,
     email: initialEmail,
     phone: "",
-    message: `Hi, I'd like to know more about the "${packageTitle}" package.`,
+    travelDates: "",
+    adults: "",
+    budget: "",
+    message: `I'm interested in the "${packageTitle}" package. I'm looking for a trip that includes:`,
   });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
@@ -29,7 +32,11 @@ export function EnquiryForm({
       const res = await fetch("/api/enquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, packageId }),
+        body: JSON.stringify({
+          ...form,
+          adults: form.adults ? Number(form.adults) : undefined,
+          packageId,
+        }),
       });
       if (!res.ok) throw new Error();
       setStatus("sent");
@@ -80,6 +87,31 @@ export function EnquiryForm({
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
           className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
         />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input
+            type="text"
+            placeholder="Travel dates (optional)"
+            value={form.travelDates}
+            onChange={(e) => setForm({ ...form, travelDates: e.target.value })}
+            className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+          />
+          <input
+            type="text"
+            inputMode="numeric"
+            min="1"
+            placeholder="Travellers (optional)"
+            value={form.adults}
+            onChange={(e) => setForm({ ...form, adults: e.target.value.replace(/\D/g, "") })}
+            className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+          />
+          <input
+            type="text"
+            placeholder="Budget (optional)"
+            value={form.budget}
+            onChange={(e) => setForm({ ...form, budget: e.target.value })}
+            className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+          />
+        </div>
         <textarea
           required
           rows={4}
