@@ -97,17 +97,39 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
   const [previewing, setPreviewing] = useState(false);
   const [error, setError] = useState("");
 
+  function getPhotoUrls() {
+    return photos.map((photo) => photo.trim()).filter(Boolean);
+  }
+
+  function validatePhotoUrls() {
+    const invalid = getPhotoUrls().find((photo) => {
+      try {
+        const url = new URL(photo);
+        return !["http:", "https:"].includes(url.protocol);
+      } catch {
+        return true;
+      }
+    });
+    if (invalid) {
+      setError("Each photo must be a direct http(s) image address. Use “Copy image address”, not a webpage URL.");
+      return null;
+    }
+    return getPhotoUrls();
+  }
+
   async function handleSave() {
     setSaving(true);
     setError("");
     try {
+      const photoUrls = validatePhotoUrls();
+      if (!photoUrls) return;
       const body = {
         title, destination, days, description, hotelTier,
         inclusions: inclusions.filter(Boolean),
         exclusions: exclusions.filter(Boolean),
         itinerary,
         seasonalPrices: prices,
-        photos: photos.filter(Boolean),
+        photos: photoUrls,
         slug: isNew ? slugify(title) : pkg.slug,
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       };
@@ -155,6 +177,8 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     setPreviewing(true);
     setError("");
     try {
+      const photoUrls = validatePhotoUrls();
+      if (!photoUrls) return;
       const body = {
         title, destination, days, description, hotelTier,
         inclusions: inclusions.filter(Boolean),
@@ -162,7 +186,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
         itinerary,
         seasonalPrices: prices,
         slug: isNew ? slugify(title) : pkg.slug,
-        photos: photos.filter(Boolean),
+        photos: photoUrls,
       };
       const res = await fetch("/api/admin/packages/preview", {
         method: "POST",
@@ -478,10 +502,30 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
               <div className="space-y-3">
                 {photos.map((url, i) => (
                   <div key={i} className="flex gap-2 items-start">
-                    {url && /^https?:\/\/.+/i.test(url) && (
-                      <img src={url} alt="" className="w-16 h-12 object-cover rounded border border-stone-200 shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    {url.trim() && /^https?:\/\/.+/i.test(url.trim()) && (
+                      <img
+                        src={url.trim()}
+                        alt=""
+                        className="w-16 h-12 object-cover rounded border border-stone-200 shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                          const preview = e.currentTarget.nextElementSibling;
+                          preview?.classList.remove("hidden");
+                        }}
+                      />
                     )}
-                    <input placeholder="Image URL" value={url} onChange={(e) => { const next = [...photos]; next[i] = e.target.value; setPhotos(next); }} className="flex-1 px-2 py-1.5 border border-stone-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-forest-500" />
+                    <span className="hidden w-16 shrink-0 pt-1 text-[10px] leading-3 text-red-500">Image address could not be loaded</span>
+                    <input
+                      type="url"
+                      placeholder="Direct image address (https://...)"
+                      value={url}
+                      onChange={(e) => {
+                        const next = [...photos];
+                        next[i] = e.target.value;
+                        setPhotos(next);
+                      }}
+                      className="flex-1 px-2 py-1.5 border border-stone-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-forest-500"
+                    />
                     <div className="flex flex-col gap-0.5 shrink-0">
                       <button disabled={i === 0} onClick={() => { const next = [...photos]; [next[i - 1], next[i]] = [next[i], next[i - 1]]; setPhotos(next); }} className="text-stone-400 hover:text-stone-600 disabled:opacity-30"><ChevronUp className="w-3.5 h-3.5" /></button>
                       <button disabled={i === photos.length - 1} onClick={() => { const next = [...photos]; [next[i], next[i + 1]] = [next[i + 1], next[i]]; setPhotos(next); }} className="text-stone-400 hover:text-stone-600 disabled:opacity-30"><ChevronDown className="w-3.5 h-3.5" /></button>
@@ -490,7 +534,9 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                   </div>
                 ))}
                 {photos.filter(Boolean).length > 0 && (
-                  <p className="text-xs text-stone-400">First photo is used as the hero image. Drag to reorder.</p>
+                  <p className="text-xs text-stone-400">
+                    Paste a direct image address using “Copy image address”. The first photo is used as the hero image.
+                  </p>
                 )}
               </div>
             )}
