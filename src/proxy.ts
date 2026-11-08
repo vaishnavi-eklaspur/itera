@@ -25,10 +25,46 @@ const REDIRECTS: Record<string, string> = {
   "/gallery": "/blog",
 };
 
+const LEGACY_PACKAGE_REDIRECTS = [
+  { id: 207, slug: "munnar-thekkady-alleppey-houseboat" },
+  { id: 212, slug: "madurai-rameswaram-kanyakumari" },
+  { id: 218, slug: "best-of-kerala" },
+  { id: 224, slug: "kochi-alleppey-weekend" },
+  { id: 231, slug: "wayanad-kozhikode-heritage" },
+  { id: 237, slug: "coorg-mysore-royal-retreat" },
+  { id: 244, slug: "kerala-honeymoon-special" },
+  { id: 251, slug: "hampi-goa-explorer" },
+  { id: 258, slug: "trivandrum-kovalam-varkala-beach" },
+  { id: 265, slug: "complete-south-india-circuit" },
+] as const;
+
+const LEGACY_PACKAGE_URLS = [
+  (id: number) => `/tour.php?id=${id}`,
+  (id: number) => `/tour-details.php?tour_id=${id}`,
+  (id: number) => `/package.php?id=${id}`,
+  (id: number) => `/holiday.php?package=${id}`,
+  (id: number) => `/packages/legacy-tour-${id}.html`,
+  (id: number) => `/packages/kerala/tour-${id}.html`,
+  (id: number) => `/travel-packages/kerala-tour-${id}.html`,
+  (id: number) => `/destinations/kerala/package-${id}`,
+  (id: number) => `/holiday-packages/kerala/${id}`,
+  (id: number) => `/kerala-tour/${id}/index.html`,
+  (id: number) => `/tour/${id}/kerala-holiday`,
+  (id: number) => `/old-site/packages/${id}`,
+  (id: number) => `/travel/${id}/itinerary`,
+  (id: number) => `/offers/kerala/${id}.php`,
+] as const;
+
+for (const packageRoute of LEGACY_PACKAGE_REDIRECTS) {
+  for (const createUrl of LEGACY_PACKAGE_URLS) {
+    REDIRECTS[createUrl(packageRoute.id)] = `/packages/${packageRoute.slug}`;
+  }
+}
+
 export const proxy = auth(async (request) => {
   const { pathname } = request.nextUrl;
 
-  const redirect = REDIRECTS[pathname.toLowerCase()];
+  const redirect = REDIRECTS[`${pathname}${request.nextUrl.search}`.toLowerCase()] ?? REDIRECTS[pathname.toLowerCase()];
   if (redirect) {
     return NextResponse.redirect(new URL(redirect, request.url), 301);
   }
