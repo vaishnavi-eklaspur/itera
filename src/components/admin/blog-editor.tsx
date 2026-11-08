@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Loader2, Eye, EyeOff } from "lucide-react";
+import { Save, Loader2, Eye, EyeOff, Edit3 } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import { SEO_DESCRIPTION_MAX_LENGTH, SEO_TITLE_MAX_LENGTH } from "@/lib/seo";
 
@@ -37,6 +37,7 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
   const [seoDescription, setSeoDescription] = useState(post?.seoDescription ?? "");
   const [relatedPackageIds, setRelatedPackageIds] = useState<string[]>(post?.relatedPackageIds ?? []);
   const [published, setPublished] = useState(post?.published ?? false);
+  const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const contentRef = useRef<HTMLTextAreaElement>(null);
@@ -54,6 +55,25 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
       const cursor = start + prefix.length + selected.length + suffix.length;
       textarea.setSelectionRange(cursor, cursor);
     });
+  }
+
+  function renderPreviewLine(line: string, index: number) {
+    const inline = line.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, partIndex) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={partIndex}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith("*") && part.endsWith("*")) {
+        return <em key={partIndex}>{part.slice(1, -1)}</em>;
+      }
+      return <span key={partIndex}>{part}</span>;
+    });
+
+    if (line.startsWith("# ")) return <h1 key={index} className="text-2xl font-semibold text-stone-900">{inline.slice(1)}</h1>;
+    if (line.startsWith("## ")) return <h2 key={index} className="text-xl font-semibold text-stone-900">{inline.slice(1)}</h2>;
+    if (line.startsWith("### ")) return <h3 key={index} className="text-lg font-semibold text-stone-900">{inline.slice(1)}</h3>;
+    if (line.startsWith("- ")) return <li key={index} className="ml-5 list-disc text-stone-700">{inline.slice(1)}</li>;
+    if (!line.trim()) return <div key={index} className="h-3" />;
+    return <p key={index} className="text-sm leading-7 text-stone-700">{inline}</p>;
   }
 
   async function handleSave() {
@@ -132,9 +152,19 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
               <textarea rows={2} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none" />
             </div>
             <div>
-              <label className="text-sm text-stone-600 mb-1 block">Content</label>
-              <div className="flex flex-wrap gap-1 mb-2 rounded-lg border border-stone-200 bg-stone-50 p-1">
-                {[
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-sm text-stone-600">Content</label>
+              <button
+                type="button"
+                onClick={() => setShowPreview((current) => !current)}
+                className="inline-flex items-center gap-1 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs text-stone-600 hover:border-forest-300 hover:text-forest-700"
+              >
+                {showPreview ? <Edit3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {showPreview ? "Edit Markdown" : "Visual Preview"}
+              </button>
+            </div>
+            {!showPreview && <div className="flex flex-wrap gap-1 mb-2 rounded-lg border border-stone-200 bg-stone-50 p-1">
+              {[
                   ["Bold", "**", "**"],
                   ["Italic", "*", "*"],
                   ["Heading", "## "],
@@ -152,14 +182,21 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
                   </button>
                 ))}
               </div>
-              <textarea
-                ref={contentRef}
-                rows={16}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-forest-500 resize-y"
-              />
-              <p className="mt-1 text-xs text-stone-400">Use the toolbar for formatting, links and images. Content remains portable Markdown.</p>
+              }
+              {showPreview ? (
+                <div className="min-h-[384px] space-y-2 rounded-lg border border-stone-200 bg-white p-5">
+                  {content ? content.split("\n").map(renderPreviewLine) : <p className="text-sm italic text-stone-400">Start writing to see the rendered article preview.</p>}
+                </div>
+              ) : (
+                <textarea
+                  ref={contentRef}
+                  rows={16}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-forest-500 resize-y"
+                />
+              )}
+              <p className="mt-1 text-xs text-stone-400">Write portable Markdown, then switch to Visual Preview to review the article as readers will see it.</p>
             </div>
           </section>
         </div>
