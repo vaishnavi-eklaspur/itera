@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MapPin, Calendar, Star, Search, SlidersHorizontal, X, ArrowRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -23,66 +24,40 @@ type Package = {
 export function PackageGrid({
   packages,
   destinations,
+  initialSearch,
   initialDestination = "",
+  initialMaxBudget,
+  initialSort,
 }: {
   packages: Package[];
   destinations: string[];
+  initialSearch?: string;
   initialDestination?: string;
+  initialMaxBudget?: string;
+  initialSort?: string;
 }) {
-  const [search, setSearch] = useState("");
+  const router = useRouter();
+  const [search, setSearch] = useState(initialSearch ?? "");
   const [destination, setDestination] = useState(initialDestination);
-  const [maxBudget, setMaxBudget] = useState("");
-  const [sort, setSort] = useState("price-asc");
+  const [maxBudget, setMaxBudget] = useState(initialMaxBudget ?? "");
+  const [sort, setSort] = useState(initialSort ?? "price-asc");
   const [showFilters, setShowFilters] = useState(false);
 
-  const filtered = useMemo(() => {
-    let result = packages.filter((p) => p.currentVersion);
-
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.currentVersion!.title.toLowerCase().includes(q) ||
-          p.currentVersion!.destination.toLowerCase().includes(q) ||
-          p.currentVersion!.description.toLowerCase().includes(q)
-      );
-    }
-
-    if (destination) {
-      result = result.filter(
-        (p) => p.currentVersion!.destination
-          .toLowerCase()
-          .includes(destination.toLowerCase())
-      );
-    }
-
-    if (maxBudget) {
-      const limit = parseInt(maxBudget);
-      if (!isNaN(limit)) {
-        result = result.filter((p) =>
-          Math.min(...p.seasonalPrices.map((s) => s.pricePerPerson)) <= limit
-        );
-      }
-    }
-
-    result.sort((a, b) => {
-      const aMin = Math.min(...a.seasonalPrices.map((p) => p.pricePerPerson));
-      const bMin = Math.min(...b.seasonalPrices.map((p) => p.pricePerPerson));
-      switch (sort) {
-        case "price-desc": return bMin - aMin;
-        case "days-asc": return a.currentVersion!.days - b.currentVersion!.days;
-        case "days-desc": return b.currentVersion!.days - a.currentVersion!.days;
-        default: return aMin - bMin;
-      }
-    });
-
-    return result;
-  }, [packages, search, destination, sort, maxBudget]);
+  function applyFilters(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("q", search.trim());
+    if (destination) params.set("destination", destination);
+    if (maxBudget) params.set("maxBudget", maxBudget);
+    if (sort !== "price-asc") params.set("sort", sort);
+    const query = params.toString();
+    router.push(query ? `/packages?${query}` : "/packages");
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-8">
+      <form onSubmit={applyFilters} className="flex flex-col sm:flex-row gap-3 mb-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input
@@ -135,20 +110,23 @@ export function PackageGrid({
             <option value="days-asc">Duration: Short First</option>
             <option value="days-desc">Duration: Long First</option>
           </select>
+          <button type="submit" className="px-4 py-2.5 rounded-lg bg-forest-700 text-sm font-medium text-white hover:bg-forest-800">
+            Search
+          </button>
         </div>
-      </div>
+      </form>
 
       {/* Results count */}
       <p className="text-sm text-stone-500 mb-4">
-        {filtered.length} package{filtered.length !== 1 ? "s" : ""} found
+        {packages.length} package{packages.length !== 1 ? "s" : ""} found
       </p>
 
       {/* Grid */}
-      {filtered.length === 0 ? (
+      {packages.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-stone-500">No packages match your search.</p>
           <button
-            onClick={() => { setSearch(""); setDestination(""); setMaxBudget(""); }}
+            onClick={() => router.push("/packages")}
             className="mt-3 text-sm text-forest-700 hover:text-forest-800 font-medium"
           >
             Clear filters
@@ -156,7 +134,7 @@ export function PackageGrid({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((pkg) => {
+          {packages.map((pkg) => {
             const v = pkg.currentVersion!;
             const minPrice = Math.min(...pkg.seasonalPrices.map((p) => p.pricePerPerson));
             const photo = v.photos?.[0];

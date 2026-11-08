@@ -33,6 +33,7 @@ export function Footer() {
               <p>Kochi, Kerala, India</p>
               <p>hello@itera.in</p>
               <p>+91 90718 82404</p>
+              <Link href="/privacy" className="block hover:text-white transition">Privacy notice</Link>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 import { timeAgo, responseTimeBadge } from "@/lib/utils";
 
 type Enquiry = {
@@ -11,6 +12,7 @@ type Enquiry = {
   email: string;
   message: string;
   status: string;
+  channel: string;
   createdAt: string;
   package: { currentVersion: { title: string } | null } | null;
   assignedTo: { id: string; name: string; role: string } | null;
@@ -21,6 +23,7 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const router = useRouter();
 
   const toggleAll = () => {
@@ -53,6 +56,14 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
 
   return (
     <div>
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => setShowCreate(true)}
+          className="inline-flex items-center gap-2 rounded-lg bg-forest-700 px-3 py-2 text-sm font-medium text-white hover:bg-forest-800"
+        >
+          <Plus className="h-4 w-4" /> Add enquiry
+        </button>
+      </div>
       {/* Status filter tabs */}
       <div className="flex gap-1 mb-6 overflow-x-auto">
         {statuses.map((s) => (
@@ -136,6 +147,7 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
                     </div>
                     <p className="text-xs text-stone-400 mt-0.5 truncate">{e.email}</p>
                     <p className="text-sm text-stone-500 mt-1 line-clamp-1">{e.message}</p>
+                    <p className="text-xs text-stone-400 mt-1">{e.channel}</p>
                     {e.package?.currentVersion && (
                       <p className="text-xs text-forest-600 mt-1">Package: {e.package.currentVersion.title}</p>
                     )}
@@ -158,6 +170,110 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
           )}
         </div>
       </div>
+      {showCreate && <CreateEnquiry onClose={() => setShowCreate(false)} />}
+    </div>
+  );
+}
+
+function CreateEnquiry({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    channel: "EMAIL",
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
+    travelDates: "",
+    adults: "",
+    children: "",
+    budget: "",
+    privacyConsent: false,
+    whatsappConsent: false,
+  });
+
+  const update = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    const response = await fetch("/api/admin/enquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...form,
+        adults: form.adults || undefined,
+        children: form.children || undefined,
+        privacyConsent: form.privacyConsent,
+        whatsappConsent: form.whatsappConsent,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      setError(body?.error || "Could not create enquiry.");
+      setSaving(false);
+      return;
+    }
+    onClose();
+    router.refresh();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4">
+      <form onSubmit={submit} className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-lg font-semibold text-stone-900">Add channel enquiry</h2>
+            <p className="text-xs text-stone-500 mt-1">Log an enquiry received outside the website.</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-sm text-stone-400 hover:text-stone-700">Close</button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm text-stone-600">Channel
+            <select value={form.channel} onChange={(e) => update("channel", e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2">
+              <option value="EMAIL">Email</option>
+              <option value="CHAT">Chat</option>
+              <option value="WHATSAPP">WhatsApp</option>
+              <option value="PHONE">Phone</option>
+            </select>
+          </label>
+          <label className="text-sm text-stone-600">Name
+            <input required value={form.name} onChange={(e) => update("name", e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2" />
+          </label>
+          <label className="text-sm text-stone-600">Email
+            <input required type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2" />
+          </label>
+          <label className="text-sm text-stone-600">Phone
+            <input value={form.phone} onChange={(e) => update("phone", e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2" />
+          </label>
+          <label className="text-sm text-stone-600 sm:col-span-2">Original message
+            <textarea required value={form.message} onChange={(e) => update("message", e.target.value)} rows={4} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2" />
+          </label>
+          <label className="text-sm text-stone-600">Travel dates
+            <input value={form.travelDates} onChange={(e) => update("travelDates", e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2" placeholder="e.g. December 2026" />
+          </label>
+          <label className="text-sm text-stone-600">Budget
+            <input value={form.budget} onChange={(e) => update("budget", e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2" placeholder="e.g. INR 1,20,000" />
+          </label>
+          <label className="flex items-start gap-2 text-xs text-stone-500 sm:col-span-2">
+            <input type="checkbox" checked={form.privacyConsent} onChange={(e) => setForm((current) => ({ ...current, privacyConsent: e.target.checked }))} className="mt-0.5 rounded border-stone-300 text-forest-600" />
+            Privacy consent was captured for this enquiry
+          </label>
+          <label className="flex items-start gap-2 text-xs text-stone-500 sm:col-span-2">
+            <input type="checkbox" checked={form.whatsappConsent} onChange={(e) => setForm((current) => ({ ...current, whatsappConsent: e.target.checked }))} className="mt-0.5 rounded border-stone-300 text-forest-600" />
+            WhatsApp follow-up consent was captured
+          </label>
+        </div>
+        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-stone-600 hover:bg-stone-100">Cancel</button>
+          <button disabled={saving} className="rounded-lg bg-forest-700 px-4 py-2 text-sm font-medium text-white hover:bg-forest-800 disabled:opacity-50">
+            {saving ? "Saving..." : "Save enquiry"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

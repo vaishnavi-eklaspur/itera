@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { aiExtractedSchema } from "@/lib/validations";
+import { randomUUID } from "crypto";
 
 const EXTRACTION_PROMPT = `You are an assistant for a travel operator. Extract travel details from the customer message below.
 
@@ -68,7 +69,8 @@ function buildDraft(
   extracted: ReturnType<typeof parseExtraction>,
   suggestions: { packageSlug: string; pricePerPerson: number | null; seasonName: string | null }[] = [],
   packageTitles: Map<string, string> = new Map(),
-  selectedPackage: { title: string; destination: string; days: number } | null = null
+  selectedPackage: { title: string; destination: string; days: number } | null = null,
+  quoteLink: string | null = null
 ) {
   const confidence = extracted.confidence;
   const isHighConfidence = confidence >= 0.75;
@@ -112,6 +114,9 @@ function buildDraft(
         : isMediumConfidence && packageContext
             ? `We will review the "${packageContext.title}" package for ${packageContext.destination} and confirm availability after the missing details are clarified.`
           : "A consultant will review your enquiry and contact you with suitable options after confirming the missing details.",
+    isHighConfidence && quoteLink
+          ? `Your indicative quote is ready: ${quoteLink}\nDownload the branded PDF: ${quoteLink.replace("/quote/", "/api/quotes/")}/pdf. Availability will be confirmed by our consultant before booking.`
+          : null,
     !isHighConfidence
         ? `Please do not treat this message as a booking confirmation. Our consultant will get back to you with the appropriate itinerary and quotation${packageContext ? ` for the "${packageContext.title}" package` : ""}.`
       : null,
@@ -123,6 +128,83 @@ function buildDraft(
     "Warm regards,",
     "Itera Travel Team",
   ].filter((line): line is string => line !== null).join("\n");
+}
+
+async function createHighConfidenceQuote(
+  enquiry: {
+    id: string;
+    packageId: string | null;
+    adults: number | null;
+    children: number | null;
+    travelDates: string | null;
+    aiExtracted?: unknown;
+  },
+  extracted: ReturnType<typeof parseExtraction>,
+  suggestions: { packageSlug: string; pricePerPerson: number | null; seasonName: string | null; basis?: string | null }[],
+  packages: {
+    id: string;
+    slug: string;
+    currentVersion: { title: string; inclusions: string[]; exclusions: string[] } | null;
+    seasonalPrices: { pricePerPerson: number; seasonName: string; basis: string; gstInclusive: boolean }[];
+  }[],
+  origin: string
+) {
+  if (extracted.confidence < 0.75) return null;
+
+  let availablePackages = packages;
+  if (availablePackages.length === 0 && enquiry.packageId) {
+    availablePackages = await db.package.findMany({
+      where: { id: enquiry.packageId, status: "PUBLISHED" },
+      include: { currentVersion: true, seasonalPrices: { where: { isActive: true } } },
+    });
+  }
+  const selected = enquiry.packageId
+    ? availablePackages.find((pkg) => pkg.id === enquiry.packageId)
+    : suggestions[0] ? availablePackages.find((pkg) => pkg.slug === suggestions[0].packageSlug) : null;
+  if (!selected?.currentVersion) return null;
+
+  const suggestion = suggestions.find((item) => item.packageSlug === selected.slug);
+  const price = suggestion?.pricePerPerson ?? selected.seasonalPrices[0]?.pricePerPerson ?? null;
+  const seasonalPrice = selected.seasonalPrices.find((item) => item.pricePerPerson === price) ?? selected.seasonalPrices[0];
+  if (!price || price <= 0 || !seasonalPrice) return null;
+
+  const author = await db.user.findFirst({
+    where: { role: "ADMIN" },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (!author) {
+    console.error(`[AI] Cannot create quote for enquiry ${enquiry.id}: no admin author found`);
+    return null;
+  }
+
+  const existing = await db.quote.findFirst({
+    where: { enquiryId: enquiry.id, generatedByAI: true },
+    select: { token: true },
+  });
+  if (existing) return `${origin}/quote/${existing.token}`;
+
+  const travellers = Math.max(1, (enquiry.adults ?? extracted.adults ?? 1) + (enquiry.children ?? extracted.children ?? 0));
+  const quote = await db.quote.create({
+    data: {
+      token: randomUUID(),
+      packageId: selected.id,
+      enquiryId: enquiry.id,
+      generatedByAI: true,
+      travellers,
+      travelDate: extracted.dates?.raw ?? enquiry.travelDates,
+      pricePerPerson: price,
+      basis: seasonalPrice.basis,
+      gstInclusive: seasonalPrice.gstInclusive,
+      totalPrice: price * travellers,
+      inclusions: selected.currentVersion.inclusions,
+      exclusions: selected.currentVersion.exclusions,
+      notes: "Indicative quote generated from high-confidence enquiry details. Availability must be confirmed before booking.",
+      validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      authorId: author.id,
+    },
+  });
+  return `${origin}/quote/${quote.token}`;
 }
 
 function parseExtraction(rawText: string) {
@@ -305,6 +387,7 @@ export async function POST(req: NextRequest) {
   if (!groqKey && !geminiKey) {
     const fallback = withConfidence(getFallbackExtraction(enquiry), enquiry);
     await applyConsultantTriage(enquiry, fallback);
+    const quoteLink = await createHighConfidenceQuote(enquiry, fallback, [], [], req.nextUrl.origin);
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
@@ -316,7 +399,8 @@ export async function POST(req: NextRequest) {
           fallback,
           [],
           new Map(),
-          enquiry.package?.currentVersion ?? null
+          enquiry.package?.currentVersion ?? null,
+          quoteLink
         ),
       },
     });
@@ -507,6 +591,7 @@ export async function POST(req: NextRequest) {
     const packageTitles = new Map(
       allPackages.flatMap((pkg) => pkg.currentVersion ? [[pkg.slug, pkg.currentVersion.title] as const] : [])
     );
+    const quoteLink = await createHighConfidenceQuote(enquiry, finalExtraction, suggestions, allPackages, req.nextUrl.origin);
 
     await db.enquiry.update({
       where: { id: enquiryId },
@@ -519,7 +604,8 @@ export async function POST(req: NextRequest) {
           finalExtraction,
           suggestions,
           packageTitles,
-          enquiry.package?.currentVersion ?? null
+          enquiry.package?.currentVersion ?? null,
+          quoteLink
         ),
       },
     });
@@ -529,6 +615,7 @@ export async function POST(req: NextRequest) {
     // Graceful fallback on any AI failure
     const fallback = withConfidence(getFallbackExtraction(enquiry), enquiry);
     await applyConsultantTriage(enquiry, fallback);
+    const quoteLink = await createHighConfidenceQuote(enquiry, fallback, [], [], req.nextUrl.origin);
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
@@ -540,7 +627,8 @@ export async function POST(req: NextRequest) {
           fallback,
           [],
           new Map(),
-          enquiry.package?.currentVersion ?? null
+          enquiry.package?.currentVersion ?? null,
+          quoteLink
         ),
       },
     });

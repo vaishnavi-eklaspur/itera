@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, ExternalLink, ClipboardList } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -10,6 +11,7 @@ type Quote = {
   travellers: number;
   travelDate: string | null;
   pricePerPerson: number;
+  basis: string;
   totalPrice: number;
   validUntil: string;
   createdAt: string;
@@ -24,14 +26,16 @@ type Package = {
 };
 
 export default function QuotesPage() {
+  const searchParams = useSearchParams();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [packageId, setPackageId] = useState("");
-  const [travellers, setTravellers] = useState(2);
-  const [travelDate, setTravelDate] = useState("");
+  const [packageId, setPackageId] = useState(() => searchParams.get("packageId") || "");
+  const [showForm, setShowForm] = useState(() => Boolean(searchParams.get("packageId")));
+  const [travellers, setTravellers] = useState(() => Number(searchParams.get("travellers")) || 2);
+  const [travelDate, setTravelDate] = useState(() => searchParams.get("travelDate") || "");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const enquiryId = searchParams.get("enquiryId") || undefined;
 
   useEffect(() => {
     fetch("/api/admin/quotes").then((r) => r.json()).then(setQuotes);
@@ -48,8 +52,9 @@ export default function QuotesPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        packageId, travellers, travelDate: travelDate || undefined,
+        packageId, enquiryId, travellers, travelDate: travelDate || undefined,
         pricePerPerson: basePrice, totalPrice,
+        basis: "Per person, twin sharing", gstInclusive: true,
         inclusions: [], exclusions: [], notes: notes || undefined, validDays: 7,
       }),
     });
@@ -94,6 +99,7 @@ export default function QuotesPage() {
             <div>
               <label className="text-sm text-stone-600 mb-1 block">Price/person</label>
               <p className="px-3 py-2.5 text-sm font-semibold text-forest-700">{formatPrice(basePrice)}</p>
+              <p className="text-xs text-stone-400">Per person, twin sharing · GST inclusive</p>
             </div>
           </div>
           <div>
@@ -121,7 +127,7 @@ export default function QuotesPage() {
             <div key={q.id} className="flex items-center justify-between px-6 py-4 border-b border-stone-50">
               <div>
                 <p className="font-medium text-stone-900 text-sm">{q.package.currentVersion?.title ?? "Unknown"}</p>
-                <p className="text-xs text-stone-400 mt-0.5">{q.travellers} pax · {formatPrice(q.totalPrice)} · Valid until {new Date(q.validUntil).toLocaleDateString()}</p>
+                <p className="text-xs text-stone-400 mt-0.5">{q.travellers} pax · {formatPrice(q.totalPrice)} · {q.basis} · Valid until {new Date(q.validUntil).toLocaleDateString()}</p>
               </div>
               <a href={`/quote/${q.token}`} target="_blank" className="flex items-center gap-1 text-xs text-forest-600 hover:text-forest-700">
                 <ExternalLink className="w-3.5 h-3.5" /> Share Link

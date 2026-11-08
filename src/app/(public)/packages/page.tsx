@@ -12,18 +12,55 @@ export const metadata: Metadata = {
 
 export const instant = false;
 
-async function getPackages() {
+async function getPackages(filters: {
+  q?: string;
+  destination?: string;
+  maxBudget?: string;
+  sort?: string;
+}) {
   "use cache";
   cacheLife("minutes");
 
-  return db.package.findMany({
-    where: { status: "PUBLISHED" },
+  const maxBudget = filters.maxBudget ? Number.parseInt(filters.maxBudget, 10) : NaN;
+  const packages = await db.package.findMany({
+    where: {
+      status: "PUBLISHED",
+      AND: [
+        ...(filters.destination
+          ? [{ currentVersion: { destination: { contains: filters.destination, mode: "insensitive" as const } } }]
+          : []),
+        ...(filters.q
+          ? [{
+              currentVersion: {
+                OR: [
+                  { title: { contains: filters.q, mode: "insensitive" as const } },
+                  { destination: { contains: filters.q, mode: "insensitive" as const } },
+                  { description: { contains: filters.q, mode: "insensitive" as const } },
+                ],
+              },
+            }]
+          : []),
+      ],
+      ...(Number.isFinite(maxBudget) && maxBudget >= 0
+        ? { seasonalPrices: { some: { isActive: true, pricePerPerson: { lte: maxBudget } } } }
+        : {}),
+    },
     include: {
       currentVersion: true,
       seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" } },
       _count: { select: { enquiries: true } },
     },
-    orderBy: { updatedAt: "desc" },
+  });
+
+  return packages.sort((a, b) => {
+    const aMin = Math.min(...a.seasonalPrices.map((price) => price.pricePerPerson));
+    const bMin = Math.min(...b.seasonalPrices.map((price) => price.pricePerPerson));
+    switch (filters.sort) {
+      case "price-desc": return bMin - aMin;
+      case "days-asc": return (a.currentVersion?.days ?? 0) - (b.currentVersion?.days ?? 0);
+      case "days-desc": return (b.currentVersion?.days ?? 0) - (a.currentVersion?.days ?? 0);
+      default: return aMin - bMin;
+    }
   });
 }
 
@@ -41,10 +78,10 @@ async function getDestinations() {
 export default async function PackagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ destination?: string }>;
+  searchParams: Promise<{ q?: string; destination?: string; maxBudget?: string; sort?: string }>;
 }) {
-  const { destination } = await searchParams;
-  const [packages, destinations] = await Promise.all([getPackages(), getDestinations()]);
+  const filters = await searchParams;
+  const [packages, destinations] = await Promise.all([getPackages(filters), getDestinations()]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -71,7 +108,10 @@ export default async function PackagesPage({
         <PackageGrid
           packages={JSON.parse(JSON.stringify(packages))}
           destinations={destinations}
-          initialDestination={destination}
+          initialSearch={filters.q}
+          initialDestination={filters.destination}
+          initialMaxBudget={filters.maxBudget}
+          initialSort={filters.sort}
         />
       </main>
       <Footer />

@@ -10,9 +10,18 @@ export const enquiryFormSchema = z.object({
   budget: z.string().optional(),
   message: z.string().min(1, "Please enter your message").max(5000, "Message is too long"),
   packageId: z.string().optional(),
+  privacyConsent: z.boolean().optional(),
+  whatsappConsent: z.boolean().optional(),
 });
 
 export type EnquiryFormData = z.infer<typeof enquiryFormSchema>;
+
+export const staffEnquirySchema = enquiryFormSchema.extend({
+  channel: z.enum(["CHAT", "WHATSAPP", "EMAIL", "PHONE"]),
+  packageId: z.string().optional().nullable(),
+});
+
+export type StaffEnquiryData = z.infer<typeof staffEnquirySchema>;
 
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),

@@ -62,6 +62,13 @@ npx prisma db seed      # seed sample data (10 packages, 18 enquiries, 3 users)
 npm run dev              # starts on http://localhost:3000
 ```
 
+Staff can record enquiries received through email, chat, WhatsApp or phone from
+**Admin → Enquiries → Add enquiry**. These entries are stored with their source
+channel and enter the same extraction, assignment and reply workflow as web
+enquiries. Direct provider webhooks are not configured by default; connect the
+provider-specific webhook to `POST /api/admin/enquiries` when credentials are
+available.
+
 ### Test credentials (from seed)
 
 | Role | Email | Password |

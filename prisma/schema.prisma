@@ -33,6 +33,14 @@ enum MessageChannel {
   SYSTEM
 }
 
+enum EnquiryChannel {
+  WEB
+  CHAT
+  WHATSAPP
+  EMAIL
+  PHONE
+}
+
 model User {
   id            String   @id @default(cuid())
   name          String
@@ -121,6 +129,9 @@ model Enquiry {
   adults         Int?
   children       Int?
   budget         String?
+  channel        EnquiryChannel @default(WEB)
+  privacyConsentAt DateTime?
+  whatsappConsentAt DateTime?
   status         EnquiryStatus @default(NEW)
   assignedToId   String?
   aiExtracted    Json?
@@ -135,6 +146,7 @@ model Enquiry {
   assignedTo User?    @relation("EnquiryAssignee", fields: [assignedToId], references: [id])
   notes      EnquiryNote[]
   replies    EnquiryReply[]
+  quotes     Quote[]
 
   @@index([status])
   @@index([assignedToId])
@@ -202,10 +214,13 @@ model Quote {
   token       String   @unique
   packageId   String
   enquiryId   String?
+  generatedByAI Boolean  @default(false)
   travellers  Int
   travelDate  String?
   pricePerPerson Int
-  totalPrice  Int
+  basis       String   @default("Per person, twin sharing")
+  gstInclusive Boolean  @default(true)
+  totalPrice Int
   inclusions  String[]
   exclusions  String[]
   notes       String?
@@ -214,6 +229,7 @@ model Quote {
   createdAt   DateTime @default(now())
 
   package Package @relation(fields: [packageId], references: [id])
+  enquiry Enquiry? @relation(fields: [enquiryId], references: [id])
   author  User    @relation(fields: [authorId], references: [id])
 
   @@index([token])

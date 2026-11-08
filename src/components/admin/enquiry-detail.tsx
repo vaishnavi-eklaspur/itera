@@ -18,21 +18,39 @@ type AIExtracted = {
   [key: string]: unknown;
 };
 
+type EnquiryQuote = {
+  id: string;
+  token: string;
+  travellers: number;
+  travelDate: string | null;
+  pricePerPerson: number;
+  basis: string;
+  gstInclusive: boolean;
+  totalPrice: number;
+  validUntil: string;
+  generatedByAI: boolean;
+  author: { name: string };
+};
+
 type Enquiry = {
   id: string;
   name: string;
   email: string;
   phone: string | null;
   message: string;
+  channel: string;
+  privacyConsentAt: string | null;
+  whatsappConsentAt: string | null;
   status: string;
   createdAt: string;
   aiExtracted: AIExtracted | null;
   aiDraftReply: string | null;
   assignedToId: string | null;
   assignedTo: { id: string; name: string; role: string } | null;
-  package: { currentVersion: { title: string } | null } | null;
+  package: { id: string; currentVersion: { title: string } | null } | null;
   notes: { id: string; content: string; createdAt: string; author: { name: string } }[];
   replies: { id: string; content: string; channel: string; sentAt: string; author: { name: string } }[];
+  quotes: EnquiryQuote[];
 };
 
 type SuggestedPackage = {
@@ -53,6 +71,7 @@ function RichText({ content }: { content: string }) {
               ? <strong key={partIndex}>{part.slice(2, -2)}</strong>
               : <span key={partIndex}>{part}</span>
           )}
+
           {lineIndex < content.split("\n").length - 1 ? <br /> : null}
         </span>
       ))}
@@ -219,6 +238,8 @@ export function EnquiryDetail({
 
   const aiFields = localExtracted ? flattenExtracted(localExtracted) : [];
   const isLowConfidence = (confidence ?? 0) < 0.4;
+  const isHighConfidence = (confidence ?? 0) >= 0.75;
+  const quoteBuilderUrl = `/admin/quotes?enquiryId=${enquiry.id}${enquiry.package?.id ? `&packageId=${enquiry.package.id}` : ""}${localExtracted?.adults ? `&travellers=${localExtracted.adults + (localExtracted.children ?? 0)}` : ""}${localExtracted?.dates?.raw ? `&travelDate=${encodeURIComponent(localExtracted.dates.raw)}` : ""}`;
 
   return (
     <div>
@@ -251,10 +272,60 @@ export function EnquiryDetail({
             <div className="flex items-center gap-2 mb-3">
               <User className="w-4 h-4 text-stone-400" />
               <span className="text-sm font-medium text-stone-700">Original Message</span>
+              <span className="text-xs text-stone-400">via {enquiry.channel}</span>
               <span className="text-xs text-stone-400">{timeAgo(new Date(enquiry.createdAt))}</span>
             </div>
             <p className="text-sm text-stone-600 whitespace-pre-wrap">{enquiry.message}</p>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs">
+              <span className={`rounded-full px-2 py-1 ${enquiry.privacyConsentAt ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                {enquiry.privacyConsentAt ? "Privacy consent recorded" : "Privacy consent not recorded"}
+              </span>
+              {enquiry.whatsappConsentAt && <span className="rounded-full bg-green-50 px-2 py-1 text-green-700">WhatsApp consent recorded</span>}
+            </div>
           </section>
+
+          {!isHighConfidence && (
+            <section className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+              <h2 className="text-sm font-semibold text-amber-900">Consultant quote required</h2>
+              <p className="mt-1 text-sm text-amber-800">Review the missing or uncertain fields, then create and send a verified quote from the quote builder.</p>
+              <Link href={quoteBuilderUrl} className="mt-3 inline-flex rounded-lg bg-forest-700 px-3 py-2 text-sm font-medium text-white hover:bg-forest-800">
+                Create quote in builder
+              </Link>
+            </section>
+          )}
+
+          {enquiry.quotes.length > 0 && (
+            <section className="rounded-xl border border-forest-200 bg-forest-50 p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-sm font-semibold text-forest-900">Quote ready</h2>
+                  <p className="mt-1 text-sm text-forest-800">
+                    {enquiry.quotes[0].generatedByAI ? "Indicative quote generated for high confidence." : "Consultant quote linked to this enquiry."}
+                  </p>
+                </div>
+                <Link
+                  href={`/quote/${enquiry.quotes[0].token}`}
+                  target="_blank"
+                  className="shrink-0 rounded-lg bg-forest-700 px-3 py-2 text-sm font-medium text-white hover:bg-forest-800"
+                >
+                  Open quote
+                </Link>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg bg-white/70 p-3">
+                  <p className="text-xs text-stone-500">Total</p>
+                  <p className="font-semibold text-stone-900">₹{enquiry.quotes[0].totalPrice.toLocaleString("en-IN")}</p>
+                </div>
+                <div className="rounded-lg bg-white/70 p-3">
+                  <p className="text-xs text-stone-500">Valid until</p>
+                  <p className="font-semibold text-stone-900">{new Date(enquiry.quotes[0].validUntil).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-forest-700">
+                {enquiry.quotes[0].basis}{enquiry.quotes[0].gstInclusive ? " · GST inclusive" : " · GST extra"} · {enquiry.quotes[0].travellers} traveller(s)
+              </p>
+            </section>
+          )}
 
           {/* AI Extraction — inline editable */}
           <section className="bg-blue-50 border border-blue-200 rounded-xl p-6">

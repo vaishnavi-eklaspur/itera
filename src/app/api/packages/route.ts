@@ -14,21 +14,21 @@ export async function GET(req: NextRequest) {
   const packages = await db.package.findMany({
     where: {
       status: "PUBLISHED",
-      ...(destination && {
-        currentVersion: { destination: { contains: destination, mode: "insensitive" } },
-      }),
-      ...(minDays && { currentVersion: { days: { gte: parseInt(minDays) } } }),
-      ...(maxDays && { currentVersion: { days: { lte: parseInt(maxDays) } } }),
-      ...(hotelTier && { currentVersion: { hotelTier: { contains: hotelTier, mode: "insensitive" } } }),
-      ...(q && {
-        currentVersion: {
-          OR: [
-            { title: { contains: q, mode: "insensitive" } },
-            { destination: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
-          ],
-        },
-      }),
+      AND: [
+        ...(destination ? [{ currentVersion: { destination: { contains: destination, mode: "insensitive" as const } } }] : []),
+        ...(minDays ? [{ currentVersion: { days: { gte: parseInt(minDays, 10) } } }] : []),
+        ...(maxDays ? [{ currentVersion: { days: { lte: parseInt(maxDays, 10) } } }] : []),
+        ...(hotelTier ? [{ currentVersion: { hotelTier: { contains: hotelTier, mode: "insensitive" as const } } }] : []),
+        ...(q ? [{
+          currentVersion: {
+            OR: [
+              { title: { contains: q, mode: "insensitive" as const } },
+              { destination: { contains: q, mode: "insensitive" as const } },
+              { description: { contains: q, mode: "insensitive" as const } },
+            ],
+          },
+        }] : []),
+      ],
     },
     include: {
       currentVersion: true,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import { slugify } from "@/lib/utils";
@@ -38,6 +38,22 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
   const [published, setPublished] = useState(post?.published ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+
+  function insertMarkup(prefix: string, suffix = "") {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = content.slice(start, end) || "text";
+    const next = `${content.slice(0, start)}${prefix}${selected}${suffix}${content.slice(end)}`;
+    setContent(next);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const cursor = start + prefix.length + selected.length + suffix.length;
+      textarea.setSelectionRange(cursor, cursor);
+    });
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -105,8 +121,34 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
               <textarea rows={2} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none" />
             </div>
             <div>
-              <label className="text-sm text-stone-600 mb-1 block">Content (Markdown supported)</label>
-              <textarea rows={16} value={content} onChange={(e) => setContent(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-forest-500 resize-y" />
+              <label className="text-sm text-stone-600 mb-1 block">Content</label>
+              <div className="flex flex-wrap gap-1 mb-2 rounded-lg border border-stone-200 bg-stone-50 p-1">
+                {[
+                  ["Bold", "**", "**"],
+                  ["Italic", "*", "*"],
+                  ["Heading", "## "],
+                  ["List", "- "],
+                  ["Link", "[", "](https://example.com)"],
+                  ["Image", "![alt text](", ")"],
+                ].map(([label, prefix, suffix = ""]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => insertMarkup(prefix, suffix)}
+                    className="rounded px-2 py-1 text-xs text-stone-600 hover:bg-white hover:text-forest-700"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                ref={contentRef}
+                rows={16}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-forest-500 resize-y"
+              />
+              <p className="mt-1 text-xs text-stone-400">Use the toolbar for formatting, links and images. Content remains portable Markdown.</p>
             </div>
           </section>
         </div>

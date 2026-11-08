@@ -12,6 +12,8 @@ const quoteSchema = z.object({
   travellers: z.number().min(1),
   travelDate: z.string().optional(),
   pricePerPerson: z.number().min(0),
+  basis: z.string().min(1).default("Per person, twin sharing"),
+  gstInclusive: z.boolean().default(true),
   totalPrice: z.number().min(0),
   inclusions: z.array(z.string()),
   exclusions: z.array(z.string()),
@@ -55,6 +57,8 @@ export async function POST(req: NextRequest) {
       travellers: parsed.data.travellers,
       travelDate: parsed.data.travelDate,
       pricePerPerson: parsed.data.pricePerPerson,
+      basis: parsed.data.basis,
+      gstInclusive: parsed.data.gstInclusive,
       totalPrice: parsed.data.totalPrice,
       inclusions: parsed.data.inclusions,
       exclusions: parsed.data.exclusions,
@@ -63,6 +67,24 @@ export async function POST(req: NextRequest) {
       authorId: session.user.id,
     },
   });
+
+  if (parsed.data.enquiryId) {
+    const enquiry = await db.enquiry.findUnique({
+      where: { id: parsed.data.enquiryId },
+      select: { aiDraftReply: true },
+    });
+    const quoteLink = `${req.nextUrl.origin}/quote/${quote.token}`;
+    const pdfLink = `${req.nextUrl.origin}/api/quotes/${quote.token}/pdf`;
+    const quoteLine = `Your verified quote is ready: ${quoteLink}\nDownload the branded PDF: ${pdfLink}\nPlease review the details and let us know if you would like to proceed.`;
+    if (enquiry && !enquiry.aiDraftReply?.includes(quoteLink)) {
+      await db.enquiry.update({
+        where: { id: parsed.data.enquiryId },
+        data: {
+          aiDraftReply: [enquiry.aiDraftReply, "", quoteLine].filter(Boolean).join("\n"),
+        },
+      });
+    }
+  }
 
   await logActivity(session.user.id, "created", "quote", quote.id, `Quote for ${parsed.data.travellers} pax`);
 

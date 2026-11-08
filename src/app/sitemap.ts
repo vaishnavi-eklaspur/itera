@@ -8,6 +8,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     where: { status: "PUBLISHED" },
     select: { slug: true, updatedAt: true },
   });
+  const posts = await db.blogPost.findMany({
+    where: { published: true },
+    select: { slug: true, updatedAt: true },
+  });
 
   return [
     { url: base, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
@@ -17,6 +21,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: p.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.8,
+    })),
+    ...posts.map((post) => ({
+      url: `${base}/blog/${post.slug}`,
+      lastModified: post.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
     })),
   ];
 }

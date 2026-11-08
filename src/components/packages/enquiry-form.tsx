@@ -28,6 +28,8 @@ export function EnquiryForm({
   });
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [whatsappConsent, setWhatsappConsent] = useState(false);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   function getDefaultEndDate(start: string) {
@@ -57,6 +59,8 @@ export function EnquiryForm({
           adults: form.adults ? Number(form.adults) : undefined,
           children: form.children !== "" ? Number(form.children) : undefined,
           packageId,
+          privacyConsent,
+          whatsappConsent,
         }),
       });
       if (!res.ok) throw new Error();
@@ -173,6 +177,25 @@ export function EnquiryForm({
           onChange={(e) => setForm({ ...form, message: e.target.value })}
           className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent resize-none"
         />
+        <label className="flex items-start gap-2 text-xs text-stone-500">
+          <input
+            type="checkbox"
+            required
+            checked={privacyConsent}
+            onChange={(e) => setPrivacyConsent(e.target.checked)}
+            className="mt-0.5 rounded border-stone-300 text-forest-600 focus:ring-forest-500"
+          />
+          <span>I agree to the <a href="/privacy" target="_blank" rel="noreferrer" className="text-forest-700 underline">privacy notice</a> and allow Itera to use my details to respond to this enquiry.</span>
+        </label>
+        <label className="flex items-start gap-2 text-xs text-stone-500">
+          <input
+            type="checkbox"
+            checked={whatsappConsent}
+            onChange={(e) => setWhatsappConsent(e.target.checked)}
+            className="mt-0.5 rounded border-stone-300 text-forest-600 focus:ring-forest-500"
+          />
+          <span>I consent to receiving follow-ups on WhatsApp.</span>
+        </label>
       </div>
       {status === "error" && (
         <p className="text-sm text-red-500 mt-2">Something went wrong. Please try again.</p>

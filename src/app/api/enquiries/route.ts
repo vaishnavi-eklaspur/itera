@@ -23,6 +23,9 @@ export async function POST(req: NextRequest) {
 
   const session = await auth();
   const data = parsed.data;
+  if (!data.privacyConsent) {
+    return NextResponse.json({ error: "Please accept the privacy notice before sending your enquiry." }, { status: 400 });
+  }
 
   const enquiry = await db.enquiry.create({
     data: {
@@ -36,6 +39,9 @@ export async function POST(req: NextRequest) {
       adults: data.adults || null,
       children: data.children ?? null,
       budget: data.budget || null,
+      channel: "WEB",
+      privacyConsentAt: new Date(),
+      whatsappConsentAt: data.whatsappConsent ? new Date() : null,
       status: "NEW",
     },
   });

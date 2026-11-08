@@ -43,6 +43,7 @@ export default async function AdminEnquiryDetailPage({
       assignedTo: { select: { id: true, name: true, role: true } },
       notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
       replies: { orderBy: { sentAt: "desc" }, include: { author: { select: { name: true } } } },
+      quotes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
     },
   });
 
@@ -56,6 +57,7 @@ export default async function AdminEnquiryDetailPage({
       assignedTo: { select: { id: true, name: true, role: true } },
       notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
       replies: { orderBy: { sentAt: "desc" }, include: { author: { select: { name: true } } } },
+      quotes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
     },
   });
   if (!refreshedEnquiry) notFound();

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
 import { Calendar, Users, MapPin, CheckCircle, XCircle, Clock } from "lucide-react";
 import type { Metadata } from "next";
+import { QuoteActions } from "@/components/quote/quote-actions";
 
 export const instant = false;
 
@@ -33,7 +34,9 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-forest-50 via-ivory to-forest-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-stone-100 overflow-hidden print:shadow-none">
+      <div className="w-full max-w-2xl print:max-w-none">
+        <QuoteActions token={token} />
+        <div className="bg-white rounded-2xl shadow-lg border border-stone-100 overflow-hidden print:shadow-none">
         {/* Header */}
         <div className="bg-gradient-to-r from-forest-700 to-forest-600 px-8 py-6 text-white">
           <div className="flex items-center justify-between">
@@ -71,7 +74,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
           {/* Pricing */}
           <div className="border border-stone-200 rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-5 py-3 bg-stone-50 text-sm text-stone-500">
-              <span>Per person</span>
+              <span>{quote.basis}{quote.gstInclusive ? " · GST inclusive" : " · GST extra"}</span>
               <span className="font-semibold text-stone-900">{formatPrice(quote.pricePerPerson)}</span>
             </div>
             <div className="flex items-center justify-between px-5 py-3 text-sm text-stone-500">
@@ -116,6 +119,7 @@ export default async function QuoteViewPage({ params }: { params: Promise<{ toke
             <span>Valid until {new Date(quote.validUntil).toLocaleDateString()}</span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
