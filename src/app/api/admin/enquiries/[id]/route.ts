@@ -114,6 +114,15 @@ export async function PUT(
     const assignee = data.assignedToId
       ? await db.user.findUnique({ where: { id: data.assignedToId }, select: { name: true, role: true } })
       : null;
+    if (data.assignedToId && assignee) {
+      await db.enquiryNote.create({
+        data: {
+          enquiryId: id,
+          authorId: session.user.id,
+          content: `Assignment notice: this enquiry is now assigned to ${assignee.name} (${assignee.role}).`,
+        },
+      });
+    }
     await logActivity(
       session.user.id,
       data.assignedToId ? "assigned" : "unassigned",

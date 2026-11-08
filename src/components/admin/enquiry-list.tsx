@@ -146,7 +146,7 @@ export function EnquiryList({
       )}
 
       <div className="mb-4 flex items-center gap-3">
-          <label htmlFor="assigned-filter" className="text-sm font-medium text-stone-600">Assigned to</label>
+          <label htmlFor="assigned-filter" className="text-sm font-medium text-stone-600">Assigned staff</label>
           <select
             id="assigned-filter"
             value={currentAssignedTo ?? ""}

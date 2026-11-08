@@ -20,14 +20,16 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
+  let assigneeLabel = "";
   if (assignedToId) {
     const assignee = await db.user.findFirst({
       where: { id: assignedToId, role: { in: ["ADMIN", "CONSULTANT"] } },
-      select: { id: true },
+      select: { id: true, name: true, role: true },
     });
     if (!assignee) {
       return NextResponse.json({ error: "Assignee must be an admin or consultant" }, { status: 400 });
     }
+    assigneeLabel = `${assignee.name} (${assignee.role})`;
   }
 
   const data: { status?: "IN_PROGRESS" | "REPLIED" | "CLOSED"; assignedToId?: string | null } = {};
@@ -47,6 +49,15 @@ export async function PUT(req: NextRequest) {
       where: { id: { in: ids }, status: "NEW", ...(assignedToId ? {} : { assignedToId: null }) },
       data: { status: "IN_PROGRESS" },
     });
+    if (assignedToId) {
+      await db.enquiryNote.createMany({
+        data: ids.map((id: string) => ({
+          enquiryId: id,
+          authorId: session.user.id,
+          content: `Assignment notice: this enquiry is now assigned to ${assigneeLabel}.`,
+        })),
+      });
+    }
   }
   await Promise.all(ids.map((id: string) => {
     if (assignedToId !== undefined) {

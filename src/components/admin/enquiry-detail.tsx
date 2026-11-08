@@ -485,7 +485,7 @@ export function EnquiryDetail({
               </select>
             </div>
             <div>
-              <label className="text-xs text-stone-500 mb-1 block">Assigned To</label>
+              <label className="text-xs text-stone-500 mb-1 block">Assigned Staff</label>
               <select
                 value={enquiry.assignedToId ?? ""}
                 onChange={(e) => assignTo(e.target.value)}
