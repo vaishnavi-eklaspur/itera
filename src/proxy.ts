@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { auth } from "@/lib/auth";
 
 const REDIRECTS: Record<string, string> = {
   "/kerala-tour-packages": "/packages",
@@ -26,7 +25,7 @@ const REDIRECTS: Record<string, string> = {
   "/gallery": "/blog",
 };
 
-export async function proxy(request: NextRequest) {
+export const proxy = auth(async (request) => {
   const { pathname } = request.nextUrl;
 
   const redirect = REDIRECTS[pathname.toLowerCase()];
@@ -45,16 +44,16 @@ export async function proxy(request: NextRequest) {
   const isApiAdminRoute = pathname.startsWith("/api/admin");
 
   if (isAdminRoute || isApiAdminRoute) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    const session = request.auth;
 
-    if (!token) {
+    if (!session?.user) {
       if (isApiAdminRoute) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    const role = token.role as string;
+    const role = session.user.role;
     const adminRoles = ["ADMIN", "EDITOR", "CONSULTANT"];
     if (!adminRoles.includes(role)) {
       if (isApiAdminRoute) {
@@ -76,7 +75,7 @@ export async function proxy(request: NextRequest) {
   );
 
   return response;
-}
+});
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
