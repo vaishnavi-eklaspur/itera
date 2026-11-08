@@ -2,9 +2,9 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { db } from "@/lib/db";
 import Link from "next/link";
-import { Calendar, Tag } from "lucide-react";
 import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
+import { BlogPostCard } from "@/components/blog/blog-post-card";
 
 export const metadata: Metadata = {
   title: "Blog — Itera Travel",
@@ -64,7 +64,7 @@ export default async function BlogPage() {
         {categories.length > 0 && (
           <div className="flex gap-2 flex-wrap mb-8">
             {categories.map((cat) => (
-              <span key={cat} className="text-xs bg-forest-50 text-forest-700 px-3 py-1 rounded-full font-medium">{cat}</span>
+              <Link key={cat} href={`/blog/category/${encodeURIComponent(cat)}`} className="text-xs bg-forest-50 text-forest-700 px-3 py-1 rounded-full font-medium hover:bg-forest-100">{cat}</Link>
             ))}
           </div>
         )}
@@ -73,26 +73,7 @@ export default async function BlogPage() {
           <div className="text-center py-16 text-stone-400">No blog posts yet. Check back soon!</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts.map((post) => (
-              <Link key={post.id} href={`/blog/${post.slug}`} className="group bg-white rounded-2xl border border-stone-200/50 overflow-hidden hover:shadow-xl transition-all duration-500">
-                <div className="aspect-[16/10] bg-gradient-to-br from-forest-100 to-forest-200 flex items-center justify-center overflow-hidden">
-                  {post.coverImage ? (
-                    <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover img-zoom" />
-                  ) : (
-                    <Tag className="w-10 h-10 text-forest-300" />
-                  )}
-                </div>
-                <div className="p-5">
-                  <span className="text-xs text-forest-600 font-medium">{post.category}</span>
-                  <h2 className="font-display font-semibold text-stone-900 mt-1 group-hover:text-forest-700 transition line-clamp-2">{post.title}</h2>
-                  <p className="text-sm text-stone-500 mt-2 line-clamp-2">{post.excerpt}</p>
-                  <div className="flex items-center gap-3 mt-3 text-xs text-stone-400">
-                    <span>{post.author.name}</span>
-                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(post.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
+            {posts.map((post) => <BlogPostCard key={post.id} post={post} />)}
           </div>
         )}
       </main>

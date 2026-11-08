@@ -9,7 +9,7 @@ import { EnquiryForm } from "@/components/packages/enquiry-form";
 import { PriceEstimator } from "@/components/packages/price-estimator";
 import { ItinerarySection } from "@/components/packages/itinerary-section";
 import { PhotoGallery } from "@/components/packages/photo-gallery";
-import { Check, X as XIcon, Calendar, Star, Users, MapPin, MessageCircle } from "lucide-react";
+import { Check, X as XIcon, Calendar, Star, Users, MapPin, MessageCircle, BookOpen } from "lucide-react";
 import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
 
@@ -40,6 +40,18 @@ async function getRelatedPackages(slug: string) {
     },
     take: 3,
     orderBy: { updatedAt: "desc" },
+  });
+}
+
+async function getRelatedBlogPosts(packageId: string) {
+  "use cache";
+  cacheLife("minutes");
+
+  return db.blogPost.findMany({
+    where: { published: true, relatedPackageIds: { has: packageId } },
+    select: { id: true, slug: true, title: true, excerpt: true, coverImage: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+    take: 3,
   });
 }
 
@@ -93,6 +105,7 @@ export default async function PackageDetailPage({
   }[];
 
   const relatedPackages = await getRelatedPackages(slug);
+  const relatedBlogPosts = await getRelatedBlogPosts(pkg.id);
 
   const whatsappMessage = encodeURIComponent(
     `Hi, I'm interested in the "${v.title}" package (${v.days} days). Could you share more details?`
@@ -345,6 +358,32 @@ export default async function PackageDetailPage({
                 </Link>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {relatedBlogPosts.length > 0 && (
+        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 border-t border-sand-200/60">
+          <div className="flex items-center gap-2 mb-6">
+            <BookOpen className="w-5 h-5 text-forest-600" />
+            <h2 className="text-2xl font-display font-semibold text-stone-900">Travel Guides for This Journey</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {relatedBlogPosts.map((post) => (
+              <Link key={post.id} href={`/blog/${post.slug}`} className="group bg-white rounded-xl border border-sand-200/60 overflow-hidden hover:shadow-lg transition-all">
+                <div className="aspect-[16/9] bg-gradient-to-br from-forest-100 to-forest-200 overflow-hidden">
+                  {post.coverImage ? (
+                    <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <div className="h-full flex items-center justify-center"><BookOpen className="w-8 h-8 text-forest-300" /></div>
+                  )}
+                </div>
+                <div className="p-5">
+                  <h3 className="font-semibold text-stone-900 group-hover:text-forest-700 transition line-clamp-2">{post.title}</h3>
+                  <p className="text-sm text-stone-500 mt-2 line-clamp-2">{post.excerpt}</p>
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
       )}
