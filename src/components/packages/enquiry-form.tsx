@@ -20,6 +20,7 @@ export function EnquiryForm({
     phone: "",
     travelDates: "",
     adults: "",
+    children: "",
     budget: "",
     message: `I'm interested in the "${packageTitle}" package. I'm looking for a trip that includes:`,
   });
@@ -35,6 +36,7 @@ export function EnquiryForm({
         body: JSON.stringify({
           ...form,
           adults: form.adults ? Number(form.adults) : undefined,
+          children: form.children !== "" ? Number(form.children) : undefined,
           packageId,
         }),
       });
@@ -88,22 +90,41 @@ export function EnquiryForm({
           className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input
-            type="text"
-            placeholder="Travel dates (optional)"
-            value={form.travelDates}
-            onChange={(e) => setForm({ ...form, travelDates: e.target.value })}
-            className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
-          />
-          <input
-            type="text"
-            inputMode="numeric"
-            min="1"
-            placeholder="Travellers (optional)"
-            value={form.adults}
-            onChange={(e) => setForm({ ...form, adults: e.target.value.replace(/\D/g, "") })}
-            className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
-          />
+          <label className="text-xs text-stone-500">
+            Travel date (optional)
+            <input
+              type="date"
+              value={form.travelDates}
+              onChange={(e) => setForm({ ...form, travelDates: e.target.value })}
+              className="mt-1 w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+            />
+          </label>
+          <label className="text-xs text-stone-500">
+            Adults (optional)
+            <input
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max="50"
+              placeholder="Number of adults"
+              value={form.adults}
+              onChange={(e) => setForm({ ...form, adults: e.target.value })}
+              className="mt-1 w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+            />
+          </label>
+          <label className="text-xs text-stone-500">
+            Children (optional)
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max="20"
+              placeholder="Number of children"
+              value={form.children}
+              onChange={(e) => setForm({ ...form, children: e.target.value })}
+              className="mt-1 w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+            />
+          </label>
           <input
             type="text"
             placeholder="Budget (optional)"
