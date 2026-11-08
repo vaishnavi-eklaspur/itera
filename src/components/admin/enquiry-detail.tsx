@@ -332,7 +332,7 @@ export function EnquiryDetail({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Original message */}
-          <section id="reply-composer" className="scroll-mt-24 bg-white rounded-xl border border-stone-200 p-6">
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
             <div className="flex items-center gap-2 mb-3">
               <User className="w-4 h-4 text-stone-400" />
               <span className="text-sm font-medium text-stone-700">Original Message</span>
@@ -462,7 +462,7 @@ export function EnquiryDetail({
           )}
 
           {/* Reply composer */}
-          <section className="bg-white rounded-xl border border-stone-200 p-6">
+          <section id="reply-composer" className="scroll-mt-24 bg-white rounded-xl border border-stone-200 p-6">
             {createdQuoteToken && (
               <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
                 Quote created successfully. The quote link and PDF link have been added to the reply draft below.
