@@ -37,7 +37,10 @@ type Enquiry = {
 
 type SuggestedPackage = {
   id: string;
+  slug: string;
   currentVersion: { title: string; destination: string; days: number } | null;
+  seasonalPrices: { pricePerPerson: number; seasonName: string; basis: string }[];
+  suggestion?: { reasons: string[]; pricePerPerson: number | null; seasonName: string | null; basis: string | null };
 };
 
 function ConfidenceBadge({ value }: { value: number }) {
@@ -277,6 +280,15 @@ export function EnquiryDetail({
                     <div>
                       <p className="text-sm font-medium text-forest-800">{sp.currentVersion?.title}</p>
                       <p className="text-xs text-forest-600">{sp.currentVersion?.destination} · {sp.currentVersion?.days} days</p>
+                      {sp.suggestion?.pricePerPerson != null && (
+                        <p className="text-xs text-stone-600 mt-1">
+                          From ₹{sp.suggestion.pricePerPerson.toLocaleString("en-IN")}/person
+                          {sp.suggestion.seasonName ? ` · ${sp.suggestion.seasonName}` : " · starting price"}
+                        </p>
+                      )}
+                      {sp.suggestion?.reasons?.length ? (
+                        <p className="text-xs text-stone-500 mt-1">{sp.suggestion.reasons.join(" · ")}</p>
+                      ) : null}
                     </div>
                   </div>
                 ))}

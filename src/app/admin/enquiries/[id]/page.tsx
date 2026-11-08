@@ -28,14 +28,24 @@ export default async function AdminEnquiryDetailPage({
     select: { id: true, name: true },
   });
 
-  const aiSuggestions = enquiry.aiSuggestions as { packageIds?: string[] } | null;
-  const suggestedIds = aiSuggestions?.packageIds ?? [];
+  const aiSuggestions = Array.isArray(enquiry.aiSuggestions)
+    ? enquiry.aiSuggestions as { packageSlug: string; score: number; reasons: string[]; pricePerPerson: number | null; seasonName: string | null; basis: string | null }[]
+    : [];
+  const suggestedSlugs = aiSuggestions.map((suggestion) => suggestion.packageSlug);
 
-  let suggestedPackages: { id: string; currentVersion: { title: string; destination: string; days: number } | null }[] = [];
-  if (suggestedIds.length) {
+  let suggestedPackages: {
+    id: string;
+    slug: string;
+    currentVersion: { title: string; destination: string; days: number } | null;
+    seasonalPrices: { pricePerPerson: number; seasonName: string; basis: string }[];
+  }[] = [];
+  if (suggestedSlugs.length) {
     suggestedPackages = await db.package.findMany({
-      where: { id: { in: suggestedIds } },
-      include: { currentVersion: { select: { title: true, destination: true, days: true } } },
+      where: { slug: { in: suggestedSlugs } },
+      include: {
+        currentVersion: { select: { title: true, destination: true, days: true } },
+        seasonalPrices: { where: { isActive: true } },
+      },
     });
   }
 
@@ -43,7 +53,12 @@ export default async function AdminEnquiryDetailPage({
     <EnquiryDetail
       enquiry={JSON.parse(JSON.stringify(enquiry))}
       admins={admins}
-      suggestedPackages={JSON.parse(JSON.stringify(suggestedPackages))}
+      suggestedPackages={JSON.parse(JSON.stringify(
+        suggestedPackages.map((pkg) => ({
+          ...pkg,
+          suggestion: aiSuggestions.find((suggestion) => suggestion.packageSlug === pkg.slug),
+        }))
+      ))}
     />
   );
 }

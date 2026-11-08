@@ -42,6 +42,18 @@ function parseExtraction(rawText: string) {
   }
 }
 
+function dateMonth(date: string | null | undefined) {
+  return date ? new Date(`${date}T00:00:00Z`).getUTCMonth() + 1 : null;
+}
+
+function isMonthInSeason(month: number, start: number, end: number) {
+  return start <= end ? month >= start && month <= end : month >= start || month <= end;
+}
+
+function matchingTokens(value: string) {
+  return value.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 3);
+}
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-internal-secret");
   if (secret !== process.env.INTERNAL_API_SECRET) {
@@ -157,18 +169,21 @@ export async function POST(req: NextRequest) {
 
         let score = 0;
         const reasons: string[] = [];
+        const destinationTokens = matchingTokens(extracted.destination || "");
+        const packageDestination = v.destination.toLowerCase();
+        const destinationMatches = destinationTokens.filter((token) => packageDestination.includes(token));
 
         // Destination match
-        if (extracted.destination && v.destination.toLowerCase().includes(extracted.destination.toLowerCase())) {
-          score += 0.3;
+        if (destinationMatches.length > 0) {
+          score += 0.3 * Math.min(destinationMatches.length / Math.max(destinationTokens.length, 1), 1);
           reasons.push(`${v.destination} destination match`);
         }
 
         // Days match
         if (extracted.dates?.start && extracted.dates?.end) {
-          const diffDays = Math.ceil(
-            (new Date(extracted.dates.end).getTime() - new Date(extracted.dates.start).getTime()) / 86400000
-          );
+          const diffDays = Math.round(
+            (new Date(`${extracted.dates.end}T00:00:00Z`).getTime() - new Date(`${extracted.dates.start}T00:00:00Z`).getTime()) / 86400000
+          ) + 1;
           if (Math.abs(v.days - diffDays) <= 1) {
             score += 0.2;
             reasons.push(`${v.days} days matches request`);
@@ -178,47 +193,87 @@ export async function POST(req: NextRequest) {
         // Budget match
         if (extracted.budget?.total && extracted.adults) {
           const perPerson = extracted.budget.total / extracted.adults;
-          const minPrice = Math.min(...pkg.seasonalPrices.map((p) => p.pricePerPerson));
-          if (minPrice <= perPerson * 1.1) {
+          const month = dateMonth(extracted.dates?.start);
+          const seasonalPrice = month
+            ? pkg.seasonalPrices.find((p) => isMonthInSeason(month, p.seasonStartMonth, p.seasonEndMonth))
+            : null;
+          const comparisonPrice = seasonalPrice?.pricePerPerson ?? Math.min(...pkg.seasonalPrices.map((p) => p.pricePerPerson));
+          if (comparisonPrice <= perPerson * 1.1) {
             score += 0.2;
-            reasons.push(`Starting at ₹${minPrice.toLocaleString("en-IN")}/person — within budget`);
+            reasons.push(`₹${comparisonPrice.toLocaleString("en-IN")}/person — within budget`);
           }
         }
 
         // Season match
-        if (extracted.dates?.start) {
-          const month = new Date(extracted.dates.start).getMonth() + 1;
-          const seasonMatch = pkg.seasonalPrices.find((p) => {
-            if (p.seasonStartMonth <= p.seasonEndMonth) return month >= p.seasonStartMonth && month <= p.seasonEndMonth;
-            return month >= p.seasonStartMonth || month <= p.seasonEndMonth;
-          });
-          if (seasonMatch) {
-            score += 0.15;
-            reasons.push(`Available in ${seasonMatch.seasonName}`);
-          }
+        const month = dateMonth(extracted.dates?.start);
+        const seasonMatch = month
+          ? pkg.seasonalPrices.find((p) => isMonthInSeason(month, p.seasonStartMonth, p.seasonEndMonth))
+          : null;
+        if (seasonMatch) {
+          score += 0.15;
+          reasons.push(`Available in ${seasonMatch.seasonName}`);
         }
 
         // Requirements match
         const itineraryText = JSON.stringify(v.itinerary).toLowerCase();
         for (const req of extracted.requirements) {
-          if (itineraryText.includes(req.toLowerCase()) || v.title.toLowerCase().includes(req.toLowerCase())) {
+          const requestTokens = matchingTokens(req);
+          const matchedRequirementTokens = requestTokens.filter((token) => itineraryText.includes(token) || v.title.toLowerCase().includes(token));
+          if (matchedRequirementTokens.length > 0) {
             score += 0.1;
             reasons.push(`Includes ${req}`);
           }
         }
 
-        return { packageSlug: pkg.slug, score: Math.min(score, 1), reasons };
+        const seasonalPrice = month
+          ? pkg.seasonalPrices.find((p) => isMonthInSeason(month, p.seasonStartMonth, p.seasonEndMonth))
+          : null;
+        const startingPrice = seasonalPrice ?? pkg.seasonalPrices.reduce((lowest, price) =>
+          price.pricePerPerson < lowest.pricePerPerson ? price : lowest
+        , pkg.seasonalPrices[0]);
+        return {
+          packageSlug: pkg.slug,
+          score: Math.min(score, 1),
+          reasons,
+          pricePerPerson: startingPrice?.pricePerPerson ?? null,
+          seasonName: seasonalPrice?.seasonName ?? null,
+          basis: startingPrice?.basis ?? null,
+        };
       })
       .filter((s): s is NonNullable<typeof s> => s !== null && s.score > 0.2)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
+
+    const draftLines = [
+      `Hi ${enquiry.name},`,
+      "",
+      "Thank you for sharing your travel plans. Based on your enquiry, we noted:",
+      extracted.destination ? `- Destination: ${extracted.destination}` : null,
+      extracted.dates?.raw ? `- Travel dates: ${extracted.dates.raw}` : null,
+      extracted.adults != null ? `- Travellers: ${extracted.adults} adult(s)${extracted.children != null ? ` and ${extracted.children} child(ren)` : ""}` : null,
+      extracted.budget?.total != null ? `- Budget: ${extracted.budget.currency || "INR"} ${extracted.budget.total.toLocaleString("en-IN")}` : null,
+      extracted.requirements.length ? `- Requirements: ${extracted.requirements.join(", ")}` : null,
+      "",
+      suggestions.length
+        ? `We recommend: ${suggestions.map((suggestion) => {
+            const pkg = allPackages.find((candidate) => candidate.slug === suggestion.packageSlug);
+            const price = suggestion.pricePerPerson != null ? ` from ₹${suggestion.pricePerPerson.toLocaleString("en-IN")}/person${suggestion.seasonName ? ` (${suggestion.seasonName})` : ""}` : "";
+            return `${pkg?.currentVersion?.title ?? suggestion.packageSlug}${price}`;
+          }).join("; ")}.`
+        : "Our travel team will review your requirements and suggest suitable options.",
+      "",
+      "A travel consultant will confirm availability and prepare the final itinerary and quotation for you.",
+      "",
+      "Warm regards,",
+      "Itera Travel Team",
+    ].filter((line): line is string => line !== null);
 
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
         aiExtracted: extracted,
         aiSuggestions: suggestions,
-        aiDraftReply: null,
+        aiDraftReply: draftLines.join("\n"),
       },
     });
 
