@@ -91,6 +91,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Enquiry is not assigned to you" }, { status: 403 });
     }
   }
+  const packagePricing = await db.package.findUnique({
+    where: { id: parsed.data.packageId },
+    select: {
+      status: true,
+      seasonalPrices: {
+        where: { isActive: true },
+        select: { pricePerPerson: true },
+      },
+    },
+  });
+  if (!packagePricing) {
+    return NextResponse.json({ error: "Package not found" }, { status: 404 });
+  }
+  if (packagePricing.status !== "PUBLISHED") {
+    return NextResponse.json({ error: "Quotes can only use published packages" }, { status: 400 });
+  }
+  if (!packagePricing.seasonalPrices.some((price) => price.pricePerPerson === parsed.data.pricePerPerson)) {
+    return NextResponse.json(
+      { error: "Price must match an active seasonal price for the selected package" },
+      { status: 400 },
+    );
+  }
 
   const token = randomUUID();
   const validUntil = new Date(Date.now() + (parsed.data.validDays ?? 7) * 24 * 60 * 60 * 1000);
