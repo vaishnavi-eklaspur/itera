@@ -31,6 +31,33 @@ const EMPTY_EXTRACTION = {
   confidence: 0,
 };
 
+function getFallbackExtraction(enquiry: {
+  message: string;
+  travelDates: string | null;
+  adults: number | null;
+  children: number | null;
+  budget: string | null;
+  package: { currentVersion: { destination: string; title: string; days: number } | null } | null;
+}) {
+  const selectedDateMatch = enquiry.travelDates?.match(/^(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})$/);
+  const budgetMatch = enquiry.budget?.match(/\d[\d,]*/);
+  const requirements = enquiry.message.split(":").slice(1).join(":").trim();
+  return {
+    dates: selectedDateMatch
+      ? { start: selectedDateMatch[1], end: selectedDateMatch[2], flexible: false, raw: enquiry.travelDates }
+      : null,
+    additionalDays: null,
+    adults: enquiry.adults,
+    children: enquiry.children,
+    destination: enquiry.package?.currentVersion?.destination ?? null,
+    budget: budgetMatch
+      ? { total: Number(budgetMatch[0].replace(/,/g, "")), perPerson: null, currency: "INR" }
+      : null,
+    requirements: requirements ? [requirements] : [],
+    confidence: 0.2,
+  };
+}
+
 function parseExtraction(rawText: string) {
   try {
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -64,19 +91,20 @@ export async function POST(req: NextRequest) {
 
   const enquiry = await db.enquiry.findUnique({
     where: { id: enquiryId },
-    include: { package: { include: { currentVersion: { select: { title: true, days: true } } } } },
+    include: { package: { include: { currentVersion: { select: { title: true, destination: true, days: true } } } } },
   });
   if (!enquiry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const groqKey = process.env.GROQ_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!groqKey && !geminiKey) {
+    const fallback = getFallbackExtraction(enquiry);
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
-        aiExtracted: EMPTY_EXTRACTION,
+        aiExtracted: fallback,
         aiSuggestions: [],
-        aiDraftReply: null,
+        aiDraftReply: `Hi ${enquiry.name},\n\nThank you for your enquiry about ${enquiry.package?.currentVersion?.title ?? "your trip"}. Our travel team will review your requirements and prepare suitable options for you.\n\nWarm regards,\nItera Travel Team`,
       },
     });
     return NextResponse.json({ success: true, fallback: true });
@@ -281,12 +309,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch {
     // Graceful fallback on any AI failure
+    const fallback = getFallbackExtraction(enquiry);
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
-        aiExtracted: EMPTY_EXTRACTION,
+        aiExtracted: fallback,
         aiSuggestions: [],
-        aiDraftReply: null,
+        aiDraftReply: `Hi ${enquiry.name},\n\nThank you for your enquiry about ${enquiry.package?.currentVersion?.title ?? "your trip"}. Our travel team will review your requirements and prepare suitable options for you.\n\nWarm regards,\nItera Travel Team`,
       },
     });
     return NextResponse.json({ success: true, fallback: true });

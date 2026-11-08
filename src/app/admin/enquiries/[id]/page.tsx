@@ -1,8 +1,33 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { EnquiryDetail } from "@/components/admin/enquiry-detail";
 
 export const instant = false;
+
+async function ensureEnquiryExtraction(id: string, aiExtracted: unknown, aiDraftReply: string | null) {
+  const extracted = aiExtracted as { confidence?: number } | null;
+  if (extracted && extracted.confidence !== 0 && aiDraftReply) return;
+
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("host");
+  const protocol = requestHeaders.get("x-forwarded-proto") || "https";
+  if (!host || !process.env.INTERNAL_API_SECRET) return;
+
+  try {
+    await fetch(`${protocol}://${host}/api/internal/ai`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-secret": process.env.INTERNAL_API_SECRET,
+      },
+      body: JSON.stringify({ enquiryId: id }),
+      cache: "no-store",
+    });
+  } catch (error) {
+    console.error(`[AI] Visit extraction failed for enquiry ${id}:`, error);
+  }
+}
 
 export default async function AdminEnquiryDetailPage({
   params,
@@ -14,7 +39,7 @@ export default async function AdminEnquiryDetailPage({
   const enquiry = await db.enquiry.findUnique({
     where: { id },
     include: {
-      package: { include: { currentVersion: { select: { title: true } } } },
+      package: { include: { currentVersion: { select: { title: true, destination: true, days: true } } } },
       assignedTo: { select: { id: true, name: true } },
       notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
       replies: { orderBy: { sentAt: "desc" }, include: { author: { select: { name: true } } } },
@@ -23,13 +48,25 @@ export default async function AdminEnquiryDetailPage({
 
   if (!enquiry) notFound();
 
+  await ensureEnquiryExtraction(enquiry.id, enquiry.aiExtracted, enquiry.aiDraftReply);
+  const refreshedEnquiry = await db.enquiry.findUnique({
+    where: { id },
+    include: {
+      package: { include: { currentVersion: { select: { title: true } } } },
+      assignedTo: { select: { id: true, name: true } },
+      notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
+      replies: { orderBy: { sentAt: "desc" }, include: { author: { select: { name: true } } } },
+    },
+  });
+  if (!refreshedEnquiry) notFound();
+
   const admins = await db.user.findMany({
     where: { role: "ADMIN" },
     select: { id: true, name: true },
   });
 
-  const aiSuggestions = Array.isArray(enquiry.aiSuggestions)
-    ? enquiry.aiSuggestions as { packageSlug: string; score: number; reasons: string[]; pricePerPerson: number | null; seasonName: string | null; basis: string | null }[]
+  const aiSuggestions = Array.isArray(refreshedEnquiry.aiSuggestions)
+    ? refreshedEnquiry.aiSuggestions as { packageSlug: string; score: number; reasons: string[]; pricePerPerson: number | null; seasonName: string | null; basis: string | null }[]
     : [];
   const suggestedSlugs = aiSuggestions.map((suggestion) => suggestion.packageSlug);
 
@@ -51,7 +88,7 @@ export default async function AdminEnquiryDetailPage({
 
   return (
     <EnquiryDetail
-      enquiry={JSON.parse(JSON.stringify(enquiry))}
+      enquiry={JSON.parse(JSON.stringify(refreshedEnquiry))}
       admins={admins}
       suggestedPackages={JSON.parse(JSON.stringify(
         suggestedPackages.map((pkg) => ({
