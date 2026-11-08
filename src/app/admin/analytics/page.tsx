@@ -9,20 +9,21 @@ export const instant = false;
 export default async function AnalyticsPage() {
   await requireAdminRole("ADMIN", "CONSULTANT");
   await connection();
-  const [total, byStatus, avgResponseMs, enquiriesLast30, topPackages] = await Promise.all([
+  const [total, byStatus, responseStats, enquiriesLast30, topPackages] = await Promise.all([
     db.enquiry.count(),
     db.enquiry.groupBy({ by: ["status"], _count: true }),
-    getAvgResponseTime(),
+    getResponseStats(),
     getEnquiriesLast30Days(),
     getTopPackages(),
   ]);
 
   const newCount = byStatus.find((s) => s.status === "NEW")?._count ?? 0;
-  const repliedCount = byStatus.find((s) => s.status === "REPLIED")?._count ?? 0;
-  const closedCount = byStatus.find((s) => s.status === "CLOSED")?._count ?? 0;
-  const slaRate = total > 0 ? Math.round(((repliedCount + closedCount) / total) * 100) : 0;
-
-  const avgHours = avgResponseMs ? Math.round(avgResponseMs / (1000 * 60 * 60) * 10) / 10 : null;
+  const slaRate = responseStats.totalReplied > 0
+    ? Math.round((responseStats.repliedWithinHour / responseStats.totalReplied) * 100)
+    : 0;
+  const avgHours = responseStats.averageResponseMs
+    ? Math.round(responseStats.averageResponseMs / (1000 * 60 * 60) * 10) / 10
+    : null;
 
   return (
     <div>
@@ -31,7 +32,7 @@ export default async function AnalyticsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KPI icon={Inbox} label="Total Enquiries" value={total} />
         <KPI icon={Clock} label="New / Pending" value={newCount} accent />
-        <KPI icon={CheckCircle} label="Response Rate" value={`${slaRate}%`} />
+        <KPI icon={CheckCircle} label="Replied within 1 hour" value={`${slaRate}%`} />
         <KPI icon={TrendingUp} label="Avg Response" value={avgHours ? `${avgHours}h` : "—"} />
       </div>
 
@@ -103,7 +104,7 @@ function KPI({ icon: Icon, label, value, accent }: {
   );
 }
 
-async function getAvgResponseTime() {
+async function getResponseStats() {
   const enquiriesWithReplies = await db.enquiry.findMany({
     where: { replies: { some: {} } },
     select: {
@@ -112,13 +113,23 @@ async function getAvgResponseTime() {
     },
   });
 
-  if (enquiriesWithReplies.length === 0) return null;
+  if (enquiriesWithReplies.length === 0) {
+    return { averageResponseMs: null, totalReplied: 0, repliedWithinHour: 0 };
+  }
   const total = enquiriesWithReplies.reduce((sum, e) => {
     const firstReply = e.replies[0];
     if (!firstReply) return sum;
     return sum + (firstReply.sentAt.getTime() - e.createdAt.getTime());
   }, 0);
-  return total / enquiriesWithReplies.length;
+  const repliedWithinHour = enquiriesWithReplies.filter((enquiry) => {
+    const firstReply = enquiry.replies[0];
+    return firstReply && firstReply.sentAt.getTime() - enquiry.createdAt.getTime() <= 60 * 60 * 1000;
+  }).length;
+  return {
+    averageResponseMs: total / enquiriesWithReplies.length,
+    totalReplied: enquiriesWithReplies.length,
+    repliedWithinHour,
+  };
 }
 
 async function getEnquiriesLast30Days() {

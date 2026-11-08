@@ -16,7 +16,6 @@ export async function GET() {
         replies: { select: { sentAt: true }, take: 1, orderBy: { sentAt: "asc" } },
       },
       orderBy: { createdAt: "desc" },
-      take: 200,
     }),
     db.enquiry.findMany({
       where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
