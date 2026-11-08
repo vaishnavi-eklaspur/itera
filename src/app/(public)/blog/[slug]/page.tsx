@@ -97,7 +97,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <Navbar />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
+      <main className="relative z-10 bg-ivory max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
         <Link href="/blog" className="flex items-center gap-1 text-sm text-forest-600 hover:text-forest-700 mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to Blog
         </Link>

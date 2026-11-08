@@ -86,9 +86,9 @@ export default async function PackagesPage({
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main id="main-content" className="flex-1">
+      <main id="main-content" className="relative z-10 flex-1 bg-ivory">
         {/* Hero — photo-led */}
-        <div className="relative h-[44vh] min-h-[300px] overflow-hidden">
+        <div className="relative z-0 isolate h-[44vh] min-h-[300px] overflow-hidden">
           <img
             src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920&h=700&fit=crop&auto=format&q=85"
             alt="South India landscape"

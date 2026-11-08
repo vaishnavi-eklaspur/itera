@@ -150,7 +150,7 @@ export default async function PackageDetailPage({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Hero — cinematic photo */}
-      <div className="relative h-[55vh] min-h-[420px] overflow-hidden">
+      <div className="relative z-0 isolate h-[55vh] min-h-[420px] overflow-hidden">
         {(v.photos as string[])?.[0] ? (
           isSeoImageUrl((v.photos as string[])[0]) ? (
             <Image src={(v.photos as string[])[0]} alt={`${v.title} hero`} fill sizes="100vw" priority className="object-cover scale-105" />
@@ -181,7 +181,7 @@ export default async function PackageDetailPage({
       </div>
 
       {/* Sticky mobile price bar */}
-      <div className="lg:hidden sticky top-[60px] z-40 bg-ivory/90 backdrop-blur-lg border-b border-stone-200/40 px-4 py-3 flex items-center justify-between">
+      <div className="relative z-20 lg:hidden sticky top-[60px] bg-ivory/90 backdrop-blur-lg border-b border-stone-200/40 px-4 py-3 flex items-center justify-between">
         <div>
           <span className="text-[10px] text-stone-400 uppercase tracking-wider">From</span>
           <p className="text-lg font-display font-bold text-forest-700">{formatPrice(minPrice)}<span className="text-xs font-normal text-stone-400 ml-0.5">/person</span></p>
@@ -191,7 +191,7 @@ export default async function PackageDetailPage({
         </a>
       </div>
 
-      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="relative z-10 bg-ivory max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="lg:grid lg:grid-cols-3 lg:gap-8">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-8">

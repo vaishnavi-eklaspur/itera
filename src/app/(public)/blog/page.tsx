@@ -45,7 +45,7 @@ export default async function BlogPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="relative h-[36vh] min-h-[260px] overflow-hidden">
+      <div className="relative z-0 isolate h-[36vh] min-h-[260px] overflow-hidden">
         <Image
           src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1600&h=500&fit=crop&auto=format&q=80"
           alt="South India landscape"
@@ -64,7 +64,7 @@ export default async function BlogPage() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
+      <main className="relative z-10 bg-ivory max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
         {categories.length > 0 && (
           <div className="flex gap-2 flex-wrap mb-8">
             {categories.map((cat) => (
