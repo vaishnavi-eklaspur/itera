@@ -311,6 +311,12 @@ export function EnquiryDetail({
                   Open quote
                 </Link>
               </div>
+              <Link
+                href={quoteBuilderUrl}
+                className="mt-3 inline-flex rounded-lg border border-forest-300 bg-white px-3 py-2 text-sm font-medium text-forest-700 hover:bg-forest-50"
+              >
+                Open quote builder
+              </Link>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-lg bg-white/70 p-3">
                   <p className="text-xs text-stone-500">Total</p>

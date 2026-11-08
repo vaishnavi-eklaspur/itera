@@ -162,6 +162,12 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
                     )}
                   </div>
                 </Link>
+                <Link
+                  href={`/admin/quotes?enquiryId=${e.id}`}
+                  className="shrink-0 rounded-lg border border-forest-200 px-2.5 py-1.5 text-xs font-medium text-forest-700 hover:bg-forest-50"
+                >
+                  Quote builder
+                </Link>
               </div>
             );
           })}
