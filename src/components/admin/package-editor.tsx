@@ -15,6 +15,33 @@ type ItineraryDay = {
   activities: string[];
 };
 
+const LOCATION_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  alleppey: { lat: 9.4981, lng: 76.3388 },
+  alappuzha: { lat: 9.4981, lng: 76.3388 },
+  athirappilly: { lat: 10.2849, lng: 76.5693 },
+  cochin: { lat: 9.9312, lng: 76.2673 },
+  coorg: { lat: 12.3375, lng: 75.8069 },
+  goa: { lat: 15.2993, lng: 74.124 },
+  hampi: { lat: 15.335, lng: 76.46 },
+  kochi: { lat: 9.9312, lng: 76.2673 },
+  kovalam: { lat: 8.4004, lng: 76.9787 },
+  kumarakom: { lat: 9.6175, lng: 76.4304 },
+  kanyakumari: { lat: 8.0883, lng: 77.5385 },
+  madurai: { lat: 9.9252, lng: 78.1198 },
+  munnar: { lat: 10.0889, lng: 77.0595 },
+  mysore: { lat: 12.2958, lng: 76.6394 },
+  rameswaram: { lat: 9.2876, lng: 79.3129 },
+  thekkady: { lat: 9.6031, lng: 77.1617 },
+  trivandrum: { lat: 8.5241, lng: 76.9366 },
+  varkala: { lat: 8.7379, lng: 76.7163 },
+  wayanad: { lat: 11.6854, lng: 76.132 },
+};
+
+function findLocationCoordinates(location: string) {
+  const normalized = location.trim().toLowerCase();
+  return Object.entries(LOCATION_COORDINATES).find(([name]) => normalized.includes(name))?.[1];
+}
+
 type SeasonalPrice = {
   id?: string;
   seasonName: string;
@@ -178,6 +205,14 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     setItinerary(prev => prev.map((d, i) => i === index ? { ...d, [field]: value } : d));
   }
 
+  function updateItineraryLocation(index: number, location: string) {
+    const coordinates = findLocationCoordinates(location);
+    setItinerary(prev => prev.map((day, i) => i === index
+      ? { ...day, location, ...(coordinates ?? {}) }
+      : day
+    ));
+  }
+
   function addDay() {
     setItinerary(prev => [...prev, {
       day: prev.length + 1, title: "", location: "", lat: 10.0, lng: 76.0, description: "", activities: [],
@@ -293,13 +328,30 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <input placeholder="Title" value={day.title} onChange={(e) => updateItineraryDay(i, "title", e.target.value)} className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
-                    <input placeholder="Location" value={day.location} onChange={(e) => updateItineraryDay(i, "location", e.target.value)} className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
+                    <input
+                      placeholder="Location (e.g. Munnar)"
+                      value={day.location}
+                      onChange={(e) => updateItineraryLocation(i, e.target.value)}
+                      className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500"
+                    />
                   </div>
                   <textarea placeholder="Description" rows={2} value={day.description} onChange={(e) => updateItineraryDay(i, "description", e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none mb-3" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input type="number" step="0.0001" placeholder="Latitude" value={day.lat} onChange={(e) => updateItineraryDay(i, "lat", parseFloat(e.target.value) || 0)} className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
-                    <input type="number" step="0.0001" placeholder="Longitude" value={day.lng} onChange={(e) => updateItineraryDay(i, "lng", parseFloat(e.target.value) || 0)} className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
-                  </div>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs text-stone-500">Advanced map settings</summary>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <label className="text-xs text-stone-500">
+                        Latitude
+                        <input type="number" step="0.0001" value={day.lat} onChange={(e) => updateItineraryDay(i, "lat", parseFloat(e.target.value) || 0)} className="mt-1 w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
+                      </label>
+                      <label className="text-xs text-stone-500">
+                        Longitude
+                        <input type="number" step="0.0001" value={day.lng} onChange={(e) => updateItineraryDay(i, "lng", parseFloat(e.target.value) || 0)} className="mt-1 w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
+                      </label>
+                    </div>
+                    <p className="mt-1 text-[11px] text-stone-400">
+                      Coordinates update automatically for common Kerala and South India locations.
+                    </p>
+                  </details>
                   <div className="mt-3">
                     <label className="text-xs text-stone-400 mb-1 block">Activities (comma-separated)</label>
                     <input
