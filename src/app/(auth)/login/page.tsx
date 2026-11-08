@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, LogIn } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,18 +16,31 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const res = await Promise.race([
+        signIn("credentials", {
+          email: email.trim().toLowerCase(),
+          password,
+          redirect: false,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Login timed out")), 15_000)
+        ),
+      ]);
 
-    if (res?.error) {
-      setError("Invalid email or password");
+      if (res?.error) {
+        setError("Invalid email or password");
+        setLoading(false);
+      } else {
+        window.location.assign("/admin");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message === "Login timed out"
+          ? "Login is taking too long. Please try again."
+          : "Unable to sign in. Please try again."
+      );
       setLoading(false);
-    } else {
-      router.push("/admin");
-      router.refresh();
     }
   }
 
