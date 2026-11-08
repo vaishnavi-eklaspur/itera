@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { EnquiryDetail } from "@/components/admin/enquiry-detail";
+import { requireAdminRole } from "@/lib/admin-access";
 
 export const instant = false;
 
@@ -34,10 +35,14 @@ export default async function AdminEnquiryDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await requireAdminRole("ADMIN", "CONSULTANT");
   const { id } = await params;
 
   const enquiry = await db.enquiry.findUnique({
-    where: { id },
+    where: {
+      id,
+      ...(session.user.role === "CONSULTANT" ? { assignedToId: session.user.id } : {}),
+    },
     include: {
       package: { include: { currentVersion: { select: { title: true, destination: true, days: true } } } },
       assignedTo: { select: { id: true, name: true, role: true } },
@@ -51,7 +56,10 @@ export default async function AdminEnquiryDetailPage({
 
   await ensureEnquiryExtraction(enquiry.id, enquiry.aiExtracted, enquiry.aiDraftReply);
   const refreshedEnquiry = await db.enquiry.findUnique({
-    where: { id },
+    where: {
+      id,
+      ...(session.user.role === "CONSULTANT" ? { assignedToId: session.user.id } : {}),
+    },
     include: {
       package: { include: { currentVersion: { select: { title: true } } } },
       assignedTo: { select: { id: true, name: true, role: true } },

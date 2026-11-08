@@ -16,6 +16,14 @@ export async function PUT(req: NextRequest) {
   if (!Array.isArray(ids) || ids.length === 0) {
     return NextResponse.json({ error: "No enquiries selected" }, { status: 400 });
   }
+  if (session.user.role === "CONSULTANT") {
+    const assignedEnquiries = await db.enquiry.count({
+      where: { id: { in: ids }, assignedToId: session.user.id },
+    });
+    if (assignedEnquiries !== ids.length) {
+      return NextResponse.json({ error: "You can only update enquiries assigned to you" }, { status: 403 });
+    }
+  }
 
   if (status && !["IN_PROGRESS", "REPLIED", "CLOSED"].includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });

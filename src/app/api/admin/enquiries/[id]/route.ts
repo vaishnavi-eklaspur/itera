@@ -40,6 +40,9 @@ export async function GET(
   if (!enquiry) {
     return NextResponse.json({ error: "Enquiry not found" }, { status: 404 });
   }
+  if (session.user.role === "CONSULTANT" && enquiry.assignedToId !== session.user.id) {
+    return NextResponse.json({ error: "Enquiry is not assigned to you" }, { status: 403 });
+  }
 
   // Also fetch suggested packages if AI suggestions exist
   let suggestedPackages = null;
@@ -87,6 +90,9 @@ export async function PUT(
     select: { status: true, assignedToId: true },
   });
   if (!existing) return NextResponse.json({ error: "Enquiry not found" }, { status: 404 });
+  if (session.user.role === "CONSULTANT" && existing.assignedToId !== session.user.id) {
+    return NextResponse.json({ error: "Enquiry is not assigned to you" }, { status: 403 });
+  }
 
   if (data.status !== undefined) updateData.status = data.status;
   if (data.assignedToId !== undefined) {
