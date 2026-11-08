@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXTAUTH_URL || "https://itera.vercel.app";
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || "https://itera.vercel.app").replace(/\/$/, "");
 
   const packages = await db.package.findMany({
     where: { status: "PUBLISHED" },
@@ -12,8 +12,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     where: { published: true },
     select: { slug: true, updatedAt: true, category: true, tags: true },
   });
-  const categories = [...new Set(posts.map((post) => post.category))];
-  const tags = [...new Set(posts.flatMap((post) => post.tags))];
+  const categoryDates = new Map<string, Date>();
+  const tagDates = new Map<string, Date>();
+  for (const post of posts) {
+    const currentCategoryDate = categoryDates.get(post.category);
+    if (!currentCategoryDate || post.updatedAt > currentCategoryDate) {
+      categoryDates.set(post.category, post.updatedAt);
+    }
+    for (const tag of post.tags) {
+      const currentTagDate = tagDates.get(tag);
+      if (!currentTagDate || post.updatedAt > currentTagDate) {
+        tagDates.set(tag, post.updatedAt);
+      }
+    }
+  }
 
   return [
     { url: base, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
@@ -30,13 +42,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),
-    ...categories.map((category) => ({
+    ...Array.from(categoryDates, ([category, lastModified]) => ({
       url: `${base}/blog/category/${encodeURIComponent(category)}`,
+      lastModified,
       changeFrequency: "weekly" as const,
       priority: 0.5,
     })),
-    ...tags.map((tag) => ({
+    ...Array.from(tagDates, ([tag, lastModified]) => ({
       url: `${base}/blog/tag/${encodeURIComponent(tag)}`,
+      lastModified,
       changeFrequency: "weekly" as const,
       priority: 0.4,
     })),
