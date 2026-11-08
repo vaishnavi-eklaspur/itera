@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const [total, byStatus, enquiries, admins] = await Promise.all([
+  const [total, byStatus, enquiries, recentEnquiries, admins] = await Promise.all([
     db.enquiry.count(),
     db.enquiry.groupBy({ by: ["status"], _count: true }),
     db.enquiry.findMany({
@@ -17,6 +17,10 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       take: 200,
+    }),
+    db.enquiry.findMany({
+      where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+      select: { createdAt: true },
     }),
     db.user.findMany({
       where: { role: "ADMIN" },
@@ -60,13 +64,16 @@ export async function GET() {
   // Daily enquiry counts (last 30 days)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const dailyEnquiries = enquiries
-    .filter((e) => e.createdAt >= thirtyDaysAgo)
-    .reduce((acc, e) => {
-      const day = e.createdAt.toISOString().split("T")[0];
-      acc[day] = (acc[day] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  const dailyEnquiries: Record<string, number> = {};
+  for (let i = 0; i < 30; i++) {
+    const day = new Date();
+    day.setDate(day.getDate() - (29 - i));
+    dailyEnquiries[day.toISOString().split("T")[0]] = 0;
+  }
+  recentEnquiries.forEach((e) => {
+    const day = e.createdAt.toISOString().split("T")[0];
+    if (day in dailyEnquiries) dailyEnquiries[day]++;
+  });
 
   // Top packages by enquiry count
   const packageCounts = await db.enquiry.groupBy({

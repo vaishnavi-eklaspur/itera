@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { connection } from "next/server";
 import { Inbox, Clock, TrendingUp, CheckCircle } from "lucide-react";
 import { requireAdminRole } from "@/lib/admin-access";
+import { AnalyticsVolume } from "@/components/admin/analytics-volume";
 
 export const instant = false;
 
@@ -83,27 +84,7 @@ export default async function AnalyticsPage() {
 
         <section className="bg-white rounded-xl border border-stone-200 p-6 lg:col-span-2">
           <h2 className="font-semibold text-stone-900 mb-4">Enquiry Volume (Last 30 Days)</h2>
-          {enquiriesLast30.length === 0 ? (
-            <p className="text-sm text-stone-400">No data yet</p>
-          ) : (
-            <div className="flex items-end gap-1 h-40">
-              {enquiriesLast30.map((d) => {
-                const max = Math.max(...enquiriesLast30.map((x) => x.count), 1);
-                const h = Math.max((d.count / max) * 100, 4);
-                return (
-                  <div key={d.date} className="flex-1 flex flex-col items-center group relative">
-                    <div
-                      className="w-full bg-forest-500 rounded-t hover:bg-forest-600 transition min-h-[4px]"
-                      style={{ height: `${h}%` }}
-                    />
-                    <div className="absolute bottom-full mb-1 hidden group-hover:block bg-stone-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                      {d.date}: {d.count}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <AnalyticsVolume initialData={enquiriesLast30} />
         </section>
       </div>
     </div>
