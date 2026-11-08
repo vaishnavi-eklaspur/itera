@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { Plus, FileText } from "lucide-react";
+import { requireAdminRole } from "@/lib/admin-access";
 
 export const instant = false;
 
 export default async function AdminBlogPage() {
+  await requireAdminRole("ADMIN", "EDITOR");
   const posts = await db.blogPost.findMany({
     include: { author: { select: { name: true } } },
     orderBy: { updatedAt: "desc" },

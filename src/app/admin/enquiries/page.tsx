@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { EnquiryList } from "@/components/admin/enquiry-list";
+import { requireAdminRole } from "@/lib/admin-access";
 
 export const instant = false;
 
@@ -8,6 +9,7 @@ export default async function AdminEnquiriesPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
+  await requireAdminRole("ADMIN", "CONSULTANT");
   const { status } = await searchParams;
 
   const where = status ? { status: status as "NEW" | "IN_PROGRESS" | "REPLIED" | "CLOSED" } : {};

@@ -22,6 +22,8 @@ const blogSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = authorizeRole(session.user.role, "ADMIN", "EDITOR");
+  if (denied) return denied;
 
   const posts = await db.blogPost.findMany({
     include: { author: { select: { name: true } } },

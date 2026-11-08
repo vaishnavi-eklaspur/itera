@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { PackageEditor } from "@/components/admin/package-editor";
+import { requireAdminRole } from "@/lib/admin-access";
 
 export const instant = false;
 
@@ -9,6 +10,7 @@ export default async function AdminPackageEditPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await requireAdminRole("ADMIN", "CONSULTANT");
   const { id } = await params;
 
   const pkg = await db.package.findUnique({
@@ -25,6 +27,7 @@ export default async function AdminPackageEditPage({
   return (
     <PackageEditor
       pkg={JSON.parse(JSON.stringify(pkg))}
+      readOnly={session.user.role === "CONSULTANT"}
     />
   );
 }

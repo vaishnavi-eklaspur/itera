@@ -1,9 +1,11 @@
 import { db } from "@/lib/db";
 import { Activity } from "lucide-react";
+import { requireAdminRole } from "@/lib/admin-access";
 
 export const instant = false;
 
 export default async function ActivityPage() {
+  await requireAdminRole("ADMIN");
   const logs = await db.activityLog.findMany({
     include: { user: { select: { name: true, email: true } } },
     orderBy: { createdAt: "desc" },

@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
 import { connection } from "next/server";
 import { Inbox, Clock, TrendingUp, CheckCircle } from "lucide-react";
+import { requireAdminRole } from "@/lib/admin-access";
 
 export const instant = false;
 
 export default async function AnalyticsPage() {
+  await requireAdminRole("ADMIN", "CONSULTANT");
   await connection();
   const [total, byStatus, avgResponseMs, enquiriesLast30, topPackages] = await Promise.all([
     db.enquiry.count(),

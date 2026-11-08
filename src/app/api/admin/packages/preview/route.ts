@@ -8,7 +8,7 @@ import { randomUUID } from "crypto";
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = authorizeRole(session.user.role, "ADMIN", "EDITOR");
+  const denied = authorizeRole(session.user.role, "ADMIN", "CONSULTANT");
   if (denied) return denied;
 
   const body = await req.json();

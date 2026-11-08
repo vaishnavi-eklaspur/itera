@@ -45,7 +45,7 @@ type PackageData = {
   versions: { id: string; versionNumber: number; title: string; createdAt: string }[];
 } | null;
 
-export function PackageEditor({ pkg }: { pkg: PackageData }) {
+export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; readOnly?: boolean }) {
   const router = useRouter();
   const isNew = !pkg;
   const v = pkg?.currentVersion;
@@ -197,7 +197,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
           {isNew ? "New Package" : `Edit: ${v?.title}`}
         </h1>
         <div className="flex items-center gap-2">
-          {!isNew && (
+          {!isNew && !readOnly && (
             <>
               <button onClick={handleDuplicate} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50">
                 <Copy className="w-4 h-4" /> Duplicate
@@ -222,20 +222,22 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
             {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
             Preview
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-forest-700 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {isNew ? "Create" : "Save (New Version)"}
-          </button>
+          {!readOnly && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-forest-700 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isNew ? "Create" : "Save (New Version)"}
+            </button>
+          )}
         </div>
       </div>
 
       {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <fieldset disabled={readOnly} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Basic info */}
@@ -245,7 +247,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
               <div>
                 <label className="text-sm text-stone-600 mb-1 block">Title</label>
                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
-              </div>
+                </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-stone-600 mb-1 block">Destination</label>
@@ -465,7 +467,7 @@ export function PackageEditor({ pkg }: { pkg: PackageData }) {
             </section>
           )}
         </div>
-      </div>
+      </fieldset>
     </div>
   );
 }

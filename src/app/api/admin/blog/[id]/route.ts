@@ -22,6 +22,8 @@ const blogUpdateSchema = z.object({
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = authorizeRole(session.user.role, "ADMIN", "EDITOR");
+  if (denied) return denied;
 
   const { id } = await params;
   const post = await db.blogPost.findUnique({ where: { id }, include: { author: { select: { name: true } } } });

@@ -9,6 +9,8 @@ export async function GET(
 ) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = authorizeRole(session.user.role, "ADMIN", "CONSULTANT");
+  if (denied) return denied;
 
   const { id } = await params;
 
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = authorizeRole(session.user.role, "ADMIN", "EDITOR");
+  const denied = authorizeRole(session.user.role, "ADMIN");
   if (denied) return denied;
 
   const { versionId } = await req.json();
