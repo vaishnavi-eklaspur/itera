@@ -43,6 +43,7 @@ type Enquiry = {
   whatsappConsentAt: string | null;
   status: string;
   createdAt: string;
+  autoAckSentAt: string | null;
   aiExtracted: AIExtracted | null;
   aiDraftReply: string | null;
   assignedToId: string | null;
@@ -51,6 +52,7 @@ type Enquiry = {
   notes: { id: string; content: string; createdAt: string; author: { name: string } }[];
   replies: { id: string; content: string; channel: string; sentAt: string; author: { name: string } }[];
   quotes: EnquiryQuote[];
+  activityLogs: { id: string; action: string; details: string | null; createdAt: string; user: { name: string } }[];
 };
 
 type SuggestedPackage = {
@@ -141,10 +143,12 @@ export function EnquiryDetail({
   enquiry,
   admins,
   suggestedPackages,
+  activityLogs,
 }: {
   enquiry: Enquiry;
   admins: { id: string; name: string; role: string }[];
   suggestedPackages: SuggestedPackage[];
+  activityLogs: Enquiry["activityLogs"];
 }) {
   const router = useRouter();
   const [replyContent, setReplyContent] = useState(enquiry.aiDraftReply ?? "");
@@ -241,6 +245,17 @@ export function EnquiryDetail({
   const isLowConfidence = (confidence ?? 0) < 0.4;
   const isHighConfidence = (confidence ?? 0) >= 0.75;
   const quoteBuilderUrl = `/admin/quotes?enquiryId=${enquiry.id}${enquiry.package?.id ? `&packageId=${enquiry.package.id}` : ""}${localExtracted?.adults ? `&travellers=${localExtracted.adults + (localExtracted.children ?? 0)}` : ""}${localExtracted?.dates?.raw ? `&travelDate=${encodeURIComponent(localExtracted.dates.raw)}` : ""}`;
+  const lifecycleEvents = [
+    { id: "created", label: "Enquiry created", details: null, createdAt: enquiry.createdAt, actor: null },
+    ...(enquiry.autoAckSentAt ? [{ id: "auto-ack", label: "Auto-acknowledgement sent", details: null, createdAt: enquiry.autoAckSentAt, actor: null }] : []),
+    ...activityLogs.map((log) => ({
+      id: log.id,
+      label: log.action,
+      details: log.details,
+      createdAt: log.createdAt,
+      actor: log.user.name,
+    })),
+  ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   return (
     <div>
@@ -481,6 +496,24 @@ export function EnquiryDetail({
                   <option key={a.id} value={a.id}>{a.role} — {a.name}</option>
                 ))}
               </select>
+            </div>
+          </section>
+
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
+            <h2 className="text-sm font-semibold text-stone-900 mb-3">Enquiry Timeline</h2>
+            <div className="space-y-3">
+              {lifecycleEvents.map((event) => (
+                <div key={event.id} className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-forest-400 mt-1.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-stone-700 capitalize">{event.label}</p>
+                    {event.details && <p className="text-xs text-stone-500">{event.details}</p>}
+                    <p className="text-xs text-stone-400">
+                      {event.actor ? `${event.actor} · ` : ""}{new Date(event.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
 

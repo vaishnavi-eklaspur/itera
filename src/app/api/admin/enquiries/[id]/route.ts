@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { authorizeRole } from "@/lib/roles";
+import { logActivity } from "@/lib/activity";
 
 export async function GET(
   req: NextRequest,
@@ -80,6 +81,11 @@ export async function PUT(
 
   const data = parsed.data;
   const updateData: Record<string, unknown> = {};
+  const existing = await db.enquiry.findUnique({
+    where: { id },
+    select: { status: true, assignedToId: true },
+  });
+  if (!existing) return NextResponse.json({ error: "Enquiry not found" }, { status: 404 });
 
   if (data.status !== undefined) updateData.status = data.status;
   if (data.assignedToId !== undefined) {
@@ -93,6 +99,9 @@ export async function PUT(
       }
     }
     updateData.assignedToId = data.assignedToId;
+    if (data.assignedToId && data.status === undefined && existing.status === "NEW") {
+      updateData.status = "IN_PROGRESS";
+    }
   }
   if (data.aiExtracted !== undefined) updateData.aiExtracted = data.aiExtracted;
 
@@ -100,6 +109,22 @@ export async function PUT(
     where: { id },
     data: updateData,
   });
+
+  if (data.assignedToId !== undefined && data.assignedToId !== existing.assignedToId) {
+    const assignee = data.assignedToId
+      ? await db.user.findUnique({ where: { id: data.assignedToId }, select: { name: true, role: true } })
+      : null;
+    await logActivity(
+      session.user.id,
+      data.assignedToId ? "assigned" : "unassigned",
+      "enquiry",
+      id,
+      data.assignedToId ? `${assignee?.role ?? "Staff"} — ${assignee?.name ?? "Unknown"}` : "Assignment removed"
+    );
+  }
+  if (updated.status !== existing.status) {
+    await logActivity(session.user.id, "status changed", "enquiry", id, `${existing.status} → ${updated.status}`);
+  }
 
   return NextResponse.json(updated);
 }

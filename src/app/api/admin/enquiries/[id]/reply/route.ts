@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { authorizeRole } from "@/lib/roles";
+import { logActivity } from "@/lib/activity";
 
 const replySchema = z.object({
   content: z.string().min(1, "Reply cannot be empty"),
@@ -40,6 +41,8 @@ export async function POST(
       data: { status: "REPLIED" },
     }),
   ]);
+
+  await logActivity(session.user.id, "replied", "enquiry", id, parsed.data.channel);
 
   return NextResponse.json(reply, { status: 201 });
 }

@@ -61,6 +61,11 @@ export default async function AdminEnquiryDetailPage({
     },
   });
   if (!refreshedEnquiry) notFound();
+  const activityLogs = await db.activityLog.findMany({
+    where: { entity: "enquiry", entityId: id },
+    orderBy: { createdAt: "asc" },
+    include: { user: { select: { name: true } } },
+  });
 
   const assignableUsers = await db.user.findMany({
     where: { role: { in: ["ADMIN", "CONSULTANT"] } },
@@ -92,6 +97,7 @@ export default async function AdminEnquiryDetailPage({
   return (
     <EnquiryDetail
       enquiry={JSON.parse(JSON.stringify(refreshedEnquiry))}
+      activityLogs={JSON.parse(JSON.stringify(activityLogs))}
       admins={assignableUsers}
       suggestedPackages={JSON.parse(JSON.stringify(
         suggestedPackages.map((pkg) => ({
