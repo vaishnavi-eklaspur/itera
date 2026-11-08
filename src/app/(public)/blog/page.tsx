@@ -10,6 +10,21 @@ export const metadata: Metadata = {
   title: "Blog — Itera Travel",
   description: "Travel stories, tips and guides for Kerala and South India.",
   alternates: { canonical: "/blog" },
+  openGraph: {
+    title: "Blog — Itera Travel",
+    description: "Travel stories, tips and guides for Kerala and South India.",
+    type: "website",
+    images: [{
+      url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1600&h=500&fit=crop&auto=format&q=80",
+      width: 1600,
+      height: 500,
+      alt: "South India landscape",
+    }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1600&h=500&fit=crop&auto=format&q=80"],
+  },
 };
 
 export const instant = false;

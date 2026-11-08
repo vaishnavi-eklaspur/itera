@@ -20,11 +20,22 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) return { title: "Post Not Found" };
+  const title = post.seoTitle || post.title;
+  const description = post.seoDescription || post.excerpt;
   return {
-    title: post.seoTitle || post.title,
-    description: post.seoDescription || post.excerpt,
+    title,
+    description,
     alternates: { canonical: `/blog/${post.slug}` },
-    openGraph: { title: post.seoTitle || post.title, description: post.seoDescription || post.excerpt, type: "article" },
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      ...(post.coverImage ? { images: [{ url: post.coverImage, alt: post.title }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      ...(post.coverImage ? { images: [post.coverImage] } : {}),
+    },
   };
 }
 
@@ -128,22 +139,35 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {relatedPackages.length > 0 && (
           <section className="mt-12 pt-8 border-t border-stone-100">
             <h2 className="text-xl font-semibold text-stone-900 mb-4">Related Packages</h2>
+            <p className="text-sm text-stone-600 mb-5">
+              Ready to experience this route? Explore the package details or send us your dates and we will tailor it for you.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {relatedPackages.map((pkg) => {
                 const v = pkg.currentVersion;
                 if (!v) return null;
                 const price = pkg.seasonalPrices[0]?.pricePerPerson;
                 return (
-                  <Link key={pkg.id} href={`/packages/${pkg.slug}`} className="flex gap-4 p-4 bg-stone-50 rounded-lg hover:bg-stone-100 transition">
-                    <div className="w-16 h-16 bg-gradient-to-br from-forest-100 to-forest-200 rounded-lg flex items-center justify-center shrink-0">
-                      <MapPin className="w-6 h-6 text-forest-300" />
+                  <div key={pkg.id} className="p-4 bg-stone-50 rounded-lg hover:bg-stone-100 transition">
+                    <Link href={`/packages/${pkg.slug}`} className="flex gap-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-forest-100 to-forest-200 rounded-lg flex items-center justify-center shrink-0">
+                        <MapPin className="w-6 h-6 text-forest-300" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-stone-900 text-sm">{v.title}</h3>
+                        <p className="text-xs text-stone-500 mt-0.5">{v.destination} · {v.days} Days</p>
+                        {price && <p className="text-sm font-semibold text-forest-700 mt-1">{formatPrice(price)}<span className="text-xs font-normal text-stone-400">/person</span></p>}
+                      </div>
+                    </Link>
+                    <div className="flex gap-2 mt-4">
+                      <Link href={`/packages/${pkg.slug}`} className="rounded-lg bg-forest-700 px-3 py-2 text-xs font-medium text-white hover:bg-forest-800">
+                        View package
+                      </Link>
+                      <Link href={`/packages/${pkg.slug}#enquiry-name`} className="rounded-lg border border-forest-200 px-3 py-2 text-xs font-medium text-forest-700 hover:bg-white">
+                        Enquire now
+                      </Link>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-stone-900 text-sm">{v.title}</h3>
-                      <p className="text-xs text-stone-500 mt-0.5">{v.destination} · {v.days} Days</p>
-                      {price && <p className="text-sm font-semibold text-forest-700 mt-1">{formatPrice(price)}<span className="text-xs font-normal text-stone-400">/person</span></p>}
-                    </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
