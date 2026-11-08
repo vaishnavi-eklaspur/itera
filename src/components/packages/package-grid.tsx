@@ -148,7 +148,13 @@ export function PackageGrid({
               >
                 <div className="aspect-[16/10] relative overflow-hidden">
                   {photo ? (
-                    <img src={photo} alt={v.title} className="absolute inset-0 w-full h-full object-cover img-zoom" />
+                    <img
+                      src={photo}
+                      alt={v.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 w-full h-full object-cover img-zoom"
+                    />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-forest-100 to-forest-200 flex items-center justify-center text-forest-300">
                       <MapPin className="w-12 h-12" />

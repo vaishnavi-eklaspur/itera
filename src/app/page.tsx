@@ -35,9 +35,10 @@ export default async function HomePage() {
       {/* Hero — cinematic full-bleed */}
       <section className="relative h-[92vh] min-h-[640px] flex items-end overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1920&h=1080&fit=crop&auto=format&q=85"
+          src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1280&h=720&fit=crop&auto=format&q=60"
           alt="Kerala backwaters at golden hour"
           fetchPriority="high"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/5" />
@@ -86,6 +87,8 @@ export default async function HomePage() {
                   <img
                     src={(hero.currentVersion.photos as string[])[0]}
                     alt={hero.currentVersion.title}
+                    loading="lazy"
+                    decoding="async"
                     className="absolute inset-0 w-full h-full object-cover img-zoom"
                   />
                 ) : (
@@ -157,6 +160,8 @@ export default async function HomePage() {
                       <img
                         src={photo}
                         alt={v.title}
+                        loading="lazy"
+                        decoding="async"
                         className="absolute inset-0 w-full h-full object-cover img-zoom"
                       />
                     ) : (
