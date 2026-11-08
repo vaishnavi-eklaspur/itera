@@ -7,7 +7,7 @@ export const instant = false;
 
 async function ensureEnquiryExtraction(id: string, aiExtracted: unknown, aiDraftReply: string | null) {
   const extracted = aiExtracted as { confidence?: number; confidenceVersion?: number } | null;
-  if (extracted?.confidenceVersion === 3 && aiDraftReply) return;
+  if (extracted?.confidenceVersion === 4 && aiDraftReply) return;
 
   const requestHeaders = await headers();
   const host = requestHeaders.get("host");

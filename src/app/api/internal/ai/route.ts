@@ -20,7 +20,7 @@ If a field cannot be determined, set it to null. Set confidence based on how cle
 
 Customer message: `;
 
-const CONFIDENCE_VERSION = 3;
+const CONFIDENCE_VERSION = 4;
 
 const EMPTY_EXTRACTION = {
   dates: null,
@@ -82,8 +82,9 @@ function buildDraft(
     !extracted.dates ? "preferred travel dates" : null,
     extracted.adults == null ? "number of adults" : null,
     extracted.children == null ? "number of children" : null,
-    !extracted.budget ? "budget" : null,
+    extracted.budget?.total == null || extracted.budget.total <= 0 ? "a valid positive budget" : null,
   ].filter((item): item is string => item !== null);
+  const packageContext = selectedPackage ?? (packageTitle ? { title: packageTitle, destination: extracted.destination ?? "the requested destination", days: 0 } : null);
 
   return [
     `Hi ${name},`,
@@ -108,11 +109,11 @@ function buildDraft(
         }).join("; ")}.`
       : isMediumConfidence && suggestions.length
         ? `These are preliminary options only: ${suggestions.map((suggestion) => packageTitles.get(suggestion.packageSlug) ?? suggestion.packageSlug).join("; ")}. A consultant will verify the itinerary, availability and current price.`
-        : isMediumConfidence && packageTitle
-          ? `We will review the "${packageTitle}" package and confirm availability after the missing details are clarified.`
+        : isMediumConfidence && packageContext
+            ? `We will review the "${packageContext.title}" package for ${packageContext.destination} and confirm availability after the missing details are clarified.`
           : "A consultant will review your enquiry and contact you with suitable options after confirming the missing details.",
     !isHighConfidence
-      ? "Please do not treat this message as a booking confirmation. Our consultant will get back to you with the appropriate itinerary and quotation."
+        ? `Please do not treat this message as a booking confirmation. Our consultant will get back to you with the appropriate itinerary and quotation${packageContext ? ` for the "${packageContext.title}" package` : ""}.`
       : null,
     "",
     isHighConfidence
@@ -207,7 +208,7 @@ function calculateConfidence(
   );
 
   const score = Math.min(1, Math.max(0, completeness * 0.7 + consistency * 0.3));
-  if (budgetInvalid) return Math.min(score, 0.55);
+  if (budgetInvalid) return Math.min(score, 0.39);
   if (budgetMissing) return Math.min(score, 0.74);
   return score;
 }
