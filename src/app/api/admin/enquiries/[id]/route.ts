@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { authorizeRole } from "@/lib/roles";
 import { logActivity } from "@/lib/activity";
+import { revalidatePath } from "next/cache";
 
 export async function GET(
   req: NextRequest,
@@ -134,6 +135,8 @@ export async function PUT(
   if (updated.status !== existing.status) {
     await logActivity(session.user.id, "status changed", "enquiry", id, `${existing.status} → ${updated.status}`);
   }
+  revalidatePath("/admin/enquiries");
+  revalidatePath(`/admin/enquiries/${id}`);
 
   return NextResponse.json(updated);
 }

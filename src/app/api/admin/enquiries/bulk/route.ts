@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { authorizeRole } from "@/lib/roles";
 import { logActivity } from "@/lib/activity";
+import { revalidatePath } from "next/cache";
 
 export async function PUT(req: NextRequest) {
   const session = await auth();
@@ -71,6 +72,7 @@ export async function PUT(req: NextRequest) {
     }
     return logActivity(session.user.id, "status changed", "enquiry", id, `Bulk update → ${status}`);
   }));
+  revalidatePath("/admin/enquiries");
 
   return NextResponse.json({ success: true, updated: ids.length });
 }

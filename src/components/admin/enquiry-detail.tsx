@@ -153,10 +153,14 @@ export function EnquiryDetail({
   const router = useRouter();
   const [replyContent, setReplyContent] = useState(enquiry.aiDraftReply ?? "");
   const [replyChannel, setReplyChannel] = useState<"EMAIL" | "WHATSAPP" | "SYSTEM">("EMAIL");
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState(enquiry.assignedToId ?? "");
+  const [localStatus, setLocalStatus] = useState(enquiry.status);
   const [noteContent, setNoteContent] = useState("");
   const [sending, setSending] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [savingAssignment, setSavingAssignment] = useState(false);
+  const [assignmentResult, setAssignmentResult] = useState<"idle" | "success" | "error">("idle");
   const [sendResult, setSendResult] = useState<"idle" | "success" | "error">("idle");
   const [localExtracted, setLocalExtracted] = useState<AIExtracted | null>(enquiry.aiExtracted);
   const firstReplyAt = enquiry.replies.length > 0 ? new Date(enquiry.replies[enquiry.replies.length - 1].sentAt) : null;
@@ -224,20 +228,31 @@ export function EnquiryDetail({
   }
 
   async function updateStatus(status: string) {
-    await fetch(`/api/admin/enquiries/${enquiry.id}`, {
+    const response = await fetch(`/api/admin/enquiries/${enquiry.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
+    if (response.ok) setLocalStatus(status);
     router.refresh();
   }
 
-  async function assignTo(userId: string) {
-    await fetch(`/api/admin/enquiries/${enquiry.id}`, {
+  async function saveAssignment() {
+    setSavingAssignment(true);
+    setAssignmentResult("idle");
+    const response = await fetch(`/api/admin/enquiries/${enquiry.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assignedToId: userId || null }),
+      body: JSON.stringify({ assignedToId: selectedAssigneeId || null }),
     });
+    setSavingAssignment(false);
+    if (!response.ok) {
+      setAssignmentResult("error");
+      return;
+    }
+    const updated = await response.json();
+    setLocalStatus(updated.status);
+    setAssignmentResult("success");
     router.refresh();
   }
 
@@ -474,7 +489,7 @@ export function EnquiryDetail({
             <div>
               <label className="text-xs text-stone-500 mb-1 block">Status</label>
               <select
-                value={enquiry.status}
+                value={localStatus}
                 onChange={(e) => updateStatus(e.target.value)}
                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500"
               >
@@ -487,8 +502,11 @@ export function EnquiryDetail({
             <div>
               <label className="text-xs text-stone-500 mb-1 block">Assigned Staff</label>
               <select
-                value={enquiry.assignedToId ?? ""}
-                onChange={(e) => assignTo(e.target.value)}
+                value={selectedAssigneeId}
+                onChange={(e) => {
+                  setSelectedAssigneeId(e.target.value);
+                  setAssignmentResult("idle");
+                }}
                 className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500"
               >
                 <option value="">Unassigned</option>
@@ -496,6 +514,22 @@ export function EnquiryDetail({
                   <option key={a.id} value={a.id}>{a.role} — {a.name}</option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={saveAssignment}
+                disabled={savingAssignment || selectedAssigneeId === (enquiry.assignedToId ?? "")}
+                className="mt-2 w-full rounded-lg bg-forest-700 px-3 py-2 text-sm font-medium text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {savingAssignment ? "Saving assignment..." : "Change assignment"}
+              </button>
+              {assignmentResult === "success" && (
+                <p className="mt-2 text-xs text-green-600">
+                  Assignment saved{localStatus === "IN_PROGRESS" ? " and enquiry moved to In Progress." : "."}
+                </p>
+              )}
+              {assignmentResult === "error" && (
+                <p className="mt-2 text-xs text-red-600">Assignment could not be saved. Please try again.</p>
+              )}
             </div>
           </section>
 
