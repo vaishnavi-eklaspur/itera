@@ -48,6 +48,11 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "No bulk action provided" }, { status: 400 });
   }
 
+  const existingEnquiries = await db.enquiry.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, status: true },
+  });
+
   await db.enquiry.updateMany({
     where: { id: { in: ids } },
     data,
@@ -71,16 +76,23 @@ export async function PUT(req: NextRequest) {
     }
   }
   await Promise.all(ids.map((id: string) => {
+    const existing = existingEnquiries.find((enquiry) => enquiry.id === id);
+    const activityLogs = [];
     if (assignedToId !== undefined) {
-      return logActivity(
+      activityLogs.push(logActivity(
         session.user.id,
         assignedToId ? "assigned" : "unassigned",
         "enquiry",
         id,
         assignedToId ? "Bulk assignment" : "Bulk assignment removed"
-      );
+      ));
     }
-    return logActivity(session.user.id, "status changed", "enquiry", id, `Bulk update → ${status}`);
+    if (status && existing && existing.status !== status) {
+      activityLogs.push(logActivity(session.user.id, "status changed", "enquiry", id, `${existing.status} → ${status}`));
+    } else if (assignedToId && existing?.status === "NEW") {
+      activityLogs.push(logActivity(session.user.id, "status changed", "enquiry", id, "NEW → IN_PROGRESS"));
+    }
+    return Promise.all(activityLogs);
   }));
   revalidatePath("/admin/enquiries");
 

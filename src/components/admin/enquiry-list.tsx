@@ -37,6 +37,7 @@ export function EnquiryList({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState("");
   const [loading, setLoading] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const router = useRouter();
 
@@ -55,8 +56,9 @@ export function EnquiryList({
   const applyBulk = async () => {
     if (!bulkAction || selected.size === 0) return;
     setLoading(true);
+    setBulkError(null);
     const [action, value] = bulkAction.split(":");
-    await fetch("/api/admin/enquiries/bulk", {
+    const response = await fetch("/api/admin/enquiries/bulk", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -64,6 +66,12 @@ export function EnquiryList({
         ...(action === "STATUS" ? { status: value } : { assignedToId: value || null }),
       }),
     });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      setBulkError(body?.error ?? "The bulk update could not be completed.");
+      setLoading(false);
+      return;
+    }
     setSelected(new Set());
     setBulkAction("");
     setLoading(false);
@@ -142,6 +150,7 @@ export function EnquiryList({
           <button onClick={() => setSelected(new Set())} className="text-sm text-stone-500 hover:text-stone-700 ml-auto">
             Clear
           </button>
+          {bulkError && <p className="basis-full text-sm text-red-600">{bulkError}</p>}
         </div>
       )}
 
