@@ -54,10 +54,12 @@ export async function PUT(req: NextRequest) {
   });
 
   if (assignedToId !== undefined) {
-    await db.enquiry.updateMany({
-      where: { id: { in: ids }, status: "NEW", ...(assignedToId ? {} : { assignedToId: null }) },
-      data: { status: "IN_PROGRESS" },
-    });
+    if (assignedToId) {
+      await db.enquiry.updateMany({
+        where: { id: { in: ids }, status: "NEW" },
+        data: { status: "IN_PROGRESS" },
+      });
+    }
     if (assignedToId) {
       await db.enquiryNote.createMany({
         data: ids.map((id: string) => ({

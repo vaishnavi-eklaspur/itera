@@ -286,12 +286,12 @@ export function EnquiryDetail({
         <div className="flex items-center gap-2">
           <span className={`text-xs px-2 py-0.5 rounded-full ${badge.className}`}>{badge.label}</span>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-            enquiry.status === "NEW" ? "bg-amber-100 text-amber-700" :
-            enquiry.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
-            enquiry.status === "REPLIED" ? "bg-green-100 text-green-700" :
+            localStatus === "NEW" ? "bg-amber-100 text-amber-700" :
+            localStatus === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
+            localStatus === "REPLIED" ? "bg-green-100 text-green-700" :
             "bg-stone-100 text-stone-500"
           }`}>
-            {enquiry.status}
+            {localStatus}
           </span>
         </div>
       </div>
