@@ -20,6 +20,8 @@ If a field cannot be determined, set it to null. Set confidence based on how cle
 
 Customer message: `;
 
+const CONFIDENCE_VERSION = 2;
+
 const EMPTY_EXTRACTION = {
   dates: null,
   additionalDays: null,
@@ -29,6 +31,7 @@ const EMPTY_EXTRACTION = {
   budget: null,
   requirements: [],
   confidence: 0,
+  confidenceVersion: CONFIDENCE_VERSION,
 };
 
 function getFallbackExtraction(enquiry: {
@@ -42,15 +45,6 @@ function getFallbackExtraction(enquiry: {
   const selectedDateMatch = enquiry.travelDates?.match(/^(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})$/);
   const budgetMatch = enquiry.budget?.match(/\d[\d,]*/);
   const requirements = enquiry.message.split(":").slice(1).join(":").trim();
-  const knownFields = [
-    enquiry.package?.currentVersion?.destination,
-    selectedDateMatch,
-    enquiry.adults != null ? enquiry.adults : null,
-    enquiry.children != null ? enquiry.children : null,
-    budgetMatch,
-    requirements,
-  ].filter(Boolean).length;
-
   return {
     dates: selectedDateMatch
       ? { start: selectedDateMatch[1], end: selectedDateMatch[2], flexible: false, raw: enquiry.travelDates }
@@ -63,7 +57,8 @@ function getFallbackExtraction(enquiry: {
       ? { total: Number(budgetMatch[0].replace(/,/g, "")), perPerson: null, currency: "INR" }
       : null,
     requirements: requirements ? [requirements] : [],
-    confidence: Math.min(0.9, Math.max(0.2, knownFields / 6)),
+    confidence: 0,
+    confidenceVersion: CONFIDENCE_VERSION,
   };
 }
 
@@ -198,6 +193,19 @@ function calculateConfidence(
   return Math.min(1, Math.max(0, completeness * 0.7 + consistency * 0.3));
 }
 
+function withConfidence(
+  extracted: ReturnType<typeof parseExtraction>,
+  enquiry: {
+    package: { currentVersion: { destination: string; days: number } | null } | null;
+  }
+) {
+  extracted.confidence = Number(
+    calculateConfidence(extracted, enquiry, enquiry.package).toFixed(2)
+  );
+  extracted.confidenceVersion = CONFIDENCE_VERSION;
+  return extracted;
+}
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-internal-secret");
   if (secret !== process.env.INTERNAL_API_SECRET) {
@@ -215,7 +223,7 @@ export async function POST(req: NextRequest) {
   const groqKey = process.env.GROQ_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!groqKey && !geminiKey) {
-    const fallback = getFallbackExtraction(enquiry);
+    const fallback = withConfidence(getFallbackExtraction(enquiry), enquiry);
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
@@ -282,27 +290,28 @@ export async function POST(req: NextRequest) {
       extracted = parseExtraction(extractionData.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
     }
     if (!extracted) throw new Error("No AI extraction provider configured");
+    let finalExtraction = extracted;
 
     const selectedDateMatch = enquiry.travelDates?.match(/^(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})$/);
     if (selectedDateMatch) {
-      extracted.dates = {
+      finalExtraction.dates = {
         start: selectedDateMatch[1],
         end: selectedDateMatch[2],
         flexible: false,
         raw: enquiry.travelDates,
       };
     }
-    if (enquiry.adults != null) extracted.adults = enquiry.adults;
-    if (enquiry.children != null) extracted.children = enquiry.children;
-    if (extracted.confidence === 0) {
-      extracted = getFallbackExtraction(enquiry);
+    if (enquiry.adults != null) finalExtraction.adults = enquiry.adults;
+    if (enquiry.children != null) finalExtraction.children = enquiry.children;
+    if (finalExtraction.confidence === 0) {
+      finalExtraction = getFallbackExtraction(enquiry);
     }
 
-    if (extracted.dates?.start && extracted.dates.end && enquiry.package?.currentVersion?.days) {
+    if (finalExtraction.dates?.start && finalExtraction.dates.end && enquiry.package?.currentVersion?.days) {
       const requestedDays = Math.round(
-        (new Date(`${extracted.dates.end}T00:00:00Z`).getTime() - new Date(`${extracted.dates.start}T00:00:00Z`).getTime()) / 86400000
+        (new Date(`${finalExtraction.dates.end}T00:00:00Z`).getTime() - new Date(`${finalExtraction.dates.start}T00:00:00Z`).getTime()) / 86400000
       ) + 1;
-      extracted.additionalDays = Math.max(0, requestedDays - enquiry.package.currentVersion.days);
+      finalExtraction.additionalDays = Math.max(0, requestedDays - enquiry.package.currentVersion.days);
     }
 
     // Step 2: Match packages from DB
@@ -318,7 +327,7 @@ export async function POST(req: NextRequest) {
 
         let score = 0;
         const reasons: string[] = [];
-        const destinationTokens = matchingTokens(extracted.destination || "");
+        const destinationTokens = matchingTokens(finalExtraction.destination || "");
         const packageDestination = v.destination.toLowerCase();
         const destinationMatches = destinationTokens.filter((token) => packageDestination.includes(token));
 
@@ -329,9 +338,9 @@ export async function POST(req: NextRequest) {
         }
 
         // Days match
-        if (extracted.dates?.start && extracted.dates?.end) {
+        if (finalExtraction.dates?.start && finalExtraction.dates?.end) {
           const diffDays = Math.round(
-            (new Date(`${extracted.dates.end}T00:00:00Z`).getTime() - new Date(`${extracted.dates.start}T00:00:00Z`).getTime()) / 86400000
+            (new Date(`${finalExtraction.dates.end}T00:00:00Z`).getTime() - new Date(`${finalExtraction.dates.start}T00:00:00Z`).getTime()) / 86400000
           ) + 1;
           if (Math.abs(v.days - diffDays) <= 1) {
             score += 0.2;
@@ -340,9 +349,9 @@ export async function POST(req: NextRequest) {
         }
 
         // Budget match
-        if (extracted.budget?.total && extracted.adults) {
-          const perPerson = extracted.budget.total / extracted.adults;
-          const month = dateMonth(extracted.dates?.start);
+        if (finalExtraction.budget?.total && finalExtraction.adults) {
+          const perPerson = finalExtraction.budget.total / finalExtraction.adults;
+          const month = dateMonth(finalExtraction.dates?.start);
           const seasonalPrice = month
             ? pkg.seasonalPrices.find((p) => isMonthInSeason(month, p.seasonStartMonth, p.seasonEndMonth))
             : null;
@@ -354,7 +363,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Season match
-        const month = dateMonth(extracted.dates?.start);
+        const month = dateMonth(finalExtraction.dates?.start);
         const seasonMatch = month
           ? pkg.seasonalPrices.find((p) => isMonthInSeason(month, p.seasonStartMonth, p.seasonEndMonth))
           : null;
@@ -365,7 +374,7 @@ export async function POST(req: NextRequest) {
 
         // Requirements match
         const itineraryText = JSON.stringify(v.itinerary).toLowerCase();
-        for (const req of extracted.requirements) {
+        for (const req of finalExtraction.requirements) {
           const requestTokens = matchingTokens(req);
           const matchedRequirementTokens = requestTokens.filter((token) => itineraryText.includes(token) || v.title.toLowerCase().includes(token));
           if (matchedRequirementTokens.length > 0) {
@@ -396,9 +405,7 @@ export async function POST(req: NextRequest) {
     const linkedPackage = enquiry.package
       ? { currentVersion: enquiry.package.currentVersion }
       : null;
-    extracted.confidence = Number(
-      calculateConfidence(extracted, enquiry, linkedPackage).toFixed(2)
-    );
+    finalExtraction = withConfidence(finalExtraction, { package: linkedPackage });
 
     const packageTitles = new Map(
       allPackages.flatMap((pkg) => pkg.currentVersion ? [[pkg.slug, pkg.currentVersion.title] as const] : [])
@@ -407,16 +414,16 @@ export async function POST(req: NextRequest) {
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
-        aiExtracted: extracted,
+        aiExtracted: finalExtraction,
         aiSuggestions: suggestions,
-        aiDraftReply: buildDraft(enquiry.name, enquiry.package?.currentVersion?.title ?? null, extracted, suggestions, packageTitles),
+        aiDraftReply: buildDraft(enquiry.name, enquiry.package?.currentVersion?.title ?? null, finalExtraction, suggestions, packageTitles),
       },
     });
 
     return NextResponse.json({ success: true });
   } catch {
     // Graceful fallback on any AI failure
-    const fallback = getFallbackExtraction(enquiry);
+    const fallback = withConfidence(getFallbackExtraction(enquiry), enquiry);
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {

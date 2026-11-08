@@ -85,6 +85,7 @@ export const aiExtractedSchema = z.object({
   }).nullable(),
   requirements: z.array(z.string()),
   confidence: z.number().min(0).max(1),
+  confidenceVersion: z.number().optional(),
 });
 
 export type AIExtracted = z.infer<typeof aiExtractedSchema>;

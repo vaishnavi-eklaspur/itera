@@ -6,8 +6,8 @@ import { EnquiryDetail } from "@/components/admin/enquiry-detail";
 export const instant = false;
 
 async function ensureEnquiryExtraction(id: string, aiExtracted: unknown, aiDraftReply: string | null) {
-  const extracted = aiExtracted as { confidence?: number } | null;
-  if (extracted && extracted.confidence !== 0 && aiDraftReply) return;
+  const extracted = aiExtracted as { confidence?: number; confidenceVersion?: number } | null;
+  if (extracted?.confidenceVersion === 2 && aiDraftReply) return;
 
   const requestHeaders = await headers();
   const host = requestHeaders.get("host");
