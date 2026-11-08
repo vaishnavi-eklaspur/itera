@@ -540,6 +540,18 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                 )}
               </div>
             )}
+            <div className="mt-4 rounded-lg border border-forest-100 bg-forest-50 p-3 text-xs text-forest-800">
+              <p className="font-semibold">How to add a package photo</p>
+              <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+                <li>Open the image in a new browser tab.</li>
+                <li>Right-click the image and choose <strong>Copy image address</strong>.</li>
+                <li>Paste the address here and confirm the preview appears.</li>
+                <li>Click <strong>Save (New Version)</strong>, then preview or publish the package.</li>
+              </ol>
+              <p className="mt-2 text-forest-700">
+                Do not paste the webpage address. It must start with <code>https://</code> and point directly to an image.
+              </p>
+            </div>
           </section>
 
           {/* Scheduling */}
