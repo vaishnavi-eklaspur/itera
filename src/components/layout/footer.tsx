@@ -32,7 +32,7 @@ export function Footer() {
             <div className="space-y-2 text-sm text-forest-300">
               <p>Kochi, Kerala, India</p>
               <p>hello@itera.in</p>
-              <p>+91 98470 12345</p>
+              <p>+91 90718 82404</p>
             </div>
           </div>
         </div>

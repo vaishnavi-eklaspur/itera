@@ -168,7 +168,7 @@ export default async function PackageDetailPage({
           <span className="text-[10px] text-stone-400 uppercase tracking-wider">From</span>
           <p className="text-lg font-display font-bold text-forest-700">{formatPrice(minPrice)}<span className="text-xs font-normal text-stone-400 ml-0.5">/person</span></p>
         </div>
-        <a href="#enquiry-form" className="bg-forest-700 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-forest-800 transition">
+        <a href="#enquiry-name" className="bg-forest-700 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-forest-800 transition">
           Enquire Now
         </a>
       </div>
@@ -283,7 +283,7 @@ export default async function PackageDetailPage({
                   <span className="text-xs text-stone-400">per person, twin sharing</span>
                 </div>
                 <a
-                  href="#enquiry-form"
+                  href="#enquiry-name"
                   className="block w-full bg-forest-700 text-white text-center py-3.5 rounded-full font-medium hover:bg-forest-800 transition text-sm"
                 >
                   Enquire Now
@@ -300,7 +300,7 @@ export default async function PackageDetailPage({
 
               {/* WhatsApp Button */}
               <a
-                href={`https://wa.me/919847012345?text=${whatsappMessage}`}
+                href={`https://wa.me/919071882404?text=${whatsappMessage}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition text-sm"
@@ -345,7 +345,7 @@ export default async function PackageDetailPage({
 
       {/* Mobile WhatsApp FAB */}
       <a
-        href={`https://wa.me/919847012345?text=${whatsappMessage}`}
+        href={`https://wa.me/919071882404?text=${whatsappMessage}`}
         target="_blank"
         rel="noopener noreferrer"
         className="lg:hidden fixed bottom-6 right-6 z-50 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition"

@@ -51,6 +51,7 @@ export function EnquiryForm({
       <h3 className="font-semibold text-stone-900 mb-4">Send an Enquiry</h3>
       <div className="space-y-3">
         <input
+          id="enquiry-name"
           type="text"
           required
           placeholder="Your Name"
