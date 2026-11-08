@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
 import { BlogPostCard } from "@/components/blog/blog-post-card";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Blog — Itera Travel",
@@ -45,10 +46,13 @@ export default async function BlogPage() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="relative h-[36vh] min-h-[260px] overflow-hidden">
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1600&h=500&fit=crop&auto=format&q=80"
           alt="South India landscape"
-          className="absolute inset-0 w-full h-full object-cover scale-105"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/5" />
         <div className="relative z-10 h-full flex items-end max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">

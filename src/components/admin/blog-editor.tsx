@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import { slugify } from "@/lib/utils";
+import { SEO_DESCRIPTION_MAX_LENGTH, SEO_TITLE_MAX_LENGTH } from "@/lib/seo";
 
 type BlogData = {
   id: string;
@@ -58,6 +59,11 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
   async function handleSave() {
     setSaving(true);
     setError("");
+    if (seoTitle.length > SEO_TITLE_MAX_LENGTH || seoDescription.length > SEO_DESCRIPTION_MAX_LENGTH) {
+      setError(`SEO title must be ${SEO_TITLE_MAX_LENGTH} characters or fewer and SEO description must be ${SEO_DESCRIPTION_MAX_LENGTH} characters or fewer.`);
+      setSaving(false);
+      return;
+    }
     try {
       const body = {
         title, excerpt, content, coverImage: coverImage || undefined,
@@ -178,11 +184,13 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
             <h2 className="font-semibold text-stone-900">SEO</h2>
             <div>
               <label className="text-sm text-stone-600 mb-1 block">SEO Title</label>
-              <input type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
+              <input type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 ${seoTitle.length > SEO_TITLE_MAX_LENGTH ? "border-red-300" : "border-stone-200"}`} />
+              <p className={`mt-1 text-xs ${seoTitle.length > SEO_TITLE_MAX_LENGTH ? "text-red-600" : "text-stone-400"}`}>{seoTitle.length}/{SEO_TITLE_MAX_LENGTH} characters</p>
             </div>
             <div>
               <label className="text-sm text-stone-600 mb-1 block">SEO Description</label>
-              <textarea rows={2} value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none" />
+              <textarea rows={2} value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none ${seoDescription.length > SEO_DESCRIPTION_MAX_LENGTH ? "border-red-300" : "border-stone-200"}`} />
+              <p className={`mt-1 text-xs ${seoDescription.length > SEO_DESCRIPTION_MAX_LENGTH ? "text-red-600" : "text-stone-400"}`}>{seoDescription.length}/{SEO_DESCRIPTION_MAX_LENGTH} characters</p>
             </div>
           </section>
 

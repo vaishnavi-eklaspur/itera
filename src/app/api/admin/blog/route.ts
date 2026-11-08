@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { logActivity } from "@/lib/activity";
 import { authorizeRole } from "@/lib/roles";
+import { SEO_DESCRIPTION_MAX_LENGTH, SEO_TITLE_MAX_LENGTH } from "@/lib/seo";
 
 const blogSchema = z.object({
   title: z.string().min(3),
@@ -13,8 +14,8 @@ const blogSchema = z.object({
   coverImage: z.string().optional(),
   category: z.string().min(1),
   tags: z.array(z.string()),
-  seoTitle: z.string().optional(),
-  seoDescription: z.string().optional(),
+  seoTitle: z.string().max(SEO_TITLE_MAX_LENGTH, `SEO title must be ${SEO_TITLE_MAX_LENGTH} characters or fewer`).optional(),
+  seoDescription: z.string().max(SEO_DESCRIPTION_MAX_LENGTH, `SEO description must be ${SEO_DESCRIPTION_MAX_LENGTH} characters or fewer`).optional(),
   relatedPackageIds: z.array(z.string()),
   published: z.boolean(),
 });

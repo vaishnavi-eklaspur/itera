@@ -12,6 +12,8 @@ import { PhotoGallery } from "@/components/packages/photo-gallery";
 import { Check, X as XIcon, Calendar, Star, Users, MapPin, MessageCircle, BookOpen } from "lucide-react";
 import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
+import Image from "next/image";
+import { isSeoImageUrl } from "@/lib/seo";
 
 export const instant = false;
 
@@ -150,11 +152,11 @@ export default async function PackageDetailPage({
       {/* Hero — cinematic photo */}
       <div className="relative h-[55vh] min-h-[420px] overflow-hidden">
         {(v.photos as string[])?.[0] ? (
-          <img
-            src={(v.photos as string[])[0]}
-            alt={v.title}
-            className="absolute inset-0 w-full h-full object-cover scale-105"
-          />
+          isSeoImageUrl((v.photos as string[])[0]) ? (
+            <Image src={(v.photos as string[])[0]} alt={`${v.title} hero`} fill sizes="100vw" priority className="object-cover scale-105" />
+          ) : (
+            <img src={(v.photos as string[])[0]} alt={`${v.title} hero`} className="absolute inset-0 w-full h-full object-cover scale-105" />
+          )
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-forest-950 via-forest-900 to-forest-800" />
         )}
@@ -373,7 +375,11 @@ export default async function PackageDetailPage({
               <Link key={post.id} href={`/blog/${post.slug}`} className="group bg-white rounded-xl border border-sand-200/60 overflow-hidden hover:shadow-lg transition-all">
                 <div className="aspect-[16/9] bg-gradient-to-br from-forest-100 to-forest-200 overflow-hidden">
                   {post.coverImage ? (
-                    <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    isSeoImageUrl(post.coverImage) ? (
+                      <Image src={post.coverImage} alt={`${post.title} cover`} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <img src={post.coverImage} alt={`${post.title} cover`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    )
                   ) : (
                     <div className="h-full flex items-center justify-center"><BookOpen className="w-8 h-8 text-forest-300" /></div>
                   )}

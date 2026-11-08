@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
 import { Calendar, ArrowLeft, MapPin } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
+import { isSeoImageUrl } from "@/lib/seo";
 
 export const instant = false;
 
@@ -117,11 +119,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
         {post.coverImage && (
           <div className="mt-8 overflow-hidden rounded-2xl bg-stone-100">
-            <img
-              src={post.coverImage}
-              alt={post.title}
-              className="w-full aspect-[16/9] object-cover"
-            />
+            {isSeoImageUrl(post.coverImage) ? (
+              <Image src={post.coverImage} alt={`${post.title} cover`} width={1600} height={900} sizes="(max-width: 768px) 100vw, 768px" className="w-full aspect-[16/9] object-cover" priority />
+            ) : (
+              <img src={post.coverImage} alt={`${post.title} cover`} className="w-full aspect-[16/9] object-cover" />
+            )}
           </div>
         )}
 

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Calendar, Tag } from "lucide-react";
+import Image from "next/image";
+import { isSeoImageUrl } from "@/lib/seo";
 
 export type PublicBlogPost = {
   id: string;
@@ -18,7 +20,11 @@ export function BlogPostCard({ post }: { post: PublicBlogPost }) {
     <Link href={`/blog/${post.slug}`} className="group bg-white rounded-2xl border border-stone-200/50 overflow-hidden hover:shadow-xl transition-all duration-500">
       <div className="aspect-[16/10] bg-gradient-to-br from-forest-100 to-forest-200 flex items-center justify-center overflow-hidden">
         {post.coverImage ? (
-          <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover img-zoom" />
+          isSeoImageUrl(post.coverImage) ? (
+            <Image src={post.coverImage} alt={`${post.title} cover`} fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 400px" className="object-cover img-zoom" />
+          ) : (
+            <img src={post.coverImage} alt={`${post.title} cover`} className="w-full h-full object-cover img-zoom" />
+          )
         ) : (
           <Tag className="w-10 h-10 text-forest-300" />
         )}
