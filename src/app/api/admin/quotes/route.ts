@@ -26,8 +26,17 @@ export async function GET() {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const quotes = await db.quote.findMany({
-    include: {
-      package: { include: { currentVersion: { select: { title: true, destination: true } } } },
+    select: {
+      id: true,
+      token: true,
+      travellers: true,
+      travelDate: true,
+      pricePerPerson: true,
+      basis: true,
+      totalPrice: true,
+      validUntil: true,
+      createdAt: true,
+      package: { select: { currentVersion: { select: { title: true, destination: true } } } },
       author: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },

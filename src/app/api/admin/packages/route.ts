@@ -11,10 +11,10 @@ export async function GET() {
   if (denied) return denied;
 
   const packages = await db.package.findMany({
-    include: {
-      currentVersion: true,
-      seasonalPrices: { where: { isActive: true } },
-      _count: { select: { enquiries: true, versions: true } },
+    select: {
+      id: true,
+      currentVersion: { select: { title: true, destination: true, days: true } },
+      seasonalPrices: { where: { isActive: true }, select: { pricePerPerson: true, seasonName: true } },
     },
     orderBy: { updatedAt: "desc" },
   });

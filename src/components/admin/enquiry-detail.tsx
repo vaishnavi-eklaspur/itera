@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send, Loader2, Bot, User, StickyNote, MapPin, ArrowLeft, RefreshCw, Pencil, Check, X } from "lucide-react";
 import Link from "next/link";
@@ -163,6 +163,18 @@ export function EnquiryDetail({
   const [assignmentResult, setAssignmentResult] = useState<"idle" | "success" | "error">("idle");
   const [sendResult, setSendResult] = useState<"idle" | "success" | "error">("idle");
   const [localExtracted, setLocalExtracted] = useState<AIExtracted | null>(enquiry.aiExtracted);
+  useEffect(() => {
+    const extracted = enquiry.aiExtracted;
+    if (extracted?.confidenceVersion === 4 && enquiry.aiDraftReply) return;
+
+    fetch(`/api/admin/enquiries/${enquiry.id}/extract`, { method: "POST" })
+      .then((response) => {
+        if (!response.ok) throw new Error("AI extraction failed");
+        return response.json();
+      })
+      .then(() => router.refresh())
+      .catch(() => undefined);
+  }, [enquiry.aiDraftReply, enquiry.aiExtracted, enquiry.id, router]);
   const firstReplyAt = enquiry.replies.length > 0 ? new Date(enquiry.replies[enquiry.replies.length - 1].sentAt) : null;
   const badge = responseTimeBadge(new Date(enquiry.createdAt), firstReplyAt);
   const confidence = typeof localExtracted?.confidence === "number" ? localExtracted.confidence : undefined;
