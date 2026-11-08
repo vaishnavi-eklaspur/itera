@@ -42,6 +42,15 @@ function getFallbackExtraction(enquiry: {
   const selectedDateMatch = enquiry.travelDates?.match(/^(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})$/);
   const budgetMatch = enquiry.budget?.match(/\d[\d,]*/);
   const requirements = enquiry.message.split(":").slice(1).join(":").trim();
+  const knownFields = [
+    enquiry.package?.currentVersion?.destination,
+    selectedDateMatch,
+    enquiry.adults != null ? enquiry.adults : null,
+    enquiry.children != null ? enquiry.children : null,
+    budgetMatch,
+    requirements,
+  ].filter(Boolean).length;
+
   return {
     dates: selectedDateMatch
       ? { start: selectedDateMatch[1], end: selectedDateMatch[2], flexible: false, raw: enquiry.travelDates }
@@ -54,8 +63,58 @@ function getFallbackExtraction(enquiry: {
       ? { total: Number(budgetMatch[0].replace(/,/g, "")), perPerson: null, currency: "INR" }
       : null,
     requirements: requirements ? [requirements] : [],
-    confidence: 0.2,
+    confidence: Math.min(0.9, Math.max(0.2, knownFields / 6)),
   };
+}
+
+function buildDraft(
+  name: string,
+  packageTitle: string | null,
+  extracted: ReturnType<typeof parseExtraction>,
+  suggestions: { packageSlug: string; pricePerPerson: number | null; seasonName: string | null }[] = [],
+  packageTitles: Map<string, string> = new Map()
+) {
+  const confidence = extracted.confidence;
+  const opening = confidence >= 0.75
+    ? "We have noted the following details from your enquiry:"
+    : confidence >= 0.4
+      ? "We have tentatively noted the following details. Please confirm anything that needs updating:"
+      : "We could only identify a few details so far. Please confirm or add the missing information:";
+  const missing = [
+    !extracted.dates ? "preferred travel dates" : null,
+    extracted.adults == null ? "number of adults" : null,
+    extracted.children == null ? "number of children" : null,
+    !extracted.budget ? "budget" : null,
+  ].filter((item): item is string => item !== null);
+
+  return [
+    `Hi ${name},`,
+    "",
+    "Thank you for contacting Itera Travel.",
+    opening,
+    extracted.destination ? `- Destination: ${extracted.destination}` : null,
+    extracted.dates?.raw ? `- Travel dates: ${extracted.dates.raw}` : null,
+    extracted.adults != null ? `- Travellers: ${extracted.adults} adult(s)${extracted.children != null ? ` and ${extracted.children} child(ren)` : ""}` : null,
+    extracted.budget?.total != null ? `- Budget: ${extracted.budget.currency || "INR"} ${extracted.budget.total.toLocaleString("en-IN")}` : null,
+    extracted.requirements.length ? `- Requirements: ${extracted.requirements.join(", ")}` : null,
+    missing.length ? `To prepare an accurate plan, please share your ${missing.join(", ")}.` : null,
+    suggestions.length
+      ? `Based on this information, possible options include: ${suggestions.map((suggestion) => {
+          const title = packageTitles.get(suggestion.packageSlug) ?? suggestion.packageSlug;
+          const price = suggestion.pricePerPerson != null
+            ? ` from ₹${suggestion.pricePerPerson.toLocaleString("en-IN")}/person${suggestion.seasonName ? ` (${suggestion.seasonName})` : ""}`
+            : "";
+          return `${title}${price}`;
+        }).join("; ")}.`
+      : packageTitle
+        ? `We will review the "${packageTitle}" package against these requirements and confirm availability.`
+        : "Our travel team will review these details and suggest suitable options.",
+    "",
+    "A consultant will confirm availability and prepare the final itinerary and quotation.",
+    "",
+    "Warm regards,",
+    "Itera Travel Team",
+  ].filter((line): line is string => line !== null).join("\n");
 }
 
 function parseExtraction(rawText: string) {
@@ -104,7 +163,7 @@ export async function POST(req: NextRequest) {
       data: {
         aiExtracted: fallback,
         aiSuggestions: [],
-        aiDraftReply: `Hi ${enquiry.name},\n\nThank you for your enquiry about ${enquiry.package?.currentVersion?.title ?? "your trip"}. Our travel team will review your requirements and prepare suitable options for you.\n\nWarm regards,\nItera Travel Team`,
+        aiDraftReply: buildDraft(enquiry.name, enquiry.package?.currentVersion?.title ?? null, fallback),
       },
     });
     return NextResponse.json({ success: true, fallback: true });
@@ -177,6 +236,9 @@ export async function POST(req: NextRequest) {
     }
     if (enquiry.adults != null) extracted.adults = enquiry.adults;
     if (enquiry.children != null) extracted.children = enquiry.children;
+    if (extracted.confidence === 0) {
+      extracted = getFallbackExtraction(enquiry);
+    }
 
     if (extracted.dates?.start && extracted.dates.end && enquiry.package?.currentVersion?.days) {
       const requestedDays = Math.round(
@@ -273,36 +335,16 @@ export async function POST(req: NextRequest) {
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
 
-    const draftLines = [
-      `Hi ${enquiry.name},`,
-      "",
-      "Thank you for sharing your travel plans. Based on your enquiry, we noted:",
-      extracted.destination ? `- Destination: ${extracted.destination}` : null,
-      extracted.dates?.raw ? `- Travel dates: ${extracted.dates.raw}` : null,
-      extracted.adults != null ? `- Travellers: ${extracted.adults} adult(s)${extracted.children != null ? ` and ${extracted.children} child(ren)` : ""}` : null,
-      extracted.budget?.total != null ? `- Budget: ${extracted.budget.currency || "INR"} ${extracted.budget.total.toLocaleString("en-IN")}` : null,
-      extracted.requirements.length ? `- Requirements: ${extracted.requirements.join(", ")}` : null,
-      "",
-      suggestions.length
-        ? `We recommend: ${suggestions.map((suggestion) => {
-            const pkg = allPackages.find((candidate) => candidate.slug === suggestion.packageSlug);
-            const price = suggestion.pricePerPerson != null ? ` from ₹${suggestion.pricePerPerson.toLocaleString("en-IN")}/person${suggestion.seasonName ? ` (${suggestion.seasonName})` : ""}` : "";
-            return `${pkg?.currentVersion?.title ?? suggestion.packageSlug}${price}`;
-          }).join("; ")}.`
-        : "Our travel team will review your requirements and suggest suitable options.",
-      "",
-      "A travel consultant will confirm availability and prepare the final itinerary and quotation for you.",
-      "",
-      "Warm regards,",
-      "Itera Travel Team",
-    ].filter((line): line is string => line !== null);
+    const packageTitles = new Map(
+      allPackages.flatMap((pkg) => pkg.currentVersion ? [[pkg.slug, pkg.currentVersion.title] as const] : [])
+    );
 
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
         aiExtracted: extracted,
         aiSuggestions: suggestions,
-        aiDraftReply: draftLines.join("\n"),
+        aiDraftReply: buildDraft(enquiry.name, enquiry.package?.currentVersion?.title ?? null, extracted, suggestions, packageTitles),
       },
     });
 
@@ -315,7 +357,7 @@ export async function POST(req: NextRequest) {
       data: {
         aiExtracted: fallback,
         aiSuggestions: [],
-        aiDraftReply: `Hi ${enquiry.name},\n\nThank you for your enquiry about ${enquiry.package?.currentVersion?.title ?? "your trip"}. Our travel team will review your requirements and prepare suitable options for you.\n\nWarm regards,\nItera Travel Team`,
+        aiDraftReply: buildDraft(enquiry.name, enquiry.package?.currentVersion?.title ?? null, fallback),
       },
     });
     return NextResponse.json({ success: true, fallback: true });
