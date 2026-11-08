@@ -25,22 +25,63 @@ type Package = {
   seasonalPrices: { pricePerPerson: number; seasonName: string }[];
 };
 
+type EnquiryPreset = {
+  package?: { id: string } | null;
+  message?: string;
+  aiExtracted?: {
+    adults?: number | null;
+    children?: number | null;
+    dates?: { raw?: string | null } | null;
+  } | null;
+};
+
 export default function QuotesPage() {
   const searchParams = useSearchParams();
+  const enquiryId = searchParams.get("enquiryId") || undefined;
+  const hasPackagePreset = Boolean(searchParams.get("packageId"));
+  const hasTravellerPreset = Boolean(searchParams.get("travellers"));
+  const hasDatePreset = Boolean(searchParams.get("travelDate"));
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [packageId, setPackageId] = useState(() => searchParams.get("packageId") || "");
-  const [showForm, setShowForm] = useState(() => Boolean(searchParams.get("packageId")));
+  const [showForm, setShowForm] = useState(() => Boolean(searchParams.get("packageId") || searchParams.get("enquiryId")));
   const [travellers, setTravellers] = useState(() => Number(searchParams.get("travellers")) || 2);
   const [travelDate, setTravelDate] = useState(() => searchParams.get("travelDate") || "");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
-  const enquiryId = searchParams.get("enquiryId") || undefined;
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    fetch("/api/admin/quotes").then((r) => r.json()).then(setQuotes);
-    fetch("/api/admin/packages").then((r) => r.json()).then(setPackages);
-  }, []);
+    async function loadQuoteContext() {
+      try {
+        const [quotesRes, packagesRes] = await Promise.all([
+          fetch("/api/admin/quotes"),
+          fetch("/api/admin/packages"),
+        ]);
+        if (!quotesRes.ok || !packagesRes.ok) throw new Error("Could not load quote builder data");
+        const [quoteData, packageData] = await Promise.all([quotesRes.json(), packagesRes.json()]);
+        setQuotes(quoteData);
+        setPackages(packageData);
+
+        if (!enquiryId) return;
+        const enquiryRes = await fetch(`/api/admin/enquiries/${enquiryId}`);
+        if (!enquiryRes.ok) throw new Error("Could not load the selected enquiry");
+        const enquiry = (await enquiryRes.json()) as EnquiryPreset;
+        const extraction = enquiry.aiExtracted;
+        const extractedTravellers = (extraction?.adults ?? 0) + (extraction?.children ?? 0);
+
+        if (!hasPackagePreset && enquiry.package?.id) setPackageId(enquiry.package.id);
+        if (!hasTravellerPreset && extractedTravellers > 0) setTravellers(extractedTravellers);
+        if (!hasDatePreset && extraction?.dates?.raw) setTravelDate(extraction.dates.raw);
+        if (enquiry.message) setNotes((current) => current || `Based on enquiry: ${enquiry.message}`);
+        setShowForm(true);
+      } catch (error) {
+        setLoadError(error instanceof Error ? error.message : "Could not load quote builder data");
+      }
+    }
+
+    loadQuoteContext();
+  }, [enquiryId, hasDatePreset, hasPackagePreset, hasTravellerPreset]);
 
   const selectedPkg = packages.find((p) => p.id === packageId);
   const basePrice = selectedPkg?.seasonalPrices?.[0]?.pricePerPerson ?? 0;
@@ -74,6 +115,8 @@ export default function QuotesPage() {
           <Plus className="w-4 h-4" /> New Quote
         </button>
       </div>
+
+      {loadError && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</p>}
 
       {showForm && (
         <div className="bg-white rounded-xl border border-stone-200 p-6 mb-6 space-y-4">
