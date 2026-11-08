@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   // --- Users ---
   const adminPassword = await hash("admin123", 12);
+  const editorPassword = await hash("editor123", 12);
   const consultantPassword = await hash("consultant123", 12);
   const travellerPassword = await hash("traveller123", 12);
 
@@ -34,6 +35,18 @@ async function main() {
       phone: "+91 94960 67890",
       passwordHash: consultantPassword,
       role: Role.CONSULTANT,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "editor@itera.in" },
+    update: { role: Role.EDITOR, name: "Meera Menon" },
+    create: {
+      name: "Meera Menon",
+      email: "editor@itera.in",
+      phone: "+91 94470 11223",
+      passwordHash: editorPassword,
+      role: Role.EDITOR,
     },
   });
 
