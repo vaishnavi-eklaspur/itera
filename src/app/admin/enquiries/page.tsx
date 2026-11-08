@@ -52,7 +52,7 @@ export default async function AdminEnquiriesPage({
         currentStatus={status}
         currentAssignedTo={assignedTo}
         assignableUsers={assignableUsers}
-        canAssign={session.user.role === "ADMIN"}
+        canAssign
       />
     </div>
   );

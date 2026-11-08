@@ -7,7 +7,7 @@ import { logActivity } from "@/lib/activity";
 export async function PUT(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = authorizeRole(session.user.role, "ADMIN");
+  const denied = authorizeRole(session.user.role, "ADMIN", "CONSULTANT");
   if (denied) return denied;
 
   const { ids, status, assignedToId } = await req.json();
