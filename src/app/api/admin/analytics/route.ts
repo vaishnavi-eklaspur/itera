@@ -22,7 +22,7 @@ export async function GET() {
       select: { createdAt: true },
     }),
     db.user.findMany({
-      where: { role: "ADMIN" },
+      where: { role: { in: ["ADMIN", "CONSULTANT"] } },
       select: { id: true, name: true },
     }),
   ]);
