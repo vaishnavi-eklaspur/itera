@@ -74,6 +74,7 @@ export const aiExtractedSchema = z.object({
     flexible: z.boolean(),
     raw: z.string().nullable(),
   }).nullable(),
+  additionalDays: z.number().nullable().optional(),
   adults: z.number().nullable(),
   children: z.number().nullable(),
   destination: z.string().nullable(),

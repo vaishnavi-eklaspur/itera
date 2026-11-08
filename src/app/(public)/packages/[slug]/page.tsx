@@ -297,6 +297,7 @@ export default async function PackageDetailPage({
                 <EnquiryForm
                   packageId={pkg.id}
                   packageTitle={v.title}
+                  packageDays={v.days}
                   initialName={session?.user?.name || ""}
                   initialEmail={session?.user?.email || ""}
                 />

@@ -6,35 +6,54 @@ import { Send, Loader2 } from "lucide-react";
 export function EnquiryForm({
   packageId,
   packageTitle,
+  packageDays,
   initialName = "",
   initialEmail = "",
 }: {
   packageId: string;
   packageTitle: string;
+  packageDays: number;
   initialName?: string;
   initialEmail?: string;
 }) {
+  const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     name: initialName,
     email: initialEmail,
     phone: "",
-    travelDates: "",
     adults: "",
     children: "",
     budget: "",
     message: `I'm interested in the "${packageTitle}" package. I'm looking for a trip that includes:`,
   });
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  function getDefaultEndDate(start: string) {
+    const date = new Date(`${start}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + packageDays - 1);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function handleStartDateChange(start: string) {
+    setStartDate(start);
+    setEndDate(start ? getDefaultEndDate(start) : "");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("sending");
     try {
+      const travelDates = startDate && endDate
+        ? `${startDate} to ${endDate}`
+        : "";
       const res = await fetch("/api/enquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          travelDates,
           adults: form.adults ? Number(form.adults) : undefined,
           children: form.children !== "" ? Number(form.children) : undefined,
           packageId,
@@ -91,13 +110,26 @@ export function EnquiryForm({
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="text-xs text-stone-500">
-            Travel date (optional)
+            Start date (optional)
             <input
               type="date"
-              value={form.travelDates}
-              onChange={(e) => setForm({ ...form, travelDates: e.target.value })}
+              min={today}
+              value={startDate}
+              onChange={(e) => handleStartDateChange(e.target.value)}
               className="mt-1 w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
             />
+          </label>
+          <label className="text-xs text-stone-500">
+            End date (optional)
+            <input
+              type="date"
+              min={startDate || today}
+              value={endDate}
+              disabled={!startDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="mt-1 w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm text-stone-700 disabled:bg-stone-50 disabled:text-stone-400 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+            />
+            {startDate && <span className="block mt-1 text-[11px] text-stone-400">{packageDays}-day package default</span>}
           </label>
           <label className="text-xs text-stone-500">
             Adults (optional)

@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       message: data.message,
       travelDates: data.travelDates || null,
       adults: data.adults || null,
-      children: data.children || null,
+      children: data.children ?? null,
       budget: data.budget || null,
       status: "NEW",
     },

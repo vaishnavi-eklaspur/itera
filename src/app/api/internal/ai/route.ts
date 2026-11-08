@@ -7,6 +7,7 @@ const EXTRACTION_PROMPT = `You are an assistant for a travel operator. Extract t
 Return ONLY valid JSON with this exact structure:
 {
   "dates": { "start": "YYYY-MM-DD or null", "end": "YYYY-MM-DD or null", "flexible": true/false, "raw": "original text about dates or null" },
+  "additionalDays": number or null,
   "adults": number or null,
   "children": number or null,
   "destination": "string or null",
@@ -27,7 +28,10 @@ export async function POST(req: NextRequest) {
 
   const { enquiryId } = await req.json();
 
-  const enquiry = await db.enquiry.findUnique({ where: { id: enquiryId } });
+  const enquiry = await db.enquiry.findUnique({
+    where: { id: enquiryId },
+    include: { package: { include: { currentVersion: { select: { title: true, days: true } } } } },
+  });
   if (!enquiry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -35,7 +39,7 @@ export async function POST(req: NextRequest) {
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
-        aiExtracted: { dates: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 },
+        aiExtracted: { dates: null, additionalDays: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 },
         aiSuggestions: [],
         aiDraftReply: null,
       },
@@ -51,7 +55,11 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: EXTRACTION_PROMPT + enquiry.message }] }],
+          contents: [{ parts: [{ text: `${EXTRACTION_PROMPT}${enquiry.message}\n\nStructured enquiry details: ${JSON.stringify({
+            selectedDates: enquiry.travelDates,
+            packageDays: enquiry.package?.currentVersion?.days ?? null,
+            packageTitle: enquiry.package?.currentVersion?.title ?? null,
+          })}` }] }],
           generationConfig: { maxOutputTokens: 500, temperature: 0.1, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
         }),
       }
@@ -67,9 +75,26 @@ export async function POST(req: NextRequest) {
       const validated = aiExtractedSchema.safeParse(parsed);
       extracted = validated.success
         ? validated.data
-        : { dates: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 };
+        : { dates: null, additionalDays: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 };
     } catch {
-      extracted = { dates: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 };
+      extracted = { dates: null, additionalDays: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 };
+    }
+
+    const selectedDateMatch = enquiry.travelDates?.match(/^(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})$/);
+    if (selectedDateMatch) {
+      extracted.dates = {
+        start: selectedDateMatch[1],
+        end: selectedDateMatch[2],
+        flexible: false,
+        raw: enquiry.travelDates,
+      };
+    }
+
+    if (extracted.dates?.start && extracted.dates.end && enquiry.package?.currentVersion?.days) {
+      const requestedDays = Math.round(
+        (new Date(`${extracted.dates.end}T00:00:00Z`).getTime() - new Date(`${extracted.dates.start}T00:00:00Z`).getTime()) / 86400000
+      ) + 1;
+      extracted.additionalDays = Math.max(0, requestedDays - enquiry.package.currentVersion.days);
     }
 
     // Step 2: Match packages from DB
@@ -195,7 +220,7 @@ Write a warm reply (under 200 words) that addresses their requirements, recommen
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
-        aiExtracted: { dates: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 },
+        aiExtracted: { dates: null, additionalDays: null, adults: null, children: null, destination: null, budget: null, requirements: [], confidence: 0 },
         aiSuggestions: [],
         aiDraftReply: null,
       },

@@ -9,6 +9,7 @@ import { timeAgo, responseTimeBadge } from "@/lib/utils";
 type AIExtracted = {
   destination?: string | null;
   dates?: { start?: string | null; end?: string | null; flexible?: boolean; raw?: string | null } | null;
+  additionalDays?: number | null;
   adults?: number | null;
   children?: number | null;
   budget?: { total?: number | null; perPerson?: number | null; currency?: string } | null;
@@ -79,6 +80,13 @@ function flattenExtracted(ai: AIExtracted): { key: string; label: string; value:
     const raw = d.raw || [d.start, d.end].filter(Boolean).join(" – ") || "";
     fields.push({ key: "dates", label: "Travel dates", value: raw + (d.flexible ? " (flexible)" : "") });
   }
+  if (ai.additionalDays != null) {
+    fields.push({
+      key: "additionalDays",
+      label: "Additional days",
+      value: ai.additionalDays > 0 ? `${ai.additionalDays} day(s) requested` : "Package duration",
+    });
+  }
   if (ai.adults != null) fields.push({ key: "adults", label: "Adults", value: String(ai.adults) });
   if (ai.children != null) fields.push({ key: "children", label: "Children", value: String(ai.children) });
   if (ai.budget) {
@@ -116,6 +124,7 @@ export function EnquiryDetail({
     if (key === "destination") updated.destination = value;
     else if (key === "adults") updated.adults = parseInt(value) || null;
     else if (key === "children") updated.children = parseInt(value) || null;
+    else if (key === "additionalDays") updated.additionalDays = parseInt(value) || 0;
     else if (key === "dates") updated.dates = { ...updated.dates, raw: value };
     else if (key === "budget") updated.budget = { ...updated.budget, total: parseInt(value.replace(/\D/g, "")) || null };
     else if (key === "requirements") updated.requirements = value.split(",").map((s: string) => s.trim()).filter(Boolean);
