@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Plus, ExternalLink, ClipboardList } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { calculateGst } from "@/lib/gst";
@@ -40,6 +41,7 @@ type EnquiryPreset = {
 
 export default function QuotesPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const enquiryId = searchParams.get("enquiryId") || undefined;
   const hasPackagePreset = Boolean(searchParams.get("packageId"));
   const hasTravellerPreset = Boolean(searchParams.get("travellers"));
@@ -105,9 +107,16 @@ export default function QuotesPage() {
       }),
     });
     if (res.ok) {
-      await res.json();
-      setShowForm(false);
-      fetch("/api/admin/quotes").then((r) => r.json()).then(setQuotes);
+      const created = await res.json() as { token: string };
+      if (enquiryId) {
+        router.push(`/admin/enquiries/${enquiryId}?quoteToken=${encodeURIComponent(created.token)}`);
+      } else {
+        setShowForm(false);
+        fetch("/api/admin/quotes").then((r) => r.json()).then(setQuotes);
+      }
+    } else {
+      const error = await res.json().catch(() => null) as { error?: string } | null;
+      setLoadError(error?.error ?? "Could not create quote");
     }
     setSaving(false);
   }

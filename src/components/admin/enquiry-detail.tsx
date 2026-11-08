@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Send, Loader2, Bot, User, StickyNote, MapPin, ArrowLeft, RefreshCw, Pencil, Check, X } from "lucide-react";
 import Link from "next/link";
 import { timeAgo, responseTimeBadge } from "@/lib/utils";
@@ -152,6 +153,8 @@ export function EnquiryDetail({
   activityLogs: Enquiry["activityLogs"];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const createdQuoteToken = searchParams.get("quoteToken");
   const [replyContent, setReplyContent] = useState(enquiry.aiDraftReply ?? "");
   const [replyChannel, setReplyChannel] = useState<"EMAIL" | "WHATSAPP" | "SYSTEM">("EMAIL");
   const [selectedAssigneeId, setSelectedAssigneeId] = useState(enquiry.assignedToId ?? "");
@@ -443,6 +446,11 @@ export function EnquiryDetail({
 
           {/* Reply composer */}
           <section className="bg-white rounded-xl border border-stone-200 p-6">
+            {createdQuoteToken && (
+              <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                Quote created successfully. The quote link and PDF link have been added to the reply draft below.
+              </div>
+            )}
             <h2 className="text-sm font-semibold text-stone-900 mb-3">
               {enquiry.aiDraftReply ? "AI Draft Reply (edit before sending)" : "Reply"}
             </h2>
