@@ -102,7 +102,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     return photos.map((photo) => photo.trim()).filter(Boolean);
   }
 
-  async function validatePhotoUrls() {
+  function validatePhotoUrls() {
     const urls = getPhotoUrls();
     const invalidUrl = urls.find((photo) => {
       try {
@@ -117,18 +117,6 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
       return null;
     }
 
-    const failedUrl = await Promise.all(urls.map((url) => new Promise<string | null>((resolve) => {
-      const image = new Image();
-      image.onload = () => resolve(null);
-      image.onerror = () => resolve(url);
-      image.src = url;
-    }))).then((results) => results.find(Boolean));
-
-    if (failedUrl) {
-      setError("One or more photo addresses could not be loaded as images. Replace the highlighted URL with a direct image address, then try again.");
-      return null;
-    }
-
     return urls;
   }
 
@@ -136,7 +124,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     setSaving(true);
     setError("");
     try {
-      const photoUrls = await validatePhotoUrls();
+      const photoUrls = validatePhotoUrls();
       if (!photoUrls) return;
       const body = {
         title, destination, days, description, hotelTier,
@@ -192,7 +180,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     setPreviewing(true);
     setError("");
     try {
-      const photoUrls = await validatePhotoUrls();
+      const photoUrls = validatePhotoUrls();
       if (!photoUrls) return;
       const body = {
         title, destination, days, description, hotelTier,
