@@ -95,11 +95,15 @@ export async function POST(req: NextRequest) {
     const quoteLink = `${req.nextUrl.origin}/quote/${quote.token}`;
     const pdfLink = `${req.nextUrl.origin}/api/quotes/${quote.token}/pdf`;
     const quoteLine = `Your verified quote is ready: ${quoteLink}\nDownload the branded PDF: ${pdfLink}\nPlease review the details and let us know if you would like to proceed.`;
-    if (enquiry && !enquiry.aiDraftReply?.includes(quoteLink)) {
+    const cleanedDraft = enquiry?.aiDraftReply
+      ?.replace(/Your verified quote is ready:\s*\S+\s*\nDownload the branded PDF:\s*\S+\s*\nPlease review the details and let us know if you would like to proceed\.\s*/g, "")
+      .trim();
+    const updatedDraft = [cleanedDraft, quoteLine].filter(Boolean).join("\n\n");
+    if (enquiry && enquiry.aiDraftReply !== updatedDraft) {
       await db.enquiry.update({
         where: { id: parsed.data.enquiryId },
         data: {
-          aiDraftReply: [enquiry.aiDraftReply, "", quoteLine].filter(Boolean).join("\n"),
+          aiDraftReply: updatedDraft,
         },
       });
     }
