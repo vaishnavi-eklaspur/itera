@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { authorizeRole } from "@/lib/roles";
-import { logActivity } from "@/lib/activity";
 import { revalidatePath } from "next/cache";
 
 export async function GET(
@@ -112,35 +111,48 @@ export async function PUT(
   }
   if (data.aiExtracted !== undefined) updateData.aiExtracted = data.aiExtracted;
 
-  const updated = await db.enquiry.update({
-    where: { id },
-    data: updateData,
-  });
+  const assignee = data.assignedToId
+    ? await db.user.findUnique({ where: { id: data.assignedToId }, select: { name: true, role: true } })
+    : null;
+  const updated = await db.$transaction(async (tx) => {
+    const result = await tx.enquiry.update({
+      where: { id },
+      data: updateData,
+    });
 
-  if (data.assignedToId !== undefined && data.assignedToId !== existing.assignedToId) {
-    const assignee = data.assignedToId
-      ? await db.user.findUnique({ where: { id: data.assignedToId }, select: { name: true, role: true } })
-      : null;
-    if (data.assignedToId && assignee) {
-      await db.enquiryNote.create({
+    if (data.assignedToId !== undefined && data.assignedToId !== existing.assignedToId) {
+      if (data.assignedToId && assignee) {
+        await tx.enquiryNote.create({
+          data: {
+            enquiryId: id,
+            authorId: session.user.id,
+            content: `Assignment notice: this enquiry is now assigned to ${assignee.name} (${assignee.role}).`,
+          },
+        });
+      }
+      await tx.activityLog.create({
         data: {
-          enquiryId: id,
-          authorId: session.user.id,
-          content: `Assignment notice: this enquiry is now assigned to ${assignee.name} (${assignee.role}).`,
+          userId: session.user.id,
+          action: data.assignedToId ? "assigned" : "unassigned",
+          entity: "enquiry",
+          entityId: id,
+          details: data.assignedToId ? `${assignee?.role ?? "Staff"} — ${assignee?.name ?? "Unknown"}` : "Assignment removed",
         },
       });
     }
-    await logActivity(
-      session.user.id,
-      data.assignedToId ? "assigned" : "unassigned",
-      "enquiry",
-      id,
-      data.assignedToId ? `${assignee?.role ?? "Staff"} — ${assignee?.name ?? "Unknown"}` : "Assignment removed"
-    );
-  }
-  if (updated.status !== existing.status) {
-    await logActivity(session.user.id, "status changed", "enquiry", id, `${existing.status} → ${updated.status}`);
-  }
+    if (result.status !== existing.status) {
+      await tx.activityLog.create({
+        data: {
+          userId: session.user.id,
+          action: "status changed",
+          entity: "enquiry",
+          entityId: id,
+          details: `${existing.status} → ${result.status}`,
+        },
+      });
+    }
+    return result;
+  });
   revalidatePath("/admin/enquiries");
   revalidatePath(`/admin/enquiries/${id}`);
 
