@@ -14,7 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="flex items-center gap-6">
             <Link href="/admin" className="text-[1.1rem] font-display font-bold text-forest-800 tracking-tight">Itera</Link>
             <nav className="hidden sm:flex items-center gap-0.5 text-[13px]">
-              <NavLink href="/admin" icon={Home}>Home</NavLink>
+              {(role === "ADMIN" || role === "CONSULTANT") && <NavLink href="/admin" icon={Home}>Home</NavLink>}
               {(role === "ADMIN" || role === "CONSULTANT") && <NavLink href="/admin/packages" icon={Package}>Packages</NavLink>}
               {(role === "ADMIN" || role === "CONSULTANT") && <NavLink href="/admin/enquiries" icon={Inbox}>Enquiries</NavLink>}
               {(role === "ADMIN" || role === "EDITOR") && <NavLink href="/admin/blog" icon={FileText}>Blog</NavLink>}
@@ -31,7 +31,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       {/* Mobile nav */}
       <nav className="sm:hidden flex border-b border-stone-200/60 bg-white">
-        <MobileNavLink href="/admin" icon={Home}>Home</MobileNavLink>
+        {(role === "ADMIN" || role === "CONSULTANT") && <MobileNavLink href="/admin" icon={Home}>Home</MobileNavLink>}
         {(role === "ADMIN" || role === "CONSULTANT") && <MobileNavLink href="/admin/packages" icon={Package}>Packages</MobileNavLink>}
         {(role === "ADMIN" || role === "CONSULTANT") && <MobileNavLink href="/admin/enquiries" icon={Inbox}>Enquiries</MobileNavLink>}
         {(role === "ADMIN" || role === "EDITOR") && <MobileNavLink href="/admin/blog" icon={FileText}>Blog</MobileNavLink>}

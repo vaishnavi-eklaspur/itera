@@ -2,10 +2,12 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { Package, Inbox, BarChart3, Clock } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
+import { requireAdminRole } from "@/lib/admin-access";
 
 export const instant = false;
 
 export default async function AdminDashboard() {
+  await requireAdminRole("ADMIN", "CONSULTANT");
   const [packageCount, enquiryCount, newEnquiries, recentEnquiries] = await Promise.all([
     db.package.count(),
     db.enquiry.count(),

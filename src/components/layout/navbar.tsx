@@ -36,7 +36,7 @@ export function Navbar() {
               <div className="flex items-center gap-4">
                 {["ADMIN", "EDITOR", "CONSULTANT"].includes(session.user.role as string) && (
                   <Link
-                    href="/admin/enquiries"
+                    href={session.user.role === "EDITOR" ? "/admin/blog" : "/admin"}
                     className="text-sm text-stone-600 hover:text-forest-700 transition flex items-center gap-1"
                   >
                     <LayoutDashboard className="w-4 h-4" />
@@ -97,7 +97,7 @@ export function Navbar() {
               <>
                 {["ADMIN", "EDITOR", "CONSULTANT"].includes(session.user.role as string) && (
                   <Link
-                    href="/admin/enquiries"
+                    href={session.user.role === "EDITOR" ? "/admin/blog" : "/admin"}
                     className="block px-3 py-2 text-sm text-stone-600 hover:bg-forest-50 rounded-lg"
                     onClick={() => setMenuOpen(false)}
                   >
