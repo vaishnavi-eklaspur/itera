@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { indiaDateKey } from "@/lib/utils";
 
 export async function GET() {
   const session = await auth();
@@ -33,7 +34,8 @@ export async function GET() {
     .map((e) => ({
       minutes: Math.floor((e.replies[0].sentAt.getTime() - e.createdAt.getTime()) / 60000),
       assignedToId: e.assignedToId,
-    }));
+    }))
+    .filter((response) => response.minutes >= 0);
 
   const avgResponseTime = responseTimes.length > 0
     ? Math.round(responseTimes.reduce((sum, r) => sum + r.minutes, 0) / responseTimes.length)
@@ -67,24 +69,26 @@ export async function GET() {
   for (let i = 0; i < 30; i++) {
     const day = new Date();
     day.setDate(day.getDate() - (29 - i));
-    dailyEnquiries[day.toISOString().split("T")[0]] = 0;
+    dailyEnquiries[indiaDateKey(day)] = 0;
   }
   recentEnquiries.forEach((e) => {
-    const day = e.createdAt.toISOString().split("T")[0];
+    const day = indiaDateKey(e.createdAt);
     if (day in dailyEnquiries) dailyEnquiries[day]++;
   });
 
-  const responseTrend: { date: string; averageMinutes: number | null }[] = [];
+  const responseTrend: { date: string; averageMinutes: number | null; sampleSize: number }[] = [];
   for (let i = 0; i < 7; i++) {
     const date = new Date();
     date.setDate(date.getDate() - (6 - i));
-    const key = date.toISOString().split("T")[0];
+    const key = indiaDateKey(date);
     const values = enquiries
-      .filter((enquiry) => enquiry.createdAt.toISOString().split("T")[0] === key && enquiry.replies.length > 0)
+      .filter((enquiry) => indiaDateKey(enquiry.createdAt) === key && enquiry.replies.length > 0)
       .map((enquiry) => Math.floor((enquiry.replies[0].sentAt.getTime() - enquiry.createdAt.getTime()) / 60000));
+    const validValues = values.filter((value) => value >= 0);
     responseTrend.push({
       date: key,
-      averageMinutes: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null,
+      averageMinutes: validValues.length ? Math.round(validValues.reduce((sum, value) => sum + value, 0) / validValues.length) : null,
+      sampleSize: validValues.length,
     });
   }
 

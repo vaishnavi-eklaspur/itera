@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type ResponseDay = { date: string; averageMinutes: number | null };
+type ResponseDay = { date: string; averageMinutes: number | null; sampleSize: number };
 
 export function ResponseTimeChart({ initialData }: { initialData: ResponseDay[] }) {
   const [data, setData] = useState(initialData);
@@ -53,7 +53,9 @@ export function ResponseTimeChart({ initialData }: { initialData: ResponseDay[] 
                   style={{ height: `${height}px` }}
                 />
                 <div className="absolute bottom-full mb-1 hidden whitespace-nowrap rounded bg-stone-800 px-2 py-1 text-xs text-white group-hover:block">
-                  {item.averageMinutes == null ? `${item.date}: No replies` : `${item.date}: ${item.averageMinutes}m average`}
+                  {item.averageMinutes == null
+                    ? `${item.date}: No valid replies`
+                    : `${item.date}: ${item.averageMinutes}m average (${item.sampleSize} ${item.sampleSize === 1 ? "reply" : "replies"})`}
                 </div>
               </div>
             );

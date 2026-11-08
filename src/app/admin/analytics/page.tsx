@@ -4,6 +4,7 @@ import { Inbox, Clock, TrendingUp, CheckCircle } from "lucide-react";
 import { requireAdminRole } from "@/lib/admin-access";
 import { AnalyticsVolume } from "@/components/admin/analytics-volume";
 import { ResponseTimeChart } from "@/components/admin/response-time-chart";
+import { indiaDateKey } from "@/lib/utils";
 
 export const instant = false;
 
@@ -125,17 +126,19 @@ async function getResponseTrend() {
   for (let i = 0; i < 7; i++) {
     const date = new Date();
     date.setDate(date.getDate() - (6 - i));
-    days[date.toISOString().split("T")[0]] = [];
+    days[indiaDateKey(date)] = [];
   }
   enquiries.forEach((enquiry) => {
-    const key = enquiry.createdAt.toISOString().split("T")[0];
+    const key = indiaDateKey(enquiry.createdAt);
     if (key in days) {
-      days[key].push(Math.floor((enquiry.replies[0].sentAt.getTime() - enquiry.createdAt.getTime()) / 60000));
+      const minutes = Math.floor((enquiry.replies[0].sentAt.getTime() - enquiry.createdAt.getTime()) / 60000);
+      if (minutes >= 0) days[key].push(minutes);
     }
   });
   return Object.entries(days).map(([date, values]) => ({
     date,
     averageMinutes: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null,
+    sampleSize: values.length,
   }));
 }
 
@@ -151,18 +154,22 @@ async function getResponseStats() {
   if (enquiriesWithReplies.length === 0) {
     return { averageResponseMs: null, totalReplied: 0, repliedWithinHour: 0 };
   }
-  const total = enquiriesWithReplies.reduce((sum, e) => {
+  const validResponses = enquiriesWithReplies.filter((enquiry) => {
+    const firstReply = enquiry.replies[0];
+    return firstReply && firstReply.sentAt.getTime() >= enquiry.createdAt.getTime();
+  });
+  const total = validResponses.reduce((sum, e) => {
     const firstReply = e.replies[0];
     if (!firstReply) return sum;
     return sum + (firstReply.sentAt.getTime() - e.createdAt.getTime());
   }, 0);
-  const repliedWithinHour = enquiriesWithReplies.filter((enquiry) => {
+  const repliedWithinHour = validResponses.filter((enquiry) => {
     const firstReply = enquiry.replies[0];
     return firstReply && firstReply.sentAt.getTime() - enquiry.createdAt.getTime() <= 60 * 60 * 1000;
   }).length;
   return {
-    averageResponseMs: total / enquiriesWithReplies.length,
-    totalReplied: enquiriesWithReplies.length,
+    averageResponseMs: validResponses.length ? total / validResponses.length : null,
+    totalReplied: validResponses.length,
     repliedWithinHour,
   };
 }
@@ -180,10 +187,10 @@ async function getEnquiriesLast30Days() {
   for (let i = 0; i < 30; i++) {
     const d = new Date();
     d.setDate(d.getDate() - (29 - i));
-    counts[d.toISOString().split("T")[0]] = 0;
+    counts[indiaDateKey(d)] = 0;
   }
   enquiries.forEach((e) => {
-    const key = new Date(e.createdAt).toISOString().split("T")[0];
+    const key = indiaDateKey(new Date(e.createdAt));
     if (key in counts) counts[key]++;
   });
 

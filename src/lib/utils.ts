@@ -43,6 +43,15 @@ export function timeAgo(date: Date): string {
   return `${diffDays}d ago`;
 }
 
+export function indiaDateKey(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 export function responseTimeBadge(createdAt: Date, repliedAt?: Date | null): { label: string; color: "green" | "amber" | "red" | "grey"; className: string } {
   if (repliedAt) {
     const diffMin = Math.floor((repliedAt.getTime() - createdAt.getTime()) / 60000);
