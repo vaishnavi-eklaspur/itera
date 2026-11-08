@@ -169,14 +169,19 @@ export function EnquiryDetail({
   const [localExtracted, setLocalExtracted] = useState<AIExtracted | null>(enquiry.aiExtracted);
   useEffect(() => {
     if (!createdQuoteToken) return;
+    let attempts = 0;
     const scrollToReplyComposer = () => {
       const composer = document.getElementById("reply-composer");
-      if (!composer) return;
-      composer.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (!composer) {
+        if (attempts++ < 10) window.setTimeout(scrollToReplyComposer, 100);
+        return;
+      }
+      const top = composer.getBoundingClientRect().top + window.scrollY - 24;
+      window.scrollTo({ top, behavior: "smooth" });
       composer.querySelector<HTMLTextAreaElement>("textarea")?.focus({ preventScroll: true });
     };
-    const frame = requestAnimationFrame(scrollToReplyComposer);
-    return () => cancelAnimationFrame(frame);
+    const timeout = window.setTimeout(scrollToReplyComposer, 100);
+    return () => window.clearTimeout(timeout);
   }, [createdQuoteToken]);
 
   useEffect(() => {
