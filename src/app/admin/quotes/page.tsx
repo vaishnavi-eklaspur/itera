@@ -1,6 +1,8 @@
 import { requireAdminRole } from "@/lib/admin-access";
 import QuotesPage from "./quotes-page";
 
+export const instant = false;
+
 export default async function QuotesRoute() {
   await requireAdminRole("ADMIN", "CONSULTANT");
   return <QuotesPage />;
