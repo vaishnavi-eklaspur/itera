@@ -31,7 +31,12 @@ async function getDestinations() {
   return [...new Set(packages.map((p) => p.currentVersion?.destination).filter(Boolean))] as string[];
 }
 
-export default async function PackagesPage() {
+export default async function PackagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ destination?: string }>;
+}) {
+  const { destination } = await searchParams;
   const [packages, destinations] = await Promise.all([getPackages(), getDestinations()]);
 
   return (
@@ -56,7 +61,11 @@ export default async function PackagesPage() {
             </div>
           </div>
         </div>
-        <PackageGrid packages={JSON.parse(JSON.stringify(packages))} destinations={destinations} />
+        <PackageGrid
+          packages={JSON.parse(JSON.stringify(packages))}
+          destinations={destinations}
+          initialDestination={destination}
+        />
       </main>
       <Footer />
     </div>

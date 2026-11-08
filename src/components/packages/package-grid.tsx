@@ -23,12 +23,14 @@ type Package = {
 export function PackageGrid({
   packages,
   destinations,
+  initialDestination = "",
 }: {
   packages: Package[];
   destinations: string[];
+  initialDestination?: string;
 }) {
   const [search, setSearch] = useState("");
-  const [destination, setDestination] = useState("");
+  const [destination, setDestination] = useState(initialDestination);
   const [maxBudget, setMaxBudget] = useState("");
   const [sort, setSort] = useState("price-asc");
   const [showFilters, setShowFilters] = useState(false);
@@ -48,7 +50,9 @@ export function PackageGrid({
 
     if (destination) {
       result = result.filter(
-        (p) => p.currentVersion!.destination === destination
+        (p) => p.currentVersion!.destination
+          .toLowerCase()
+          .includes(destination.toLowerCase())
       );
     }
 
