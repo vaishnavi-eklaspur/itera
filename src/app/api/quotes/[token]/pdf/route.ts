@@ -58,10 +58,10 @@ export async function GET(
 
   page.drawRectangle({ x: 42, y: y - 78, width: 511, height: 94, color: rgb(0.94, 0.97, 0.95), borderColor: rgb(0.78, 0.87, 0.82), borderWidth: 1 });
   page.drawText("PRICE", { x: 60, y: y - 8, size: 8, font: regular, color: muted });
-  page.drawText(`₹${quote.pricePerPerson.toLocaleString("en-IN")} / person`, { x: 60, y: y - 31, size: 16, font: bold, color: forest });
+  page.drawText(`INR ${quote.pricePerPerson.toLocaleString("en-IN")} / person`, { x: 60, y: y - 31, size: 16, font: bold, color: forest });
   page.drawText(`${quote.basis} · ${quote.gstInclusive ? "GST inclusive" : "GST extra"}`, { x: 60, y: y - 52, size: 9, font: regular, color: muted });
   page.drawText("TOTAL", { x: 380, y: y - 8, size: 8, font: regular, color: muted });
-  page.drawText(`₹${quote.totalPrice.toLocaleString("en-IN")}`, { x: 380, y: y - 35, size: 20, font: bold, color: forest });
+  page.drawText(`INR ${quote.totalPrice.toLocaleString("en-IN")}`, { x: 380, y: y - 35, size: 20, font: bold, color: forest });
   y -= 125;
 
   const drawList = (heading: string, items: string[]) => {
