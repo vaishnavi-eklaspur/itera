@@ -19,7 +19,21 @@ type Enquiry = {
   replies: { sentAt: string }[];
 };
 
-export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]; currentStatus?: string }) {
+type AssignableUser = { id: string; name: string; role: string };
+
+export function EnquiryList({
+  enquiries,
+  currentStatus,
+  currentAssignedTo,
+  assignableUsers,
+  canAssign,
+}: {
+  enquiries: Enquiry[];
+  currentStatus?: string;
+  currentAssignedTo?: string;
+  assignableUsers: AssignableUser[];
+  canAssign: boolean;
+}) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,10 +55,14 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
   const applyBulk = async () => {
     if (!bulkAction || selected.size === 0) return;
     setLoading(true);
+    const [action, value] = bulkAction.split(":");
     await fetch("/api/admin/enquiries/bulk", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [...selected], status: bulkAction }),
+      body: JSON.stringify({
+        ids: [...selected],
+        ...(action === "STATUS" ? { status: value } : { assignedToId: value || null }),
+      }),
     });
     setSelected(new Set());
     setBulkAction("");
@@ -53,6 +71,13 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
   };
 
   const statuses = ["ALL", "NEW", "IN_PROGRESS", "REPLIED", "CLOSED"];
+  const withFilters = (status?: string, assignedTo = currentAssignedTo) => {
+    const params = new URLSearchParams();
+    if (status && status !== "ALL") params.set("status", status);
+    if (assignedTo) params.set("assignedTo", assignedTo);
+    const query = params.toString();
+    return `/admin/enquiries${query ? `?${query}` : ""}`;
+  };
 
   return (
     <div>
@@ -69,7 +94,7 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
         {statuses.map((s) => (
           <Link
             key={s}
-            href={s === "ALL" ? "/admin/enquiries" : `/admin/enquiries?status=${s}`}
+            href={withFilters(s)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition ${
               (s === "ALL" && !currentStatus) || s === currentStatus
                 ? "bg-forest-100 text-forest-700"
@@ -90,10 +115,22 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
             onChange={(e) => setBulkAction(e.target.value)}
             className="text-sm border border-forest-200 rounded px-2 py-1 bg-white"
           >
-            <option value="">Change status to...</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="REPLIED">Replied</option>
-            <option value="CLOSED">Closed</option>
+            <option value="">Choose bulk action...</option>
+            <optgroup label="Change status">
+              <option value="STATUS:IN_PROGRESS">In Progress</option>
+              <option value="STATUS:REPLIED">Replied</option>
+              <option value="STATUS:CLOSED">Closed</option>
+            </optgroup>
+            {canAssign && (
+              <optgroup label="Assign to">
+                {assignableUsers.map((user) => (
+                  <option key={user.id} value={`ASSIGN:${user.id}`}>
+                    {user.role} — {user.name}
+                  </option>
+                ))}
+                <option value="ASSIGN:">Unassign</option>
+              </optgroup>
+            )}
           </select>
           <button
             onClick={applyBulk}
@@ -108,6 +145,24 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
         </div>
       )}
 
+      <div className="mb-4 flex items-center gap-3">
+          <label htmlFor="assigned-filter" className="text-sm font-medium text-stone-600">Assigned to</label>
+          <select
+            id="assigned-filter"
+            value={currentAssignedTo ?? ""}
+            onChange={(e) => {
+              const href = withFilters(currentStatus, e.target.value || undefined);
+              router.push(href);
+            }}
+            className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-forest-500"
+          >
+            <option value="">Everyone</option>
+            <option value="unassigned">Unassigned</option>
+            {assignableUsers.map((user) => (
+              <option key={user.id} value={user.id}>{user.role} — {user.name}</option>
+            ))}
+          </select>
+        </div>
       <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
         {/* Header row with select all */}
         <div className="flex items-center gap-3 px-5 py-2.5 border-b border-stone-100 bg-stone-50">

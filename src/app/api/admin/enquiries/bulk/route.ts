@@ -15,9 +15,26 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "No enquiries selected" }, { status: 400 });
   }
 
-  const data: Record<string, string> = {};
+  if (status && !["IN_PROGRESS", "REPLIED", "CLOSED"].includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+
+  if (assignedToId) {
+    const assignee = await db.user.findFirst({
+      where: { id: assignedToId, role: { in: ["ADMIN", "CONSULTANT"] } },
+      select: { id: true },
+    });
+    if (!assignee) {
+      return NextResponse.json({ error: "Assignee must be an admin or consultant" }, { status: 400 });
+    }
+  }
+
+  const data: { status?: "IN_PROGRESS" | "REPLIED" | "CLOSED"; assignedToId?: string | null } = {};
   if (status) data.status = status;
   if (assignedToId !== undefined) data.assignedToId = assignedToId || null;
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "No bulk action provided" }, { status: 400 });
+  }
 
   await db.enquiry.updateMany({
     where: { id: { in: ids } },

@@ -7,14 +7,20 @@ export const instant = false;
 export default async function AdminEnquiriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; assignedTo?: string }>;
 }) {
   const session = await requireAdminRole("ADMIN", "CONSULTANT");
-  const { status } = await searchParams;
+  const { status, assignedTo } = await searchParams;
 
   const where = {
     ...(status ? { status: status as "NEW" | "IN_PROGRESS" | "REPLIED" | "CLOSED" } : {}),
-    ...(session.user.role === "CONSULTANT" ? { assignedToId: session.user.id } : {}),
+    ...(session.user.role === "CONSULTANT"
+      ? { assignedToId: session.user.id }
+      : assignedTo === "unassigned"
+        ? { assignedToId: null }
+        : assignedTo
+          ? { assignedToId: assignedTo }
+          : {}),
   };
   const enquiries = await db.enquiry.findMany({
     where,
@@ -24,6 +30,11 @@ export default async function AdminEnquiriesPage({
       replies: { orderBy: { sentAt: "asc" as const }, take: 1, select: { sentAt: true } },
     },
     orderBy: { createdAt: "desc" },
+  });
+  const assignableUsers = await db.user.findMany({
+    where: { role: { in: ["ADMIN", "CONSULTANT"] } },
+    select: { id: true, name: true, role: true },
+    orderBy: { name: "asc" },
   });
 
   return (
@@ -36,7 +47,13 @@ export default async function AdminEnquiriesPage({
           )}
         </div>
       </div>
-      <EnquiryList enquiries={JSON.parse(JSON.stringify(enquiries))} currentStatus={status} />
+      <EnquiryList
+        enquiries={JSON.parse(JSON.stringify(enquiries))}
+        currentStatus={status}
+        currentAssignedTo={assignedTo}
+        assignableUsers={assignableUsers}
+        canAssign={session.user.role === "ADMIN"}
+      />
     </div>
   );
 }
