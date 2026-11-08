@@ -1,10 +1,12 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
 import { cacheLife } from "next/cache";
 import { MapPin, Calendar, Star, ArrowRight, Compass, Shield, Clock } from "lucide-react";
+import { isSeoImageUrl } from "@/lib/seo";
 
 export const instant = false;
 
@@ -15,7 +17,17 @@ async function getFeaturedPackages() {
   return db.package.findMany({
     where: { status: "PUBLISHED" },
     include: {
-      currentVersion: true,
+      currentVersion: {
+        select: {
+          title: true,
+          destination: true,
+          days: true,
+          itinerary: true,
+          description: true,
+          hotelTier: true,
+          photos: true,
+        },
+      },
       seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" } },
     },
     take: 6,
@@ -34,11 +46,12 @@ export default async function HomePage() {
 
       {/* Hero — cinematic full-bleed */}
       <section className="relative h-[92vh] min-h-[640px] flex items-end overflow-hidden">
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1280&h=720&fit=crop&auto=format&q=60"
           alt="Kerala backwaters at golden hour"
+          fill
+          sizes="100vw"
           fetchPriority="high"
-          decoding="async"
           className="absolute inset-0 w-full h-full object-cover scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/5" />
@@ -84,13 +97,23 @@ export default async function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-2xl overflow-hidden bg-white border border-stone-200/60 hover:shadow-2xl transition-shadow duration-500">
               <div className="relative aspect-[4/3] lg:aspect-auto lg:min-h-[420px] overflow-hidden">
                 {(hero.currentVersion.photos as string[])?.[0] ? (
-                  <img
-                    src={(hero.currentVersion.photos as string[])[0]}
-                    alt={hero.currentVersion.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover img-zoom"
-                  />
+                  isSeoImageUrl((hero.currentVersion.photos as string[])[0]) ? (
+                    <Image
+                      src={(hero.currentVersion.photos as string[])[0]}
+                      alt={hero.currentVersion.title}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      className="object-cover img-zoom"
+                    />
+                  ) : (
+                    <img
+                      src={(hero.currentVersion.photos as string[])[0]}
+                      alt={hero.currentVersion.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 w-full h-full object-cover img-zoom"
+                    />
+                  )
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-forest-200 to-forest-400" />
                 )}
@@ -157,13 +180,23 @@ export default async function HomePage() {
                 >
                   <div className={`relative overflow-hidden ${isWide ? "aspect-[21/9]" : "aspect-[16/10]"}`}>
                     {photo ? (
-                      <img
-                        src={photo}
-                        alt={v.title}
-                        loading="lazy"
-                        decoding="async"
-                        className="absolute inset-0 w-full h-full object-cover img-zoom"
-                      />
+                      isSeoImageUrl(photo) ? (
+                        <Image
+                          src={photo}
+                          alt={v.title}
+                          fill
+                          sizes={isWide ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 100vw, 33vw"}
+                          className="object-cover img-zoom"
+                        />
+                      ) : (
+                        <img
+                          src={photo}
+                          alt={v.title}
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 w-full h-full object-cover img-zoom"
+                        />
+                      )
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-forest-100 to-forest-300 flex items-center justify-center">
                         <MapPin className="w-12 h-12 text-forest-400" />

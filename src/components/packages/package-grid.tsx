@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, Calendar, Star, Search, SlidersHorizontal, X, ArrowRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { isSeoImageUrl } from "@/lib/seo";
 
 type Package = {
   id: string;
@@ -148,13 +150,23 @@ export function PackageGrid({
               >
                 <div className="aspect-[16/10] relative overflow-hidden">
                   {photo ? (
-                    <img
-                      src={photo}
-                      alt={v.title}
-                      loading="lazy"
-                      decoding="async"
-                      className="absolute inset-0 w-full h-full object-cover img-zoom"
-                    />
+                    isSeoImageUrl(photo) ? (
+                      <Image
+                        src={photo}
+                        alt={v.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover img-zoom"
+                      />
+                    ) : (
+                      <img
+                        src={photo}
+                        alt={v.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 w-full h-full object-cover img-zoom"
+                      />
+                    )
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-forest-100 to-forest-200 flex items-center justify-center text-forest-300">
                       <MapPin className="w-12 h-12" />

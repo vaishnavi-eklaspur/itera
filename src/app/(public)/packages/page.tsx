@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/layout/navbar";
+import Image from "next/image";
 import { Footer } from "@/components/layout/footer";
 import { PackageGrid } from "@/components/packages/package-grid";
 import { db } from "@/lib/db";
@@ -46,7 +47,17 @@ async function getPackages(filters: {
         : {}),
     },
     include: {
-      currentVersion: true,
+      currentVersion: {
+        select: {
+          title: true,
+          destination: true,
+          days: true,
+          itinerary: true,
+          description: true,
+          hotelTier: true,
+          photos: true,
+        },
+      },
       seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" } },
       _count: { select: { enquiries: true } },
     },
@@ -89,11 +100,12 @@ export default async function PackagesPage({
       <main id="main-content" className="relative z-10 flex-1 bg-ivory">
         {/* Hero — photo-led */}
         <div className="relative z-0 isolate h-[44vh] min-h-[300px] overflow-hidden">
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1280&h=500&fit=crop&auto=format&q=60"
             alt="South India landscape"
+            fill
+            sizes="100vw"
             fetchPriority="high"
-            decoding="async"
             className="absolute inset-0 w-full h-full object-cover scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/5" />
