@@ -109,7 +109,7 @@ export default function QuotesPage() {
     if (res.ok) {
       const created = await res.json() as { token: string };
       if (enquiryId) {
-        router.push(`/admin/enquiries/${enquiryId}?quoteToken=${encodeURIComponent(created.token)}`);
+        router.push(`/admin/enquiries/${enquiryId}?quoteToken=${encodeURIComponent(created.token)}#reply-composer`);
       } else {
         setShowForm(false);
         fetch("/api/admin/quotes").then((r) => r.json()).then(setQuotes);

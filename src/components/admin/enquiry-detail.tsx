@@ -315,7 +315,7 @@ export function EnquiryDetail({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Original message */}
-          <section className="bg-white rounded-xl border border-stone-200 p-6">
+          <section id="reply-composer" className="scroll-mt-24 bg-white rounded-xl border border-stone-200 p-6">
             <div className="flex items-center gap-2 mb-3">
               <User className="w-4 h-4 text-stone-400" />
               <span className="text-sm font-medium text-stone-700">Original Message</span>
