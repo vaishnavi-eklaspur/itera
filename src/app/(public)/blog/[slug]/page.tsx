@@ -76,6 +76,16 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
         )}
 
+        {post.coverImage && (
+          <div className="mt-8 overflow-hidden rounded-2xl bg-stone-100">
+            <img
+              src={post.coverImage}
+              alt={post.title}
+              className="w-full aspect-[16/9] object-cover"
+            />
+          </div>
+        )}
+
         <div className="mt-8 prose prose-slate max-w-none prose-headings:text-stone-900 prose-a:text-forest-600">
           {post.content.split("\n").map((para, i) => {
             if (para.startsWith("# ")) return <h1 key={i}>{renderInline(para.slice(2))}</h1>;
