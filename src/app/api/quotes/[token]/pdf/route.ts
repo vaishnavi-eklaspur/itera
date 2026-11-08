@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { db } from "@/lib/db";
 import { calculateGst } from "@/lib/gst";
+import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 function pdfText(value: string) {
   return value
@@ -25,9 +26,10 @@ function wrapText(text: string, maxLength: number) {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  if (!rateLimit(`quote-pdf:${getClientIp(request)}`, 60_000, 20)) return rateLimitResponse();
   const { token } = await params;
   const quote = await db.quote.findUnique({
     where: { token },

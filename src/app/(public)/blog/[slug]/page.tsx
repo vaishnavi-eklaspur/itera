@@ -21,7 +21,13 @@ async function getPost(slug: string) {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPost(slug);
-  if (!post) return { title: "Post Not Found" };
+  if (!post) {
+    return {
+      title: "Post Not Found",
+      alternates: { canonical: `/blog/${encodeURIComponent(slug)}` },
+      robots: { index: false, follow: false },
+    };
+  }
   const title = post.seoTitle || post.title;
   const description = post.seoDescription || post.excerpt;
   return {

@@ -7,8 +7,13 @@ import { formatPrice } from "@/lib/utils";
 import { cacheLife } from "next/cache";
 import { MapPin, Calendar, Star, ArrowRight, Compass, Shield, Clock } from "lucide-react";
 import { isSeoImageUrl } from "@/lib/seo";
+import type { Metadata } from "next";
 
 export const instant = false;
+export const metadata: Metadata = {
+  title: "Kerala & South India Travel Packages",
+  alternates: { canonical: "/" },
+};
 
 async function getFeaturedPackages() {
   "use cache";

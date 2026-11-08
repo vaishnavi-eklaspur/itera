@@ -1,8 +1,10 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Privacy Notice — Itera",
   description: "How Itera uses and protects traveller enquiry information.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

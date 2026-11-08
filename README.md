@@ -1,75 +1,113 @@
 # Itera
 
-A full-stack travel platform for a Kerala/South India tour operator. Replaces a manual workflow — content updates via vendor (₹3k + 3 days per change), enquiries scattered across WhatsApp, email and phone — with a unified CMS and AI-powered enquiry pipeline.
+Itera is a full-stack travel platform for a Kerala and South India tour
+operator. It turns package publishing, seasonal pricing, traveller enquiries,
+AI-assisted triage and branded quotes into one responsive application.
 
-## What It Does
+- **Repository:** https://github.com/vaishnavi-eklaspur/itera
+- **Live demo:** https://itera-5nq4.vercel.app
+- **Technical design:** [TDD.md](TDD.md)
+- **Deployment guide:** [deployment.md](deployment.md)
 
-**For travellers:** Browse curated travel packages with seasonal pricing, day-wise itineraries and interactive maps. Submit enquiries and receive instant acknowledgement.
+## What is implemented
 
-**For the operator:** Manage packages, blog posts and enquiries from a single admin dashboard. AI extracts travel details from free-text enquiries, matches packages by budget/destination/dates, and drafts personalised replies — all reviewed by staff before sending.
+### Core build
 
-## Stack
+- Server-rendered public package pages with itinerary, inclusions, hotels,
+  photos, map and seasonal price estimator.
+- Package CMS with create, edit, duplicate, preview, publish, schedule and
+  append-only version history.
+- Enquiry form on package pages and a staff inbox with assignment, status,
+  notes, replies and response-time indicators.
+- AI extraction of dates, destination, traveller counts and budget; deterministic
+  package suggestions; and an editable draft reply. AI output is displayed
+  beside the original message and is never sent automatically.
+- Traveller and staff authentication with Admin, Editor, Consultant and
+  Traveller roles.
 
-Next.js 16 (App Router, SSR) · React 19 · PostgreSQL (Neon) · Prisma 6 · NextAuth v5 · Gemini API · Tailwind CSS 4 · Leaflet · Vitest
+### Additional implemented depth
 
-## Key Features
+- Blog CMS with categories, SEO fields, related packages and a visual
+  content-editing surface. Content remains stored in the existing Markdown
+  field for compatibility with the public renderer.
+- Branded quote links and downloadable PDF quotes. Prices are selected from
+  the database seasonal-price table and include the per-person/twin-sharing
+  basis and GST treatment.
+- Consent provenance and withdrawal controls, correction/deletion requests,
+  transactional anonymisation, retention cron, robots.txt, sitemap and
+  legacy URL redirects.
+- Activity log and endpoint-specific IP rate limiting.
 
-- **Append-only package versioning** — every edit creates a new version; instant rollback with full audit trail
-- **Seasonal pricing engine** — per-season per-person pricing with live calculator on public pages
-- **Hybrid AI pipeline** — Gemini extraction → deterministic matching → AI-drafted reply, human approval mandatory
-- **4-role RBAC** — Admin, Editor, Consultant, Traveller with defense-in-depth auth (proxy + route-level)
-- **Blog CMS** — Markdown-based posts with tags, SEO metadata and scheduling
-- **Quote builder** — Generate shareable quote links with per-traveller pricing
-- **Activity log** — Tracks all admin actions for accountability
+Email, WhatsApp and other outside systems are intentionally mocked: email
+dispatch is logged server-side and non-web enquiries can be recorded by staff.
 
-## Quick Start
+## Technology
+
+Next.js 16 App Router and server components, React 19, PostgreSQL, Prisma 6,
+NextAuth, Tailwind CSS 4, Leaflet, `pdf-lib`, Zod and Vitest. AI uses Groq when
+configured and Gemini as a fallback; without either key the enquiry flow uses a
+safe deterministic fallback and still requires staff review.
+
+## Quick start
 
 ```bash
 git clone https://github.com/vaishnavi-eklaspur/itera.git
 cd itera
 npm install
-cp .env.example .env   # fill in DATABASE_URL, NEXTAUTH_SECRET, etc.
+Copy-Item .env.example .env  # PowerShell; edit the file before continuing
 npx prisma db push
 npx prisma db seed
 npm run dev
 ```
 
-See [deployment.md](deployment.md) for full setup, environment variables, Vercel/Docker deployment and secret generation.
+Open http://localhost:3000 (or the port printed by Next.js). Full local,
+Vercel and production-database instructions are in [deployment.md](deployment.md).
 
-### Test Credentials (from seed)
+## Seeded demo accounts
+
+These are demo-only credentials created by `prisma/seed.ts`; never reuse them
+in a real deployment.
 
 | Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@itera.in | admin123 |
-| Consultant | consultant@itera.in | consultant123 |
-| Traveller | traveller@itera.in | traveller123 |
+|---|---|---|
+| Admin | `admin@itera.in` | `admin123` |
+| Editor | `editor@itera.in` | `editor123` |
+| Consultant | `consultant@itera.in` | `consultant123` |
+| Traveller | `traveller@itera.in` | `traveller123` |
 
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── (auth)/          # Login, registration
-│   ├── (public)/        # Packages, blog, enquiries, quotes
-│   ├── admin/           # Dashboard, package editor, enquiry inbox, blog CMS
-│   └── api/             # REST endpoints (admin, public, internal)
-├── components/          # React components (admin, layout, packages, ui)
-├── lib/                 # Auth, DB, validations, rate limiting, roles
-└── proxy.ts             # Request proxy (auth, rate limiting, security headers)
-prisma/
-├── schema.prisma        # Data model
-└── seed.ts              # Sample data (10 packages, 18 enquiries, 3 users)
-tests/                   # Vitest test suites (64 tests)
-```
-
-## Tests
+## Verification
 
 ```bash
-npm test          # 64 tests across 4 files
-npm run test:watch
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
 ```
 
-## Documentation
+The current repository verification run completed with 64 tests passing and
+zero ESLint errors. ESLint still reports non-blocking existing warnings.
 
-- [TDD.md](TDD.md) — Architecture decisions, data model, AI pipeline design
-- [deployment.md](deployment.md) — Local dev, Vercel, Docker, cron jobs
+## Structure
+
+```text
+src/app/                 routes, server pages and API handlers
+src/components/          public, admin and shared UI
+src/lib/                 auth, RBAC, validation, pricing and rate limiting
+src/proxy.ts              auth gate, redirects and response security headers
+prisma/schema.prisma     PostgreSQL data model
+prisma/seed.ts           realistic demo data
+tests/                   Vitest validation, utility and security tests
+```
+
+## Known limitations
+
+- The production Lighthouse Mobile Slow 4G target has not been independently
+  verified against the deployed URL.
+- The current rate limiter is process-memory based; a distributed store is
+  required for strong multi-instance/serverless enforcement.
+- Real email, WhatsApp, payments and live inventory are outside this demo.
+- Photos are URL-backed rather than uploaded through an asset pipeline.
+- The blog editor is visually rich, but persists Markdown rather than a
+  structured rich-text document.
+- The deployed CSP and external image policy should be browser-verified after
+  the latest security-header changes.

@@ -6,8 +6,18 @@ import { ItinerarySection } from "@/components/packages/itinerary-section";
 import { PriceEstimator } from "@/components/packages/price-estimator";
 import { Check, X as XIcon, Calendar, Star, Users, MapPin, AlertTriangle } from "lucide-react";
 import { db } from "@/lib/db";
+import type { Metadata } from "next";
 
 export const instant = false;
+
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  return {
+    title: "Package Preview",
+    alternates: { canonical: `/packages/preview/${token}` },
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function PreviewPage({
   params,

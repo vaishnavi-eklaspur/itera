@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { registerSchema } from "@/lib/validations";
+import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  if (!rateLimit(`register:${getClientIp(req)}`, 900_000, 5)) return rateLimitResponse(900);
   const body = await req.json();
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {

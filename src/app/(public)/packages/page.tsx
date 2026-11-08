@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Travel Packages",
   description: "Explore handcrafted holiday packages across Kerala, Tamil Nadu, Karnataka and Goa.",
+  alternates: { canonical: "/packages" },
 };
 
 export const instant = false;

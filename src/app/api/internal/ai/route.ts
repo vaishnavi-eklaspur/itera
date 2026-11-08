@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { aiExtractedSchema } from "@/lib/validations";
 import { randomUUID } from "crypto";
 import { calculateGst } from "@/lib/gst";
+import { selectSeasonalPrice } from "@/lib/seasonal-pricing";
 
 const EXTRACTION_PROMPT = `You are an assistant for a travel operator. Extract travel details from the customer message below.
 
@@ -146,7 +147,7 @@ async function createHighConfidenceQuote(
     id: string;
     slug: string;
     currentVersion: { title: string; inclusions: string[]; exclusions: string[] } | null;
-    seasonalPrices: { pricePerPerson: number; seasonName: string; basis: string; gstInclusive: boolean }[];
+    seasonalPrices: { pricePerPerson: number; seasonName: string; basis: string; gstInclusive: boolean; seasonStartMonth: number; seasonEndMonth: number }[];
   }[],
   origin: string
 ) {
@@ -165,8 +166,8 @@ async function createHighConfidenceQuote(
   if (!selected?.currentVersion) return null;
 
   const suggestion = suggestions.find((item) => item.packageSlug === selected.slug);
-  const price = suggestion?.pricePerPerson ?? selected.seasonalPrices[0]?.pricePerPerson ?? null;
-  const seasonalPrice = selected.seasonalPrices.find((item) => item.pricePerPerson === price) ?? selected.seasonalPrices[0];
+  const seasonalPrice = selectSeasonalPrice(selected.seasonalPrices, extracted.dates?.raw ?? enquiry.travelDates);
+  const price = seasonalPrice?.pricePerPerson ?? suggestion?.pricePerPerson ?? null;
   if (!price || price <= 0 || !seasonalPrice) return null;
 
   const author = await db.user.findFirst({

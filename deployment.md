@@ -1,243 +1,155 @@
-# Deployment Guide — Itera
+# Itera deployment guide
 
-## For Reviewers — Quick Start
+## Reviewer access
 
-The app is live at **https://itera-5nq4.vercel.app**
+- **Repository:** https://github.com/vaishnavi-eklaspur/itera
+- **Live app:** https://itera-5nq4.vercel.app
+
+Seeded demo accounts:
 
 | Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@itera.in | admin123 |
-| Consultant | consultant@itera.in | consultant123 |
-| Traveller | traveller@itera.in | traveller123 |
+|---|---|---|
+| Admin | `admin@itera.in` | `admin123` |
+| Editor | `editor@itera.in` | `editor123` |
+| Consultant | `consultant@itera.in` | `consultant123` |
+| Traveller | `traveller@itera.in` | `traveller123` |
 
-Log in as Admin to see the full CMS, enquiry inbox and AI pipeline. Submit an enquiry from any package page to see the auto-acknowledgement and AI extraction in action. Emails are mocked (logged server-side, not actually sent) as specified in the brief.
-
----
+These credentials are for the review database only. Rotate or remove them
+before any real deployment.
 
 ## Prerequisites
 
-- Node.js 20+
-- PostgreSQL database (Neon recommended for serverless)
-- Google Gemini API key (for AI features — optional, degrades gracefully)
+- Node.js 20 or newer
+- npm
+- PostgreSQL 14 or newer; Neon is suitable for Vercel
+- A database connection string with SSL enabled for hosted PostgreSQL
+- Optional Groq and/or Gemini API key for live AI calls
 
----
+## Local setup (PowerShell)
 
-## Local Development
-
-```bash
-# 1. Clone and install
+```powershell
 git clone https://github.com/vaishnavi-eklaspur/itera.git
-cd itera
+Set-Location itera
 npm install
-
-# 2. Configure environment
-cp .env.example .env
+Copy-Item .env.example .env
 ```
 
-Edit `.env` with your values:
+Edit `.env` with local values. Names only are listed below; do not commit the
+file or any secret.
 
-```env
-DATABASE_URL=postgresql://user:pass@host/dbname?sslmode=require
-NEXTAUTH_SECRET=<random-32-char-string>
-NEXTAUTH_URL=http://localhost:3000
-GROQ_API_KEY=gsk_...                   # preferred — fast AI extraction
-GEMINI_API_KEY=AIza...                 # optional fallback for AI extraction
-INTERNAL_API_SECRET=<random-string>   # protects internal AI route
-CRON_SECRET=<random-string>           # protects scheduled publish endpoint
+| Variable | Required | Purpose |
+|---|---:|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `NEXTAUTH_SECRET` | Yes | Session signing secret |
+| `NEXTAUTH_URL` | Yes | Base URL, for example `http://localhost:3000` |
+| `NEXT_PUBLIC_SITE_URL` | No | Canonical/sitemap/robots base URL |
+| `GROQ_API_KEY` | No | Preferred AI extraction and drafting provider |
+| `GEMINI_API_KEY` | No | AI fallback provider |
+| `INTERNAL_API_SECRET` | Yes | Protects the internal AI endpoint |
+| `CRON_SECRET` | Yes for retention | Protects scheduled retention requests |
+| `ENQUIRY_RETENTION_DAYS` | No | Closed-enquiry retention period; default is 730 |
+
+Generate local secrets with a password manager or a cryptographically secure
+generator. For example, with OpenSSL:
+
+```powershell
+openssl rand -base64 32
+openssl rand -hex 32
 ```
 
-Generate secrets:
+Create the schema and sample data:
 
-```bash
-openssl rand -base64 32    # use output for NEXTAUTH_SECRET
-openssl rand -hex 16       # use output for INTERNAL_API_SECRET and CRON_SECRET
+```powershell
+npx prisma db push
+npx prisma db seed
 ```
 
-```bash
-# 3. Set up database
-npx prisma db push      # create tables
-npx prisma db seed      # seed sample data (10 packages, 18 enquiries, 3 users)
+Start the app:
 
-# 4. Run
-npm run dev              # starts on http://localhost:3000
+```powershell
+npm run dev
 ```
 
-Staff can record enquiries received through email, chat, WhatsApp or phone from
-**Admin → Enquiries → Add enquiry**. These entries are stored with their source
-channel and enter the same extraction, assignment and reply workflow as web
-enquiries. Direct provider webhooks are not configured by default; connect the
-provider-specific webhook to `POST /api/admin/enquiries` when credentials are
-available.
+The default URL is http://localhost:3000. To use port 3001:
 
-### Test credentials (from seed)
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@itera.in | admin123 |
-| Consultant | consultant@itera.in | consultant123 |
-| Traveller | traveller@itera.in | traveller123 |
-
-### Run tests
-
-```bash
-npm test                 # 64 tests across 4 files
-npm run test:watch       # watch mode
+```powershell
+npx next dev -p 3001
 ```
 
----
+The seed creates packages, seasonal prices, enquiries, replies, notes, blog
+posts and users. Re-running it is intended to be safe for the demo database.
 
-## Production Deployment (Vercel)
+## Verification commands
 
-### 1. Connect repository
-
-- Push to GitHub
-- Import the repository in [vercel.com/new](https://vercel.com/new)
-- Vercel auto-detects Next.js — no build config needed
-
-### 2. Environment variables
-
-Set these in Vercel → Project → Settings → Environment Variables:
-
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `DATABASE_URL` | `postgresql://...` | Neon connection string (pooled, with `?sslmode=require`) |
-| `NEXTAUTH_SECRET` | `<random-32-chars>` | **Must be different from dev** |
-| `NEXTAUTH_URL` | `https://your-domain.vercel.app` | Your production URL |
-| `GROQ_API_KEY` | `gsk_...` | Preferred fast AI extraction provider |
-| `GEMINI_API_KEY` | `AIza...` | Optional fallback for AI extraction |
-| `INTERNAL_API_SECRET` | `<random-string>` | Protects `/api/internal/ai` |
-| `CRON_SECRET` | `<random-string>` | Protects `/api/cron/publish` |
-
-### 3. Database migration
-
-After first deploy, run from your local machine:
-
-```bash
-DATABASE_URL="<production-connection-string>" npx prisma db push
-DATABASE_URL="<production-connection-string>" npx prisma db seed
+```powershell
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
 ```
 
-Or use Neon's SQL Editor to run the generated SQL from `npx prisma migrate diff`.
+For database inspection:
 
-### 4. Scheduled publishing (optional)
-
-To auto-publish packages with a future `scheduledAt` date, set up a Vercel Cron Job:
-
-Create `vercel.json`:
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/publish?secret=YOUR_CRON_SECRET",
-      "schedule": "0 */6 * * *"
-    }
-  ]
-}
+```powershell
+npm run db:studio
 ```
 
-This checks every 6 hours for packages due for publication.
+## Vercel deployment
 
----
+1. Import `vaishnavi-eklaspur/itera` at https://vercel.com/new.
+2. Add the environment variables above in Project Settings for the
+   **Production** environment.
+3. Set `NEXTAUTH_URL` and, preferably, `NEXT_PUBLIC_SITE_URL` to the final
+   HTTPS domain.
+4. Deploy. The repository build command is `npm run vercel-build`, which runs
+   `prisma db push --skip-generate && next build`.
+5. Seed the production database once from a controlled machine:
 
-## Production Deployment (Other Platforms)
+   ```powershell
+   $env:DATABASE_URL = "<production-connection-string>"
+   npx prisma db seed
+   Remove-Item Env:DATABASE_URL
+   ```
 
-### Docker
+   Never place the connection string in source control or a shell history
+   shared with the team.
 
-```dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npx prisma generate
-RUN npm run build
+`vercel.json` schedules `/api/cron/retention` daily at 02:00 UTC. Vercel sends
+the configured `CRON_SECRET` authorization header. Scheduled package publishing
+is implemented at `/api/cron/publish` and is protected by the same secret, but
+is not currently included in `vercel.json`; add it to the scheduler only if
+scheduled publishing is required.
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-ENV NODE_ENV=production
-EXPOSE 3000
-CMD ["node", "server.js"]
+## Other hosts
+
+For a long-running Node host:
+
+```powershell
+npm ci
+npx prisma generate
+npm run build
+npx prisma db push
+npm start
 ```
 
-### Railway / Render / Fly.io
-
-1. Connect GitHub repository
-2. Set environment variables (same as Vercel table above)
-3. Build command: `npm run build`
-4. Start command: `npm start`
-5. Run `npx prisma db push` as a release command or one-off task
-
----
-
-## Database Management
-
-```bash
-# View data in browser
-npm run db:studio        # opens Prisma Studio at localhost:5555
-
-# Create a migration (for production changes)
-npm run db:migrate       # creates migration file + applies
-
-# Push schema changes directly (dev only)
-npm run db:push
-
-# Re-seed data
-npm run db:seed
-```
-
----
-
-## Project Structure
-
-```
-itera/
-├── prisma/
-│   ├── schema.prisma          # data model (11 tables)
-│   └── seed.ts                # sample data generator
-├── src/
-│   ├── app/
-│   │   ├── (auth)/            # login, register pages
-│   │   ├── (public)/          # packages, blog, my-enquiries
-│   │   ├── admin/             # admin panel (7 sections)
-│   │   ├── api/               # 22 API routes
-│   │   ├── layout.tsx         # root layout (fonts, providers)
-│   │   ├── page.tsx           # homepage
-│   │   └── sitemap.ts         # dynamic sitemap
-│   ├── components/
-│   │   ├── admin/             # blog editor, enquiry detail, package editor
-│   │   ├── layout/            # navbar, footer, providers
-│   │   └── packages/          # enquiry form, gallery, grid, estimator
-│   ├── lib/
-│   │   ├── auth.ts            # NextAuth config
-│   │   ├── db.ts              # Prisma client
-│   │   ├── email.ts           # auto-ack email (mock)
-│   │   ├── rate-limit.ts      # sliding window rate limiter
-│   │   ├── utils.ts           # formatPrice, slugify, timeAgo, etc.
-│   │   └── validations.ts     # Zod schemas
-│   └── proxy.ts               # middleware (auth, redirects, security headers)
-├── tests/
-│   ├── validations.test.ts    # 18 schema tests
-│   ├── rate-limit.test.ts     # 5 rate limiter tests
-│   ├── utils.test.ts          # 18 utility tests
-│   └── security.test.ts       # 12 security tests
-├── TDD.md                     # technical design document
-├── deployment.md              # this file
-└── .env.example               # environment template
-```
-
----
+Set the same environment variables and expose the port selected by the host.
+For multiple application instances, replace the in-memory rate limiter with a
+shared Redis/Upstash or platform rate-limit service before production traffic.
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `PrismaClientInitializationError` | Check `DATABASE_URL` — ensure `?sslmode=require` for Neon |
-| Login fails silently | Verify `NEXTAUTH_SECRET` is set and `NEXTAUTH_URL` matches the actual domain |
-| AI extraction not running | Check `GROQ_API_KEY` (or fallback `GEMINI_API_KEY`) is set. The feature degrades gracefully — enquiries still work without it |
-| `ERR_MODULE_NOT_FOUND` on deploy | Run `npx prisma generate` before build (the `postinstall` script handles this) |
-| Security headers not appearing | Headers are set in `proxy.ts` middleware — verify the middleware matcher covers the route |
-| Tests fail on CI | Ensure `vitest` is in `devDependencies` and CI runs `npm ci` before `npm test` |
+| Symptom | Check |
+|---|---|
+| Prisma cannot connect | Confirm `DATABASE_URL`, SSL parameters and database network access |
+| Login redirects or fails | Confirm `NEXTAUTH_SECRET` and that `NEXTAUTH_URL` exactly matches the current origin |
+| AI fields use fallback values | Configure `GROQ_API_KEY` or `GEMINI_API_KEY`; the core enquiry flow still works without them |
+| Cron returns 401 | Confirm the platform sends its configured cron authorization header |
+| Images do not render | Check the image host is permitted by `next.config.ts` and the response CSP |
+| Port already in use | Start Next.js with `npx next dev -p 3001` or stop the specific process holding the port |
+
+## Security notes
+
+Do not commit `.env`, production credentials, real traveller data or API keys.
+Use separate secrets and databases for local, preview and production
+environments. Review the current CSP, external image hosts and distributed
+rate-limiting behaviour before treating the deployment as production-ready.

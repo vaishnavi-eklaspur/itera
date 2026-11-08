@@ -64,7 +64,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const pkg = await getPackage(slug);
-  if (!pkg?.currentVersion) return { title: "Package Not Found" };
+  if (!pkg?.currentVersion) {
+    return {
+      title: "Package Not Found",
+      alternates: { canonical: `/packages/${encodeURIComponent(slug)}` },
+      robots: { index: false, follow: false },
+    };
+  }
   const v = pkg.currentVersion;
   const metadataItinerary = Array.isArray(v.itinerary) ? v.itinerary : [];
   const durationDays = metadataItinerary.length || v.days;

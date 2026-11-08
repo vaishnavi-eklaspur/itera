@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Loader2, Eye, EyeOff, Edit3 } from "lucide-react";
 import { slugify } from "@/lib/utils";
@@ -40,21 +40,57 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  function insertMarkup(prefix: string, suffix = "") {
-    const textarea = contentRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = content.slice(start, end) || "text";
-    const next = `${content.slice(0, start)}${prefix}${selected}${suffix}${content.slice(end)}`;
-    setContent(next);
-    requestAnimationFrame(() => {
-      textarea.focus();
-      const cursor = start + prefix.length + selected.length + suffix.length;
-      textarea.setSelectionRange(cursor, cursor);
-    });
+  function markdownToHtml(markdown: string) {
+    return markdown
+      .split("\n")
+      .map((line) => {
+        const escaped = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        if (escaped.startsWith("### ")) return `<h3>${escaped.slice(4)}</h3>`;
+        if (escaped.startsWith("## ")) return `<h2>${escaped.slice(3)}</h2>`;
+        if (escaped.startsWith("# ")) return `<h1>${escaped.slice(2)}</h1>`;
+        if (escaped.startsWith("- ")) return `<li>${escaped.slice(2)}</li>`;
+        return escaped ? `<p>${escaped}</p>` : "<p><br></p>";
+      })
+      .join("");
+  }
+
+  function htmlToMarkdown(root: HTMLElement) {
+    const render = (node: Node): string => {
+      if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
+      if (!(node instanceof HTMLElement)) return Array.from(node.childNodes).map(render).join("");
+      const text = Array.from(node.childNodes).map(render).join("");
+      switch (node.tagName) {
+        case "H1": return `# ${text}\n`;
+        case "H2": return `## ${text}\n`;
+        case "H3": return `### ${text}\n`;
+        case "STRONG":
+        case "B": return `**${text}**`;
+        case "EM":
+        case "I": return `*${text}*`;
+        case "LI": return `- ${text}\n`;
+        case "BR": return "\n";
+        case "P":
+        case "DIV": return `${text}\n`;
+        default: return text;
+      }
+    };
+    return Array.from(root.childNodes).map(render).join("").replace(/\n{3,}/g, "\n\n").trim();
+  }
+
+  // Only rehydrate when switching back into the editor; typing must not reset the caret.
+  useEffect(() => {
+    if (!showPreview && contentRef.current) {
+      contentRef.current.innerHTML = markdownToHtml(content);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPreview]);
+
+  function runEditorCommand(command: string, value?: string) {
+    contentRef.current?.focus();
+    document.execCommand(command, false, value);
+    if (contentRef.current) setContent(htmlToMarkdown(contentRef.current));
   }
 
   function renderPreviewLine(line: string, index: number) {
@@ -90,8 +126,9 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
       return;
     }
     try {
-      const body = {
-        title, excerpt, content, coverImage: coverImage || undefined,
+        const savedContent = contentRef.current && !showPreview ? htmlToMarkdown(contentRef.current) : content;
+        const body = {
+          title, excerpt, content: savedContent, coverImage: coverImage || undefined,
         category, tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         seoTitle: seoTitle || undefined, seoDescription: seoDescription || undefined,
         relatedPackageIds, published,
@@ -160,27 +197,29 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
                 className="inline-flex items-center gap-1 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs text-stone-600 hover:border-forest-300 hover:text-forest-700"
               >
                 {showPreview ? <Edit3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                {showPreview ? "Edit Markdown" : "Visual Preview"}
+                {showPreview ? "Edit content" : "Preview"}
               </button>
             </div>
             {!showPreview && <div className="flex flex-wrap gap-1 mb-2 rounded-lg border border-stone-200 bg-stone-50 p-1">
               {[
-                  ["Bold", "**", "**"],
-                  ["Italic", "*", "*"],
-                  ["Heading", "## "],
-                  ["List", "- "],
-                  ["Link", "[", "](https://example.com)"],
-                  ["Image", "![alt text](", ")"],
-                ].map(([label, prefix, suffix = ""]) => (
+                  ["Bold", "bold"],
+                  ["Italic", "italic"],
+                  ["Heading", "formatBlock"],
+                  ["List", "insertUnorderedList"],
+                ].map(([label, command]) => (
                   <button
                     key={label}
                     type="button"
-                    onClick={() => insertMarkup(prefix, suffix)}
+                    onClick={() => runEditorCommand(command, command === "formatBlock" ? "H2" : undefined)}
                     className="rounded px-2 py-1 text-xs text-stone-600 hover:bg-white hover:text-forest-700"
                   >
                     {label}
                   </button>
                 ))}
+                <button type="button" onClick={() => {
+                  const url = window.prompt("Link URL");
+                  if (url) runEditorCommand("createLink", url);
+                }} className="rounded px-2 py-1 text-xs text-stone-600 hover:bg-white hover:text-forest-700">Link</button>
               </div>
               }
               {showPreview ? (
@@ -188,15 +227,16 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
                   {content ? content.split("\n").map(renderPreviewLine) : <p className="text-sm italic text-stone-400">Start writing to see the rendered article preview.</p>}
                 </div>
               ) : (
-                <textarea
+                <div
                   ref={contentRef}
-                  rows={16}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-forest-500 resize-y"
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={(event) => setContent(htmlToMarkdown(event.currentTarget))}
+                  className="min-h-[384px] w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 prose prose-sm max-w-none"
+                  aria-label="Blog content rich text editor"
                 />
               )}
-              <p className="mt-1 text-xs text-stone-400">Write portable Markdown, then switch to Visual Preview to review the article as readers will see it.</p>
+              <p className="mt-1 text-xs text-stone-400">Use the visual editor to format headings, emphasis, lists and links. Existing Markdown posts remain supported.</p>
             </div>
           </section>
         </div>

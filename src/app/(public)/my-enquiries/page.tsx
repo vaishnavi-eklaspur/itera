@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { Navbar } from "@/components/layout/navbar";
@@ -7,6 +8,11 @@ import { timeAgo, responseTimeBadge } from "@/lib/utils";
 import Link from "next/link";
 
 export const instant = false;
+export const metadata: Metadata = {
+  title: "My Enquiries",
+  alternates: { canonical: "/my-enquiries" },
+  robots: { index: false, follow: false },
+};
 
 export default async function MyEnquiriesPage() {
   const session = await auth();

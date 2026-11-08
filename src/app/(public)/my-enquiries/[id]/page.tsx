@@ -6,8 +6,19 @@ import { Footer } from "@/components/layout/footer";
 import { timeAgo } from "@/lib/utils";
 import Link from "next/link";
 import { ConsentControls } from "@/components/enquiries/consent-controls";
+import { DataRightsForm } from "@/components/enquiries/data-rights-form";
+import type { Metadata } from "next";
 
 export const instant = false;
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  return {
+    title: "My Enquiry",
+    alternates: { canonical: `/my-enquiries/${id}` },
+    robots: { index: false, follow: false },
+  };
+}
 
 function RichText({ content }: { content: string }) {
   return (
@@ -77,6 +88,18 @@ export default async function MyEnquiryDetailPage({
             enquiryId={enquiry.id}
             whatsappConsentAt={enquiry.whatsappConsentAt?.toISOString() ?? null}
             whatsappConsentWithdrawnAt={enquiry.whatsappConsentWithdrawnAt?.toISOString() ?? null}
+          />
+          <DataRightsForm
+            enquiryId={enquiry.id}
+            current={{
+              name: enquiry.name,
+              email: enquiry.email,
+              phone: enquiry.phone,
+              travelDates: enquiry.travelDates,
+              budget: enquiry.budget,
+              adults: enquiry.adults,
+              children: enquiry.children,
+            }}
           />
         </section>
 

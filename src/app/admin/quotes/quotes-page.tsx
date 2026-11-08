@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Plus, ExternalLink, ClipboardList } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { calculateGst } from "@/lib/gst";
+import { selectSeasonalPrice } from "@/lib/seasonal-pricing";
 
 type Quote = {
   id: string;
@@ -25,7 +26,7 @@ type Quote = {
 type Package = {
   id: string;
   currentVersion: { title: string; destination: string; days: number } | null;
-  seasonalPrices: { pricePerPerson: number; seasonName: string }[];
+  seasonalPrices: { pricePerPerson: number; seasonName: string; seasonStartMonth: number; seasonEndMonth: number }[];
 };
 
 type EnquiryPreset = {
@@ -87,7 +88,8 @@ export default function QuotesPage() {
   }, [enquiryId, hasDatePreset, hasPackagePreset, hasTravellerPreset]);
 
   const selectedPkg = packages.find((p) => p.id === packageId);
-  const basePrice = selectedPkg?.seasonalPrices?.[0]?.pricePerPerson ?? 0;
+  const selectedSeason = selectedPkg ? selectSeasonalPrice(selectedPkg.seasonalPrices, travelDate) : null;
+  const basePrice = selectedSeason?.pricePerPerson ?? 0;
   const [gstInclusive, setGstInclusive] = useState(true);
   const [gstRate, setGstRate] = useState(18);
   const gst = calculateGst(basePrice, travellers, gstRate, gstInclusive);
@@ -154,7 +156,7 @@ export default function QuotesPage() {
             <div>
               <label className="text-sm text-stone-600 mb-1 block">Price/person</label>
               <p className="px-3 py-2.5 text-sm font-semibold text-forest-700">{formatPrice(basePrice)}</p>
-              <p className="text-xs text-stone-400">Per person, twin sharing</p>
+              <p className="text-xs text-stone-400">Per person, twin sharing · {selectedSeason?.seasonName ?? "Season"}</p>
             </div>
             <div>
               <label className="text-sm text-stone-600 mb-1 block">GST rate (%)</label>

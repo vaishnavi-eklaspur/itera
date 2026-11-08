@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 const withdrawalSchema = z.object({
   channel: z.enum(["PRIVACY", "WHATSAPP"]),
@@ -11,6 +12,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!rateLimit(`consent:${getClientIp(req)}`, 900_000, 20)) return rateLimitResponse(900);
   const session = await auth();
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

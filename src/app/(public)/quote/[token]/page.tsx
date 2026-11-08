@@ -21,8 +21,12 @@ async function getQuote(token: string) {
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const { token } = await params;
   const quote = await getQuote(token);
-  if (!quote) return { title: "Quote Not Found" };
-  return { title: `Quote — ${quote.package.currentVersion?.title ?? "Package"}`, description: `Travel quote for ${quote.travellers} travellers` };
+  if (!quote) return { title: "Quote Not Found", alternates: { canonical: `/quote/${token}` } };
+  return {
+    title: `Quote — ${quote.package.currentVersion?.title ?? "Package"}`,
+    description: `Travel quote for ${quote.travellers} travellers`,
+    alternates: { canonical: `/quote/${token}` },
+  };
 }
 
 export default async function QuoteViewPage({ params }: { params: Promise<{ token: string }> }) {

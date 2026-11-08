@@ -6,6 +6,7 @@ import { randomUUID } from "crypto";
 import { logActivity } from "@/lib/activity";
 import { authorizeRole } from "@/lib/roles";
 import { calculateGst } from "@/lib/gst";
+import { getTravelMonth, selectSeasonalPrice } from "@/lib/seasonal-pricing";
 
 function replaceGeneratedQuoteBlock(draft: string | null | undefined, quoteBlock: string) {
   const lines = (draft ?? "").split(/\r?\n/);
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
       status: true,
       seasonalPrices: {
         where: { isActive: true },
-        select: { pricePerPerson: true },
+        select: { pricePerPerson: true, seasonName: true, seasonStartMonth: true, seasonEndMonth: true },
       },
     },
   });
@@ -107,9 +108,18 @@ export async function POST(req: NextRequest) {
   if (packagePricing.status !== "PUBLISHED") {
     return NextResponse.json({ error: "Quotes can only use published packages" }, { status: 400 });
   }
-  if (!packagePricing.seasonalPrices.some((price) => price.pricePerPerson === parsed.data.pricePerPerson)) {
+  const selectedPrice = selectSeasonalPrice(packagePricing.seasonalPrices, parsed.data.travelDate);
+  const travelMonth = getTravelMonth(parsed.data.travelDate);
+  if (!selectedPrice || (travelMonth && !(
+    selectedPrice.seasonStartMonth <= selectedPrice.seasonEndMonth
+      ? travelMonth >= selectedPrice.seasonStartMonth && travelMonth <= selectedPrice.seasonEndMonth
+      : travelMonth >= selectedPrice.seasonStartMonth || travelMonth <= selectedPrice.seasonEndMonth
+  ))) {
+    return NextResponse.json({ error: "No active seasonal price matches the travel date" }, { status: 400 });
+  }
+  if (selectedPrice.pricePerPerson !== parsed.data.pricePerPerson) {
     return NextResponse.json(
-      { error: "Price must match an active seasonal price for the selected package" },
+      { error: `The selected travel date uses the ${selectedPrice.seasonName} seasonal price` },
       { status: 400 },
     );
   }

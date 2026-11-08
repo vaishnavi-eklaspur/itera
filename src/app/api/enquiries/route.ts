@@ -3,13 +3,11 @@ import { db } from "@/lib/db";
 import { enquiryFormSchema } from "@/lib/validations";
 import { auth } from "@/lib/auth";
 import { sendAutoAckEmail } from "@/lib/email";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  if (!rateLimit(ip)) {
-    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
-  }
+  if (!rateLimit(`enquiry:${ip}`, 60_000, 5)) return rateLimitResponse();
 
   const body = await req.json();
   const parsed = enquiryFormSchema.safeParse(body);

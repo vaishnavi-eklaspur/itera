@@ -16,3 +16,13 @@ export function getClientIp(req: { headers: { get(name: string): string | null }
     "unknown"
   );
 }
+
+export function rateLimitResponse(retryAfterSeconds = 60) {
+  return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+    status: 429,
+    headers: {
+      "Content-Type": "application/json",
+      "Retry-After": String(retryAfterSeconds),
+    },
+  });
+}

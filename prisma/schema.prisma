@@ -41,6 +41,18 @@ enum EnquiryChannel {
   PHONE
 }
 
+enum DataRightsRequestType {
+  CORRECTION
+  DELETION
+}
+
+enum DataRightsRequestStatus {
+  PENDING
+  IN_REVIEW
+  COMPLETED
+  REJECTED
+}
+
 model User {
   id            String   @id @default(cuid())
   name          String
@@ -59,6 +71,8 @@ model User {
   blogPosts         BlogPost[]
   quotes            Quote[]
   activityLogs      ActivityLog[]
+  dataRightsRequests DataRightsRequest[] @relation("DataRightsRequester")
+  resolvedDataRightsRequests DataRightsRequest[] @relation("DataRightsResolver")
 }
 
 model Package {
@@ -153,6 +167,7 @@ model Enquiry {
   notes      EnquiryNote[]
   replies    EnquiryReply[]
   quotes     Quote[]
+  dataRightsRequests DataRightsRequest[]
 
   @@index([status])
   @@index([assignedToId])
@@ -180,6 +195,27 @@ model EnquiryReply {
 
   enquiry Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
   author  User    @relation(fields: [authorId], references: [id])
+}
+
+model DataRightsRequest {
+  id            String                 @id @default(cuid())
+  userId        String?
+  enquiryId     String?
+  email         String
+  type          DataRightsRequestType
+  details       String?
+  status        DataRightsRequestStatus @default(PENDING)
+  requestedAt   DateTime               @default(now())
+  resolvedAt    DateTime?
+  resolvedById  String?
+  resolutionNote String?
+
+  requester User? @relation("DataRightsRequester", fields: [userId], references: [id], onDelete: SetNull)
+  resolver  User? @relation("DataRightsResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  enquiry   Enquiry? @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+
+  @@index([status, requestedAt])
+  @@index([email])
 }
 
 model PreviewCache {
