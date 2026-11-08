@@ -20,7 +20,7 @@ If a field cannot be determined, set it to null. Set confidence based on how cle
 
 Customer message: `;
 
-const CONFIDENCE_VERSION = 2;
+const CONFIDENCE_VERSION = 3;
 
 const EMPTY_EXTRACTION = {
   dates: null,
@@ -185,12 +185,19 @@ function calculateConfidence(
     : destinationsCompatible(extractedDestination, comparisonDestination);
   const datesProvided = Boolean(extracted.dates?.start && extracted.dates.end);
   const datesValid = !datesProvided || new Date(extracted.dates!.start!).getTime() <= new Date(extracted.dates!.end!).getTime();
+  const budgetTotal = extracted.budget?.total;
+  const budgetMissing = budgetTotal == null;
+  const budgetInvalid = budgetTotal != null && budgetTotal <= 0;
   const consistency = (
     (destinationConsistent ? 0.5 : 0) +
-    (datesValid ? 0.5 : 0)
+    (datesValid ? 0.5 : 0) +
+    (budgetInvalid ? -0.5 : 0)
   );
 
-  return Math.min(1, Math.max(0, completeness * 0.7 + consistency * 0.3));
+  const score = Math.min(1, Math.max(0, completeness * 0.7 + consistency * 0.3));
+  if (budgetInvalid) return Math.min(score, 0.55);
+  if (budgetMissing) return Math.min(score, 0.74);
+  return score;
 }
 
 function withConfidence(
@@ -303,6 +310,14 @@ export async function POST(req: NextRequest) {
     }
     if (enquiry.adults != null) finalExtraction.adults = enquiry.adults;
     if (enquiry.children != null) finalExtraction.children = enquiry.children;
+    const structuredBudget = enquiry.budget?.match(/\d[\d,]*/);
+    if (structuredBudget) {
+      finalExtraction.budget = {
+        total: Number(structuredBudget[0].replace(/,/g, "")),
+        perPerson: null,
+        currency: "INR",
+      };
+    }
     if (finalExtraction.confidence === 0) {
       finalExtraction = getFallbackExtraction(enquiry);
     }

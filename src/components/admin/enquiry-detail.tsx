@@ -94,7 +94,7 @@ function flattenExtracted(ai: AIExtracted): { key: string; label: string; value:
   if (ai.children != null) fields.push({ key: "children", label: "Children", value: String(ai.children) });
   if (ai.budget) {
     const b = ai.budget;
-    const amt = b.total ? `${b.currency ?? "INR"} ${b.total.toLocaleString()}` : b.perPerson ? `${b.currency ?? "INR"} ${b.perPerson.toLocaleString()}/person` : "";
+    const amt = b.total != null ? `${b.currency ?? "INR"} ${b.total.toLocaleString()}` : b.perPerson != null ? `${b.currency ?? "INR"} ${b.perPerson.toLocaleString()}/person` : "";
     fields.push({ key: "budget", label: "Budget", value: amt });
   }
   if (ai.requirements?.length) fields.push({ key: "requirements", label: "Requirements", value: ai.requirements.join(", ") });
