@@ -140,41 +140,60 @@ function matchingTokens(value: string) {
   return value.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 3);
 }
 
+const DESTINATION_REGIONS: Record<string, string[]> = {
+  karnataka: ["karnataka", "coorg", "mysore", "mysuru", "madikeri", "hampi", "chikmagalur", "bengaluru", "bangalore"],
+  kerala: ["kerala", "kochi", "alleppey", "alappuzha", "munnar", "thekkady", "wayanad", "kovalam"],
+  "tamil nadu": ["tamil nadu", "ooty", "chennai", "madurai", "kodaikanal", "rameswaram"],
+  goa: ["goa", "panaji", "calangute"],
+};
+
+function destinationsCompatible(first: string, second: string) {
+  const firstValue = first.toLowerCase();
+  const secondValue = second.toLowerCase();
+  if (firstValue.includes(secondValue) || secondValue.includes(firstValue)) return true;
+
+  return Object.values(DESTINATION_REGIONS).some((places) => {
+    const firstInRegion = places.some((place) => firstValue.includes(place));
+    const secondInRegion = places.some((place) => secondValue.includes(place));
+    return firstInRegion && secondInRegion;
+  });
+}
+
 function calculateConfidence(
   extracted: ReturnType<typeof parseExtraction>,
   enquiry: {
-    budget: string | null;
     package: { currentVersion: { destination: string; days: number } | null } | null;
   },
-  matchedPackage: { currentVersion: { destination: string; days: number } | null } | null,
-  budgetFits: boolean
+  matchedPackage: { currentVersion: { destination: string; days: number } | null } | null
 ) {
-  const fieldWeights = [
+  const baseFields = [
     { present: Boolean(extracted.destination), weight: 0.2 },
     { present: Boolean(extracted.dates?.start && extracted.dates?.end), weight: 0.2 },
     { present: extracted.adults != null, weight: 0.15 },
     { present: extracted.children != null, weight: 0.1 },
     { present: Boolean(extracted.budget?.total), weight: 0.2 },
-    { present: extracted.requirements.length > 0, weight: 0.15 },
   ];
-  const completeness = fieldWeights.reduce((score, field) => score + (field.present ? field.weight : 0), 0);
+  const baseWeight = baseFields.reduce((total, field) => total + field.weight, 0);
+  const requirementsProvided = extracted.requirements.length > 0;
+  const weightMultiplier = requirementsProvided ? 1 : 1 / baseWeight;
+  const completeness = baseFields.reduce(
+    (score, field) => score + (field.present ? field.weight * weightMultiplier : 0),
+    0
+  ) + (requirementsProvided ? 0.15 : 0);
 
   const linkedDestination = enquiry.package?.currentVersion?.destination;
   const extractedDestination = extracted.destination?.toLowerCase();
   const packageDestination = matchedPackage?.currentVersion?.destination?.toLowerCase();
-  const destinationConsistent = Boolean(
-    extractedDestination &&
-    ((linkedDestination && extractedDestination.includes(linkedDestination.toLowerCase())) ||
-      (packageDestination && (extractedDestination.includes(packageDestination) || packageDestination.includes(extractedDestination))))
+  const comparisonDestination = linkedDestination || packageDestination;
+  const destinationConsistent = !comparisonDestination || !extractedDestination
+    ? true
+    : destinationsCompatible(extractedDestination, comparisonDestination);
+  const datesProvided = Boolean(extracted.dates?.start && extracted.dates.end);
+  const datesValid = !datesProvided || new Date(extracted.dates!.start!).getTime() <= new Date(extracted.dates!.end!).getTime();
+  const consistency = (
+    (destinationConsistent ? 0.5 : 0) +
+    (datesValid ? 0.5 : 0)
   );
-  const datesValid = Boolean(
-    extracted.dates?.start &&
-    extracted.dates.end &&
-    new Date(extracted.dates.start).getTime() <= new Date(extracted.dates.end).getTime()
-  );
-  const budgetProvided = Boolean(enquiry.budget || extracted.budget?.total);
-  const consistency = (destinationConsistent ? 0.4 : 0) + (datesValid ? 0.2 : 0) +
-    (budgetProvided ? (budgetFits ? 0.4 : 0.2) : 0);
 
   return Math.min(1, Math.max(0, completeness * 0.7 + consistency * 0.3));
 }
@@ -377,11 +396,8 @@ export async function POST(req: NextRequest) {
     const linkedPackage = enquiry.package
       ? { currentVersion: enquiry.package.currentVersion }
       : null;
-    const budgetFits = suggestions.some((suggestion) =>
-      suggestion.reasons.some((reason) => reason.includes("within budget"))
-    );
     extracted.confidence = Number(
-      calculateConfidence(extracted, enquiry, linkedPackage, budgetFits).toFixed(2)
+      calculateConfidence(extracted, enquiry, linkedPackage).toFixed(2)
     );
 
     const packageTitles = new Map(
