@@ -29,7 +29,7 @@ type Enquiry = {
   aiExtracted: AIExtracted | null;
   aiDraftReply: string | null;
   assignedToId: string | null;
-  assignedTo: { id: string; name: string } | null;
+  assignedTo: { id: string; name: string; role: string } | null;
   package: { currentVersion: { title: string } | null } | null;
   notes: { id: string; content: string; createdAt: string; author: { name: string } }[];
   replies: { id: string; content: string; channel: string; sentAt: string; author: { name: string } }[];
@@ -107,7 +107,7 @@ export function EnquiryDetail({
   suggestedPackages,
 }: {
   enquiry: Enquiry;
-  admins: { id: string; name: string }[];
+  admins: { id: string; name: string; role: string }[];
   suggestedPackages: SuggestedPackage[];
 }) {
   const router = useRouter();
@@ -360,7 +360,7 @@ export function EnquiryDetail({
               >
                 <option value="">Unassigned</option>
                 {admins.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
+                  <option key={a.id} value={a.id}>{a.role} — {a.name}</option>
                 ))}
               </select>
             </div>

@@ -40,7 +40,7 @@ export default async function AdminEnquiryDetailPage({
     where: { id },
     include: {
       package: { include: { currentVersion: { select: { title: true, destination: true, days: true } } } },
-      assignedTo: { select: { id: true, name: true } },
+      assignedTo: { select: { id: true, name: true, role: true } },
       notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
       replies: { orderBy: { sentAt: "desc" }, include: { author: { select: { name: true } } } },
     },
@@ -53,7 +53,7 @@ export default async function AdminEnquiryDetailPage({
     where: { id },
     include: {
       package: { include: { currentVersion: { select: { title: true } } } },
-      assignedTo: { select: { id: true, name: true } },
+      assignedTo: { select: { id: true, name: true, role: true } },
       notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
       replies: { orderBy: { sentAt: "desc" }, include: { author: { select: { name: true } } } },
     },
@@ -62,7 +62,7 @@ export default async function AdminEnquiryDetailPage({
 
   const assignableUsers = await db.user.findMany({
     where: { role: { in: ["ADMIN", "CONSULTANT"] } },
-    select: { id: true, name: true },
+    select: { id: true, name: true, role: true },
     orderBy: { name: "asc" },
   });
 

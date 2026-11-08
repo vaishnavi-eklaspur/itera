@@ -13,7 +13,7 @@ type Enquiry = {
   status: string;
   createdAt: string;
   package: { currentVersion: { title: string } | null } | null;
-  assignedTo: { id: string; name: string } | null;
+  assignedTo: { id: string; name: string; role: string } | null;
   replies: { sentAt: string }[];
 };
 
@@ -146,7 +146,7 @@ export function EnquiryList({ enquiries, currentStatus }: { enquiries: Enquiry[]
                     </span>
                     <p className="text-xs text-stone-400 mt-1">{timeAgo(new Date(e.createdAt))}</p>
                     {e.assignedTo && (
-                      <p className="text-xs text-stone-400">{e.assignedTo.name}</p>
+                      <p className="text-xs text-stone-400">{e.assignedTo.role} — {e.assignedTo.name}</p>
                     )}
                   </div>
                 </Link>

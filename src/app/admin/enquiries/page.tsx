@@ -17,7 +17,7 @@ export default async function AdminEnquiriesPage({
     where,
     include: {
       package: { include: { currentVersion: { select: { title: true } } } },
-      assignedTo: { select: { id: true, name: true } },
+      assignedTo: { select: { id: true, name: true, role: true } },
       replies: { orderBy: { sentAt: "asc" as const }, take: 1, select: { sentAt: true } },
     },
     orderBy: { createdAt: "desc" },
