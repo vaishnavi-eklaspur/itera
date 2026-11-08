@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
       selectedDates: enquiry.travelDates,
       adults: enquiry.adults,
       children: enquiry.children,
+      budget: enquiry.budget,
       packageDays: enquiry.package?.currentVersion?.days ?? null,
       packageTitle: enquiry.package?.currentVersion?.title ?? null,
     })}`;
