@@ -26,19 +26,20 @@ export async function POST(
     return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const reply = await db.enquiryReply.create({
-    data: {
-      enquiryId: id,
-      authorId: session.user.id,
-      content: parsed.data.content,
-      channel: parsed.data.channel,
-    },
-  });
-
-  await db.enquiry.update({
-    where: { id },
-    data: { status: "REPLIED" },
-  });
+  const [reply] = await db.$transaction([
+    db.enquiryReply.create({
+      data: {
+        enquiryId: id,
+        authorId: session.user.id,
+        content: parsed.data.content,
+        channel: parsed.data.channel,
+      },
+    }),
+    db.enquiry.update({
+      where: { id },
+      data: { status: "REPLIED" },
+    }),
+  ]);
 
   return NextResponse.json(reply, { status: 201 });
 }

@@ -60,9 +60,10 @@ export default async function AdminEnquiryDetailPage({
   });
   if (!refreshedEnquiry) notFound();
 
-  const admins = await db.user.findMany({
-    where: { role: "ADMIN" },
+  const assignableUsers = await db.user.findMany({
+    where: { role: { in: ["ADMIN", "CONSULTANT"] } },
     select: { id: true, name: true },
+    orderBy: { name: "asc" },
   });
 
   const aiSuggestions = Array.isArray(refreshedEnquiry.aiSuggestions)
@@ -89,7 +90,7 @@ export default async function AdminEnquiryDetailPage({
   return (
     <EnquiryDetail
       enquiry={JSON.parse(JSON.stringify(refreshedEnquiry))}
-      admins={admins}
+      admins={assignableUsers}
       suggestedPackages={JSON.parse(JSON.stringify(
         suggestedPackages.map((pkg) => ({
           ...pkg,

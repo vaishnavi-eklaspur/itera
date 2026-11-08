@@ -82,7 +82,18 @@ export async function PUT(
   const updateData: Record<string, unknown> = {};
 
   if (data.status !== undefined) updateData.status = data.status;
-  if (data.assignedToId !== undefined) updateData.assignedToId = data.assignedToId;
+  if (data.assignedToId !== undefined) {
+    if (data.assignedToId) {
+      const assignee = await db.user.findFirst({
+        where: { id: data.assignedToId, role: { in: ["ADMIN", "CONSULTANT"] } },
+        select: { id: true },
+      });
+      if (!assignee) {
+        return NextResponse.json({ error: "Assignee must be an admin or consultant" }, { status: 400 });
+      }
+    }
+    updateData.assignedToId = data.assignedToId;
+  }
   if (data.aiExtracted !== undefined) updateData.aiExtracted = data.aiExtracted;
 
   const updated = await db.enquiry.update({
