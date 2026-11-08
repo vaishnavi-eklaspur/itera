@@ -5,6 +5,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { timeAgo } from "@/lib/utils";
 import Link from "next/link";
+import { ConsentControls } from "@/components/enquiries/consent-controls";
 
 export const instant = false;
 
@@ -68,6 +69,15 @@ export default async function MyEnquiryDetailPage({
         <section className="mt-6 bg-white rounded-xl border border-stone-200 p-6">
           <h2 className="text-sm font-semibold text-stone-900 mb-3">Your enquiry</h2>
           <p className="text-sm text-stone-600 whitespace-pre-wrap">{enquiry.message}</p>
+        </section>
+
+        <section className="mt-4 bg-white rounded-xl border border-stone-200 p-6">
+          <h2 className="text-sm font-semibold text-stone-900 mb-2">Communication preferences</h2>
+          <ConsentControls
+            enquiryId={enquiry.id}
+            whatsappConsentAt={enquiry.whatsappConsentAt?.toISOString() ?? null}
+            whatsappConsentWithdrawnAt={enquiry.whatsappConsentWithdrawnAt?.toISOString() ?? null}
+          />
         </section>
 
         <section className="mt-4 space-y-4">

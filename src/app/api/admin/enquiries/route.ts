@@ -64,7 +64,11 @@ export async function POST(req: NextRequest) {
       budget: data.budget || null,
       channel: data.channel,
       privacyConsentAt: data.privacyConsent ? new Date() : null,
+      privacyConsentSource: data.privacyConsent ? "STAFF_RECORDED" : null,
+      privacyConsentVersion: data.privacyConsent ? "2026-11-09" : null,
       whatsappConsentAt: data.whatsappConsent ? new Date() : null,
+      whatsappConsentSource: data.whatsappConsent ? "STAFF_RECORDED" : null,
+      whatsappConsentVersion: data.whatsappConsent ? "2026-11-09" : null,
       status: "NEW",
     },
   });

@@ -39,6 +39,7 @@ export function EnquiryList({
   const [loading, setLoading] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [now] = useState(() => Date.now());
   const router = useRouter();
 
   const toggleAll = () => {
@@ -81,7 +82,7 @@ export function EnquiryList({
   const statuses = ["ALL", "NEW", "IN_PROGRESS", "REPLIED", "CLOSED"];
   const overdueCount = enquiries.filter((enquiry) => {
     if (enquiry.replies.length > 0) return false;
-    return Date.now() - new Date(enquiry.createdAt).getTime() >= 60 * 60 * 1000;
+    return now - new Date(enquiry.createdAt).getTime() >= 60 * 60 * 1000;
   }).length;
   const withFilters = (status?: string, assignedTo = currentAssignedTo) => {
     const params = new URLSearchParams();

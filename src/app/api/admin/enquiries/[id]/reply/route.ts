@@ -28,13 +28,19 @@ export async function POST(
   }
   const enquiry = await db.enquiry.findUnique({
     where: { id },
-    select: { assignedToId: true, whatsappConsentAt: true },
+    select: { assignedToId: true, whatsappConsentAt: true, whatsappConsentSource: true, whatsappConsentWithdrawnAt: true },
   });
   if (!enquiry) return NextResponse.json({ error: "Enquiry not found" }, { status: 404 });
   if (session.user.role === "CONSULTANT" && enquiry.assignedToId !== session.user.id) {
     return NextResponse.json({ error: "Enquiry is not assigned to you" }, { status: 403 });
   }
-  if (parsed.data.channel === "WHATSAPP" && !enquiry.whatsappConsentAt) {
+  if (
+    parsed.data.channel === "WHATSAPP" &&
+    (!enquiry.whatsappConsentAt ||
+      !enquiry.whatsappConsentSource ||
+      enquiry.whatsappConsentSource === "LEGACY_MIGRATION" ||
+      enquiry.whatsappConsentWithdrawnAt)
+  ) {
     return NextResponse.json({ error: "WhatsApp consent is required before sending this reply" }, { status: 400 });
   }
 

@@ -42,7 +42,13 @@ type Enquiry = {
   message: string;
   channel: string;
   privacyConsentAt: string | null;
+  privacyConsentSource: string | null;
+  privacyConsentVersion: string | null;
+  privacyConsentWithdrawnAt: string | null;
   whatsappConsentAt: string | null;
+  whatsappConsentSource: string | null;
+  whatsappConsentVersion: string | null;
+  whatsappConsentWithdrawnAt: string | null;
   status: string;
   createdAt: string;
   autoAckSentAt: string | null;
@@ -341,10 +347,12 @@ export function EnquiryDetail({
             </div>
             <p className="text-sm text-stone-600 whitespace-pre-wrap">{enquiry.message}</p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs">
-              <span className={`rounded-full px-2 py-1 ${enquiry.privacyConsentAt ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
-                {enquiry.privacyConsentAt ? "Privacy consent recorded" : "Privacy consent not recorded"}
+              <span className={`rounded-full px-2 py-1 ${enquiry.privacyConsentAt && !enquiry.privacyConsentWithdrawnAt ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                {enquiry.privacyConsentAt && !enquiry.privacyConsentWithdrawnAt ? `Privacy consent recorded (${enquiry.privacyConsentSource ?? "unknown"})` : "Privacy consent not active"}
               </span>
-              {enquiry.whatsappConsentAt && <span className="rounded-full bg-green-50 px-2 py-1 text-green-700">WhatsApp consent recorded</span>}
+              <span className={`rounded-full px-2 py-1 ${enquiry.whatsappConsentAt && !enquiry.whatsappConsentWithdrawnAt && enquiry.whatsappConsentSource !== "LEGACY_MIGRATION" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                {enquiry.whatsappConsentAt && !enquiry.whatsappConsentWithdrawnAt && enquiry.whatsappConsentSource !== "LEGACY_MIGRATION" ? `WhatsApp consent recorded (${enquiry.whatsappConsentSource})` : "WhatsApp consent not active"}
+              </span>
             </div>
           </section>
 

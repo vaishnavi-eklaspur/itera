@@ -131,7 +131,13 @@ model Enquiry {
   budget         String?
   channel        EnquiryChannel @default(WEB)
   privacyConsentAt DateTime?
+  privacyConsentSource String?
+  privacyConsentVersion String?
+  privacyConsentWithdrawnAt DateTime?
   whatsappConsentAt DateTime?
+  whatsappConsentSource String?
+  whatsappConsentVersion String?
+  whatsappConsentWithdrawnAt DateTime?
   status         EnquiryStatus @default(NEW)
   assignedToId   String?
   aiExtracted    Json?
