@@ -226,6 +226,66 @@ function withConfidence(
   return extracted;
 }
 
+async function applyConsultantTriage(
+  enquiry: {
+    id: string;
+    assignedToId: string | null;
+  },
+  extracted: ReturnType<typeof parseExtraction>
+) {
+  if (extracted.confidence >= 0.75) return;
+
+  const consultant = await db.user.findFirst({
+    where: { role: "CONSULTANT" },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (!consultant) {
+    console.error(`[AI] No consultant available for enquiry ${enquiry.id}`);
+    return;
+  }
+
+  const issues = [
+    !extracted.destination ? "destination is missing" : null,
+    !extracted.dates?.start || !extracted.dates.end ? "complete travel dates are missing" : null,
+    extracted.adults == null ? "adult traveller count is missing" : null,
+    extracted.children == null ? "child traveller count is missing" : null,
+    extracted.budget?.total == null ? "budget is missing" : extracted.budget.total <= 0 ? "budget is zero or invalid" : null,
+  ].filter((issue): issue is string => issue !== null);
+  const level = extracted.confidence < 0.4 ? "LOW" : "MODERATE";
+  const summary = issues.length > 0 ? issues.join("; ") : "confidence is below the high-confidence threshold";
+  const content = `[AI TRIAGE]\n${level} confidence (${Math.round(extracted.confidence * 100)}%). Assigned for consultant review. Issues: ${summary}. Do not confirm pricing or availability until reviewed.`;
+
+  await db.$transaction(async (tx) => {
+    if (!enquiry.assignedToId) {
+      await tx.enquiry.update({
+        where: { id: enquiry.id },
+        data: { assignedToId: consultant.id },
+      });
+    }
+
+    const existingNote = await tx.enquiryNote.findFirst({
+      where: { enquiryId: enquiry.id, content: { startsWith: "[AI TRIAGE]" } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+    if (existingNote) {
+      await tx.enquiryNote.update({
+        where: { id: existingNote.id },
+        data: { content },
+      });
+    } else {
+      await tx.enquiryNote.create({
+        data: {
+          enquiryId: enquiry.id,
+          authorId: consultant.id,
+          content,
+        },
+      });
+    }
+  });
+}
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-internal-secret");
   if (secret !== process.env.INTERNAL_API_SECRET) {
@@ -244,6 +304,7 @@ export async function POST(req: NextRequest) {
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!groqKey && !geminiKey) {
     const fallback = withConfidence(getFallbackExtraction(enquiry), enquiry);
+    await applyConsultantTriage(enquiry, fallback);
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
@@ -441,6 +502,7 @@ export async function POST(req: NextRequest) {
       ? { currentVersion: enquiry.package.currentVersion }
       : null;
     finalExtraction = withConfidence(finalExtraction, { package: linkedPackage });
+    await applyConsultantTriage(enquiry, finalExtraction);
 
     const packageTitles = new Map(
       allPackages.flatMap((pkg) => pkg.currentVersion ? [[pkg.slug, pkg.currentVersion.title] as const] : [])
@@ -466,6 +528,7 @@ export async function POST(req: NextRequest) {
   } catch {
     // Graceful fallback on any AI failure
     const fallback = withConfidence(getFallbackExtraction(enquiry), enquiry);
+    await applyConsultantTriage(enquiry, fallback);
     await db.enquiry.update({
       where: { id: enquiryId },
       data: {
