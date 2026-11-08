@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Blog — Itera Travel",
   description: "Travel stories, tips and guides for Kerala and South India.",
+  alternates: { canonical: "/blog" },
 };
 
 export const instant = false;

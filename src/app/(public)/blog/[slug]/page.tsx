@@ -23,6 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: post.seoTitle || post.title,
     description: post.seoDescription || post.excerpt,
+    alternates: { canonical: `/blog/${post.slug}` },
     openGraph: { title: post.seoTitle || post.title, description: post.seoDescription || post.excerpt, type: "article" },
   };
 }
@@ -52,10 +53,37 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         },
       })
     : [];
+  const base = process.env.NEXTAUTH_URL || "https://itera.vercel.app";
+  const postUrl = `${base}/blog/${post.slug}`;
+  const blogPostingJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": `${postUrl}#article`,
+    url: postUrl,
+    headline: post.title,
+    description: post.seoDescription || post.excerpt,
+    datePublished: post.createdAt.toISOString(),
+    dateModified: post.updatedAt.toISOString(),
+    author: { "@type": "Person", name: post.author.name },
+    publisher: { "@type": "Organization", name: "Itera", url: base },
+    mainEntityOfPage: { "@type": "WebPage", "@id": postUrl },
+    ...(post.coverImage ? { image: [post.coverImage] } : {}),
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: base },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${base}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title, item: postUrl },
+    ],
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
         <Link href="/blog" className="flex items-center gap-1 text-sm text-forest-600 hover:text-forest-700 mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to Blog

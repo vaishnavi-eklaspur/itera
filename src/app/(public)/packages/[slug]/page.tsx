@@ -56,6 +56,7 @@ export async function generateMetadata({
   return {
     title: v.title,
     description: v.description.slice(0, 160),
+    alternates: { canonical: `/packages/${pkg.slug}` },
     openGraph: {
       title: `${v.title} — ${v.days} Days in ${v.destination}`,
       description: v.description.slice(0, 160),
