@@ -168,6 +168,18 @@ export function EnquiryDetail({
   const [sendResult, setSendResult] = useState<"idle" | "success" | "error">("idle");
   const [localExtracted, setLocalExtracted] = useState<AIExtracted | null>(enquiry.aiExtracted);
   useEffect(() => {
+    if (!createdQuoteToken) return;
+    const scrollToReplyComposer = () => {
+      const composer = document.getElementById("reply-composer");
+      if (!composer) return;
+      composer.scrollIntoView({ behavior: "smooth", block: "start" });
+      composer.querySelector<HTMLTextAreaElement>("textarea")?.focus({ preventScroll: true });
+    };
+    const frame = requestAnimationFrame(scrollToReplyComposer);
+    return () => cancelAnimationFrame(frame);
+  }, [createdQuoteToken]);
+
+  useEffect(() => {
     const extracted = enquiry.aiExtracted;
     if (extracted?.confidenceVersion === 4 && enquiry.aiDraftReply) return;
 
