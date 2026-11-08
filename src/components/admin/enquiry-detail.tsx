@@ -148,6 +148,7 @@ export function EnquiryDetail({
 }) {
   const router = useRouter();
   const [replyContent, setReplyContent] = useState(enquiry.aiDraftReply ?? "");
+  const [replyChannel, setReplyChannel] = useState<"EMAIL" | "WHATSAPP" | "SYSTEM">("EMAIL");
   const [noteContent, setNoteContent] = useState("");
   const [sending, setSending] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
@@ -194,7 +195,7 @@ export function EnquiryDetail({
     const response = await fetch(`/api/admin/enquiries/${enquiry.id}/reply`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: replyContent, channel: "EMAIL" }),
+      body: JSON.stringify({ content: replyContent, channel: replyChannel }),
     });
     setSending(false);
     if (!response.ok) {
@@ -409,14 +410,28 @@ export function EnquiryDetail({
               className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none"
               placeholder="Write your reply..."
             />
-            <button
-              onClick={sendReply}
-              disabled={sending || !replyContent.trim()}
-              className="mt-3 flex items-center gap-1.5 bg-forest-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-forest-700 disabled:opacity-50 transition"
-            >
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Send Reply
-            </button>
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <label className="text-xs text-stone-500">
+                Reply channel
+                <select
+                  value={replyChannel}
+                  onChange={(e) => setReplyChannel(e.target.value as "EMAIL" | "WHATSAPP" | "SYSTEM")}
+                  className="mt-1 block rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-forest-500"
+                >
+                  <option value="EMAIL">Email</option>
+                  <option value="WHATSAPP">WhatsApp</option>
+                  <option value="SYSTEM">System note</option>
+                </select>
+              </label>
+              <button
+                onClick={sendReply}
+                disabled={sending || !replyContent.trim()}
+                className="flex items-center gap-1.5 bg-forest-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-forest-700 disabled:opacity-50 transition"
+              >
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {replyChannel === "SYSTEM" ? "Add Note" : "Send Reply"}
+              </button>
+            </div>
             {sendResult === "success" && <p className="mt-2 text-sm text-green-600">Reply sent successfully. Enquiry marked as replied.</p>}
             {sendResult === "error" && <p className="mt-2 text-sm text-red-600">Reply could not be sent. Please try again.</p>}
           </section>
