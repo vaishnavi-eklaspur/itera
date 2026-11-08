@@ -91,11 +91,11 @@ function buildDraft(
     "",
     "Thank you for contacting Itera Travel.",
     opening,
-    extracted.destination ? `- Destination: ${extracted.destination}` : null,
-    extracted.dates?.raw ? `- Travel dates: ${extracted.dates.raw}` : null,
-    extracted.adults != null ? `- Travellers: ${extracted.adults} adult(s)${extracted.children != null ? ` and ${extracted.children} child(ren)` : ""}` : null,
-    extracted.budget?.total != null ? `- Budget: ${extracted.budget.currency || "INR"} ${extracted.budget.total.toLocaleString("en-IN")}` : null,
-    extracted.requirements.length ? `- Requirements: ${extracted.requirements.join(", ")}` : null,
+    extracted.destination ? `- **Destination:** ${extracted.destination}` : null,
+    extracted.dates?.raw ? `- **Travel dates:** ${extracted.dates.raw}` : null,
+    extracted.adults != null ? `- **Travellers:** ${extracted.adults} adult(s)${extracted.children != null ? ` and ${extracted.children} child(ren)` : ""}` : null,
+    extracted.budget?.total != null ? `- **Budget:** ${extracted.budget.currency || "INR"} ${extracted.budget.total.toLocaleString("en-IN")}` : null,
+    extracted.requirements.length ? `- **Requirements:** ${extracted.requirements.join(", ")}` : null,
     missing.length ? `To prepare an accurate plan, please share your ${missing.join(", ")}.` : null,
     isHighConfidence && selectedPackage
       ? `The "${selectedPackage.title}" package covers ${selectedPackage.destination} and is designed for ${selectedPackage.days} day(s). We will verify availability for your requested dates before confirming the booking.`

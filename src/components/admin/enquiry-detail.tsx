@@ -43,6 +43,23 @@ type SuggestedPackage = {
   suggestion?: { reasons: string[]; pricePerPerson: number | null; seasonName: string | null; basis: string | null };
 };
 
+function RichText({ content }: { content: string }) {
+  return (
+    <>
+      {content.split("\n").map((line, lineIndex) => (
+        <span key={lineIndex}>
+          {line.split(/(\*\*[^*]+\*\*)/g).map((part, partIndex) =>
+            part.startsWith("**") && part.endsWith("**")
+              ? <strong key={partIndex}>{part.slice(2, -2)}</strong>
+              : <span key={partIndex}>{part}</span>
+          )}
+          {lineIndex < content.split("\n").length - 1 ? <br /> : null}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function ConfidenceBadge({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   const level = pct >= 75 ? "high" : pct >= 40 ? "medium" : "low";
@@ -116,6 +133,7 @@ export function EnquiryDetail({
   const [sending, setSending] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [sendResult, setSendResult] = useState<"idle" | "success" | "error">("idle");
   const [localExtracted, setLocalExtracted] = useState<AIExtracted | null>(enquiry.aiExtracted);
   const firstReplyAt = enquiry.replies.length > 0 ? new Date(enquiry.replies[enquiry.replies.length - 1].sentAt) : null;
   const badge = responseTimeBadge(new Date(enquiry.createdAt), firstReplyAt);
@@ -153,12 +171,18 @@ export function EnquiryDetail({
 
   async function sendReply() {
     setSending(true);
-    await fetch(`/api/admin/enquiries/${enquiry.id}/reply`, {
+    setSendResult("idle");
+    const response = await fetch(`/api/admin/enquiries/${enquiry.id}/reply`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: replyContent, channel: "EMAIL" }),
     });
     setSending(false);
+    if (!response.ok) {
+      setSendResult("error");
+      return;
+    }
+    setSendResult("success");
     router.refresh();
   }
 
@@ -316,6 +340,8 @@ export function EnquiryDetail({
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Send Reply
             </button>
+            {sendResult === "success" && <p className="mt-2 text-sm text-green-600">Reply sent successfully. Enquiry marked as replied.</p>}
+            {sendResult === "error" && <p className="mt-2 text-sm text-red-600">Reply could not be sent. Please try again.</p>}
           </section>
 
           {/* Replies */}
@@ -328,7 +354,7 @@ export function EnquiryDetail({
                     <span className="text-xs text-green-600">{r.channel}</span>
                     <span className="text-xs text-green-600">{timeAgo(new Date(r.sentAt))} by {r.author.name}</span>
                   </div>
-                  <p className="text-sm text-green-700 whitespace-pre-wrap">{r.content}</p>
+                  <p className="text-sm text-green-700"><RichText content={r.content} /></p>
                 </div>
               ))}
             </section>
