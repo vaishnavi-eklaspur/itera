@@ -140,6 +140,45 @@ function matchingTokens(value: string) {
   return value.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 3);
 }
 
+function calculateConfidence(
+  extracted: ReturnType<typeof parseExtraction>,
+  enquiry: {
+    budget: string | null;
+    package: { currentVersion: { destination: string; days: number } | null } | null;
+  },
+  matchedPackage: { currentVersion: { destination: string; days: number } | null } | null,
+  budgetFits: boolean
+) {
+  const fieldWeights = [
+    { present: Boolean(extracted.destination), weight: 0.2 },
+    { present: Boolean(extracted.dates?.start && extracted.dates?.end), weight: 0.2 },
+    { present: extracted.adults != null, weight: 0.15 },
+    { present: extracted.children != null, weight: 0.1 },
+    { present: Boolean(extracted.budget?.total), weight: 0.2 },
+    { present: extracted.requirements.length > 0, weight: 0.15 },
+  ];
+  const completeness = fieldWeights.reduce((score, field) => score + (field.present ? field.weight : 0), 0);
+
+  const linkedDestination = enquiry.package?.currentVersion?.destination;
+  const extractedDestination = extracted.destination?.toLowerCase();
+  const packageDestination = matchedPackage?.currentVersion?.destination?.toLowerCase();
+  const destinationConsistent = Boolean(
+    extractedDestination &&
+    ((linkedDestination && extractedDestination.includes(linkedDestination.toLowerCase())) ||
+      (packageDestination && (extractedDestination.includes(packageDestination) || packageDestination.includes(extractedDestination))))
+  );
+  const datesValid = Boolean(
+    extracted.dates?.start &&
+    extracted.dates.end &&
+    new Date(extracted.dates.start).getTime() <= new Date(extracted.dates.end).getTime()
+  );
+  const budgetProvided = Boolean(enquiry.budget || extracted.budget?.total);
+  const consistency = (destinationConsistent ? 0.4 : 0) + (datesValid ? 0.2 : 0) +
+    (budgetProvided ? (budgetFits ? 0.4 : 0.2) : 0);
+
+  return Math.min(1, Math.max(0, completeness * 0.7 + consistency * 0.3));
+}
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-internal-secret");
   if (secret !== process.env.INTERNAL_API_SECRET) {
@@ -334,6 +373,16 @@ export async function POST(req: NextRequest) {
       .filter((s): s is NonNullable<typeof s> => s !== null && s.score > 0.2)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
+
+    const linkedPackage = enquiry.package
+      ? { currentVersion: enquiry.package.currentVersion }
+      : null;
+    const budgetFits = suggestions.some((suggestion) =>
+      suggestion.reasons.some((reason) => reason.includes("within budget"))
+    );
+    extracted.confidence = Number(
+      calculateConfidence(extracted, enquiry, linkedPackage, budgetFits).toFixed(2)
+    );
 
     const packageTitles = new Map(
       allPackages.flatMap((pkg) => pkg.currentVersion ? [[pkg.slug, pkg.currentVersion.title] as const] : [])
