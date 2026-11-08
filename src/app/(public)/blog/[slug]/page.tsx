@@ -61,7 +61,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     ? await db.package.findMany({
         where: { id: { in: post.relatedPackageIds }, status: "PUBLISHED" },
         include: {
-          currentVersion: { select: { title: true, destination: true, days: true } },
+          currentVersion: { select: { title: true, destination: true, days: true, photos: true } },
           seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" }, take: 1 },
         },
       })
@@ -149,11 +149,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 const v = pkg.currentVersion;
                 if (!v) return null;
                 const price = pkg.seasonalPrices[0]?.pricePerPerson;
+                const packagePhoto = (v.photos as string[])?.[0];
                 return (
                   <div key={pkg.id} className="p-4 bg-stone-50 rounded-lg hover:bg-stone-100 transition">
                     <Link href={`/packages/${pkg.slug}`} className="flex gap-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-forest-100 to-forest-200 rounded-lg flex items-center justify-center shrink-0">
-                        <MapPin className="w-6 h-6 text-forest-300" />
+                      <div className="relative w-16 h-16 bg-gradient-to-br from-forest-100 to-forest-200 rounded-lg overflow-hidden shrink-0">
+                        {packagePhoto ? (
+                          isSeoImageUrl(packagePhoto) ? (
+                            <Image src={packagePhoto} alt={`${v.title} package`} fill sizes="64px" className="object-cover" />
+                          ) : (
+                            <img src={packagePhoto} alt={`${v.title} package`} className="absolute inset-0 w-full h-full object-cover" />
+                          )
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <MapPin className="w-6 h-6 text-forest-300" />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <h3 className="font-medium text-stone-900 text-sm">{v.title}</h3>
