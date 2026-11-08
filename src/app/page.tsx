@@ -110,8 +110,8 @@ export default async function HomePage() {
                     <span className="text-xs text-stone-400 uppercase tracking-wider">From</span>
                     <p className="text-2xl font-display font-bold text-forest-700 mt-0.5">
                       {formatPrice(Math.min(...hero.seasonalPrices.map((p) => p.pricePerPerson)))}
-                      <span className="text-sm font-normal text-stone-400 ml-0.5">/person</span>
                     </p>
+                    <span className="text-xs text-stone-400">Per person</span>
                   </div>
                   <span className="ml-auto text-sm text-forest-600 font-medium group-hover:text-forest-800 flex items-center gap-1.5 transition">
                     View Itinerary <ArrowRight className="w-4 h-4" />
@@ -190,6 +190,7 @@ export default async function HomePage() {
                       <div className="glass rounded-lg px-3 py-1.5 text-right shrink-0 ml-4">
                         <span className="text-[10px] text-stone-500 block">From</span>
                         <span className="text-sm font-bold text-forest-700">{formatPrice(minPrice)}</span>
+                        <span className="text-[10px] text-stone-400 block">Per person</span>
                       </div>
                     </div>
                   </div>

@@ -116,7 +116,10 @@ export default async function PreviewPage({
                         <tr key={idx} className="border-b border-stone-50">
                           <td className="py-3 font-medium text-stone-700">{price.seasonName}</td>
                           <td className="py-3 text-stone-500">{range}</td>
-                          <td className="py-3 text-right font-semibold text-forest-700">{formatPrice(price.pricePerPerson)}</td>
+                          <td className="py-3 text-right font-semibold text-forest-700">
+                            {formatPrice(price.pricePerPerson)}
+                            <span className="block text-[10px] font-normal text-stone-400">Per person</span>
+                          </td>
                           <td className="py-3 text-right text-stone-400 text-xs">{price.basis}{price.gstInclusive ? ", GST incl." : ""}</td>
                         </tr>
                       );
@@ -160,6 +163,7 @@ export default async function PreviewPage({
                 <div className="text-center mb-4">
                   <span className="text-xs text-stone-400">Starting from</span>
                   <p className="text-2xl font-bold text-forest-700">{formatPrice(minPrice)}</p>
+                  <span className="text-xs text-stone-400">Per person</span>
                   <span className="text-xs text-stone-400">per person, twin sharing</span>
                 </div>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center text-sm text-amber-700">

@@ -253,7 +253,10 @@ export default async function PackageDetailPage({
                         <tr key={price.id} className="border-b border-sand-200/40">
                           <td className="py-3 font-medium text-stone-700">{price.seasonName}</td>
                           <td className="py-3 text-stone-500">{range}</td>
-                          <td className="py-3 text-right font-semibold text-forest-700">{formatPrice(price.pricePerPerson)}</td>
+                          <td className="py-3 text-right font-semibold text-forest-700">
+                            {formatPrice(price.pricePerPerson)}
+                            <span className="block text-[10px] font-normal text-stone-400">Per person</span>
+                          </td>
                           <td className="py-3 text-right text-stone-400 text-xs">{price.basis}{price.gstInclusive ? ", GST incl." : ""}</td>
                         </tr>
                       );

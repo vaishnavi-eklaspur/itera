@@ -186,8 +186,8 @@ export function PackageGrid({
                       <span className="text-[10px] text-stone-400 uppercase tracking-wider">From</span>
                       <p className="text-lg font-display font-bold text-forest-700">
                         {formatPrice(minPrice)}
-                        <span className="text-xs font-normal text-stone-400 ml-0.5">/person</span>
                       </p>
+                      <span className="text-[10px] text-stone-400">Per person</span>
                     </div>
                     <span className="text-xs text-forest-600 font-medium group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
                       View Details <ArrowRight className="w-3.5 h-3.5" />
