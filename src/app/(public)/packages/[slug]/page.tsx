@@ -9,17 +9,36 @@ import { PriceEstimator } from "@/components/packages/price-estimator";
 import { ItinerarySection } from "@/components/packages/itinerary-section";
 import { PhotoGallery } from "@/components/packages/photo-gallery";
 import { Check, X as XIcon, Calendar, Star, Users, MapPin, MessageCircle } from "lucide-react";
+import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
 
 export const instant = false;
 
 async function getPackage(slug: string) {
+  "use cache";
+  cacheLife("minutes");
+
   return db.package.findUnique({
     where: { slug, status: "PUBLISHED" },
     include: {
       currentVersion: true,
       seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" } },
     },
+  });
+}
+
+async function getRelatedPackages(slug: string) {
+  "use cache";
+  cacheLife("minutes");
+
+  return db.package.findMany({
+    where: { status: "PUBLISHED", slug: { not: slug } },
+    include: {
+      currentVersion: { select: { title: true, destination: true, days: true, description: true, photos: true } },
+      seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" }, take: 1 },
+    },
+    take: 3,
+    orderBy: { updatedAt: "desc" },
   });
 }
 
@@ -70,15 +89,7 @@ export default async function PackageDetailPage({
     activities: string[];
   }[];
 
-  const relatedPackages = await db.package.findMany({
-    where: { status: "PUBLISHED", slug: { not: slug } },
-    include: {
-      currentVersion: { select: { title: true, destination: true, days: true, description: true, photos: true } },
-      seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" }, take: 1 },
-    },
-    take: 3,
-    orderBy: { updatedAt: "desc" },
-  });
+  const relatedPackages = await getRelatedPackages(slug);
 
   const whatsappMessage = encodeURIComponent(
     `Hi, I'm interested in the "${v.title}" package (${v.days} days). Could you share more details?`

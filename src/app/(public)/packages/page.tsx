@@ -2,6 +2,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { PackageGrid } from "@/components/packages/package-grid";
 import { db } from "@/lib/db";
+import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -12,6 +13,9 @@ export const metadata: Metadata = {
 export const instant = false;
 
 async function getPackages() {
+  "use cache";
+  cacheLife("minutes");
+
   return db.package.findMany({
     where: { status: "PUBLISHED" },
     include: {
@@ -24,6 +28,9 @@ async function getPackages() {
 }
 
 async function getDestinations() {
+  "use cache";
+  cacheLife("minutes");
+
   const packages = await db.package.findMany({
     where: { status: "PUBLISHED" },
     select: { currentVersion: { select: { destination: true } } },

@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/footer";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { Calendar, Tag } from "lucide-react";
+import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
 export const instant = false;
 
 export default async function BlogPage() {
+  "use cache";
+  cacheLife("minutes");
+
   const posts = await db.blogPost.findMany({
     where: { published: true },
     orderBy: { createdAt: "desc" },

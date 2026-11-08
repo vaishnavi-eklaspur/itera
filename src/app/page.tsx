@@ -3,11 +3,15 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
+import { cacheLife } from "next/cache";
 import { MapPin, Calendar, Star, ArrowRight, Compass, Shield, Clock } from "lucide-react";
 
 export const instant = false;
 
 async function getFeaturedPackages() {
+  "use cache";
+  cacheLife("minutes");
+
   return db.package.findMany({
     where: { status: "PUBLISHED" },
     include: {

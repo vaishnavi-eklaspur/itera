@@ -26,10 +26,10 @@ export function Navbar() {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/packages" className="text-[13px] text-stone-500 hover:text-forest-700 transition link-slide">
+            <Link href="/packages" prefetch className="text-[13px] text-stone-500 hover:text-forest-700 transition link-slide">
               Packages
             </Link>
-            <Link href="/blog" className="text-[13px] text-stone-500 hover:text-forest-700 transition link-slide">
+            <Link href="/blog" prefetch className="text-[13px] text-stone-500 hover:text-forest-700 transition link-slide">
               Blog
             </Link>
             {session?.user ? (

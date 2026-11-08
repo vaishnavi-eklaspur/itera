@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CurrentYear } from "./current-year";
 
 export function Footer() {
   return (
@@ -15,13 +16,13 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-medium text-forest-200 mb-3">Quick Links</h4>
             <div className="space-y-2">
-              <Link href="/packages" className="block text-sm text-forest-300 hover:text-white transition">
+              <Link href="/packages" prefetch className="block text-sm text-forest-300 hover:text-white transition">
                 All Packages
               </Link>
-              <Link href="/packages?destination=Kerala" className="block text-sm text-forest-300 hover:text-white transition">
+              <Link href="/packages?destination=Kerala" prefetch className="block text-sm text-forest-300 hover:text-white transition">
                 Kerala Packages
               </Link>
-              <Link href="/packages?destination=Karnataka" className="block text-sm text-forest-300 hover:text-white transition">
+              <Link href="/packages?destination=Karnataka" prefetch className="block text-sm text-forest-300 hover:text-white transition">
                 Karnataka Packages
               </Link>
             </div>
@@ -36,7 +37,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-10 pt-8 border-t border-forest-800/60 text-center text-xs text-forest-500">
-          &copy; {new Date().getFullYear()} Itera Travel. All rights reserved.
+          &copy; <CurrentYear /> Itera Travel. All rights reserved.
         </div>
       </div>
     </footer>
