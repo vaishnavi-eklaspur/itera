@@ -64,6 +64,11 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
       setSaving(false);
       return;
     }
+    if (relatedPackageIds.length === 0) {
+      setError("Select at least one related package before saving this blog post.");
+      setSaving(false);
+      return;
+    }
     try {
       const body = {
         title, excerpt, content, coverImage: coverImage || undefined,
@@ -196,6 +201,7 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
 
           <section className="bg-white rounded-xl border border-stone-200 p-6 space-y-4">
             <h2 className="font-semibold text-stone-900">Related Packages</h2>
+            <p className="text-xs text-stone-500">Select the package or packages this article helps a traveller choose.</p>
             {packages.map((pkg) => (
               <label key={pkg.id} className="flex items-center gap-2 text-sm text-stone-700">
                 <input
@@ -211,6 +217,8 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
                 {pkg.title}
               </label>
             ))}
+            {packages.length === 0 && <p className="text-sm text-amber-700">No packages are available to link yet.</p>}
+            {relatedPackageIds.length === 0 && <p className="text-xs text-red-600">At least one package is required.</p>}
           </section>
         </div>
       </div>

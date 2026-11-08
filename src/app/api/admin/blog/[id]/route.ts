@@ -16,7 +16,7 @@ const blogUpdateSchema = z.object({
   tags: z.array(z.string()),
   seoTitle: z.string().max(SEO_TITLE_MAX_LENGTH, `SEO title must be ${SEO_TITLE_MAX_LENGTH} characters or fewer`).optional(),
   seoDescription: z.string().max(SEO_DESCRIPTION_MAX_LENGTH, `SEO description must be ${SEO_DESCRIPTION_MAX_LENGTH} characters or fewer`).optional(),
-  relatedPackageIds: z.array(z.string()),
+  relatedPackageIds: z.array(z.string()).min(1, "Select at least one related package"),
   published: z.boolean(),
 });
 

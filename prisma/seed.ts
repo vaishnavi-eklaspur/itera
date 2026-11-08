@@ -973,6 +973,51 @@ async function main() {
     ],
   });
 
+  const packageGuideLinks: Record<string, string[]> = {
+    "best-time-to-visit-kerala": ["best-of-kerala", "kerala-honeymoon-special"],
+    "alleppey-houseboat-guide": ["munnar-thekkady-alleppey-houseboat", "kochi-alleppey-weekend"],
+    "munnar-tea-plantations-weekend": ["munnar-thekkady-alleppey-houseboat", "wayanad-kozhikode-heritage"],
+  };
+  for (const [slug, packageSlugs] of Object.entries(packageGuideLinks)) {
+    const packageIds = allPackages
+      .filter((pkg) => packageSlugs.includes(pkg.slug))
+      .map((pkg) => pkg.id);
+    if (packageIds.length > 0) {
+      await prisma.blogPost.update({
+        where: { slug },
+        data: { relatedPackageIds: packageIds },
+      });
+    }
+  }
+
+  for (const pkg of allPackages) {
+    const linkedPost = await prisma.blogPost.findFirst({
+      where: { relatedPackageIds: { has: pkg.id } },
+      select: { id: true },
+    });
+    if (linkedPost || !pkg.currentVersion) continue;
+
+    const title = `${pkg.currentVersion.title}: Travel Guide`;
+    await prisma.blogPost.upsert({
+      where: { slug: `travel-guide-${pkg.slug}` },
+      update: { relatedPackageIds: [pkg.id] },
+      create: {
+        slug: `travel-guide-${pkg.slug}`,
+        title,
+        excerpt: `Plan your ${pkg.currentVersion.destination} journey with this guide to the ${pkg.currentVersion.title} package.`,
+        content: `## Plan your ${pkg.currentVersion.destination} journey\n\nThe ${pkg.currentVersion.title} package brings together the highlights of ${pkg.currentVersion.destination} in a carefully planned ${pkg.currentVersion.days}-day itinerary.\n\nReview the day-wise route, included experiences and seasonal pricing on the package page, then send us your dates so our consultant can tailor the trip.`,
+        coverImage: Array.isArray(pkg.currentVersion.photos) ? (pkg.currentVersion.photos as string[])[0] : null,
+        category: "Destinations",
+        tags: [pkg.currentVersion.destination.toLowerCase(), "travel guide"],
+        seoTitle: `${title} | Itera`,
+        seoDescription: `Explore the ${pkg.currentVersion.title} itinerary, inclusions and planning tips with Itera Travel.`,
+        relatedPackageIds: [pkg.id],
+        published: pkg.status === PackageStatus.PUBLISHED,
+        authorId: admin.id,
+      },
+    });
+  }
+
   console.log("Seed complete:");
   console.log(`  Users: ${await prisma.user.count()}`);
   console.log(`  Packages: ${await prisma.package.count()}`);

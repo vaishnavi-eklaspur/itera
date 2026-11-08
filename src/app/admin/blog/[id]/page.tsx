@@ -13,7 +13,7 @@ export default async function EditBlogPage({ params }: { params: Promise<{ id: s
   if (!post) notFound();
 
   const packages = await db.package.findMany({
-    where: { status: "PUBLISHED" },
+    where: { currentVersionId: { not: null } },
     include: { currentVersion: { select: { title: true } } },
   });
   const packageOptions = packages.filter((p) => p.currentVersion).map((p) => ({ id: p.id, title: p.currentVersion!.title }));
