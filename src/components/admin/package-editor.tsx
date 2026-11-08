@@ -96,13 +96,15 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
   const [publishing, setPublishing] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [error, setError] = useState("");
+  const [photoStatus, setPhotoStatus] = useState<Record<number, "valid" | "invalid">>({});
 
   function getPhotoUrls() {
     return photos.map((photo) => photo.trim()).filter(Boolean);
   }
 
-  function validatePhotoUrls() {
-    const invalid = getPhotoUrls().find((photo) => {
+  async function validatePhotoUrls() {
+    const urls = getPhotoUrls();
+    const invalidUrl = urls.find((photo) => {
       try {
         const url = new URL(photo);
         return !["http:", "https:"].includes(url.protocol);
@@ -110,18 +112,31 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
         return true;
       }
     });
-    if (invalid) {
+    if (invalidUrl) {
       setError("Each photo must be a direct http(s) image address. Use “Copy image address”, not a webpage URL.");
       return null;
     }
-    return getPhotoUrls();
+
+    const failedUrl = await Promise.all(urls.map((url) => new Promise<string | null>((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(null);
+      image.onerror = () => resolve(url);
+      image.src = url;
+    }))).then((results) => results.find(Boolean));
+
+    if (failedUrl) {
+      setError("One or more photo addresses could not be loaded as images. Replace the highlighted URL with a direct image address, then try again.");
+      return null;
+    }
+
+    return urls;
   }
 
   async function handleSave() {
     setSaving(true);
     setError("");
     try {
-      const photoUrls = validatePhotoUrls();
+      const photoUrls = await validatePhotoUrls();
       if (!photoUrls) return;
       const body = {
         title, destination, days, description, hotelTier,
@@ -177,7 +192,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     setPreviewing(true);
     setError("");
     try {
-      const photoUrls = validatePhotoUrls();
+      const photoUrls = await validatePhotoUrls();
       if (!photoUrls) return;
       const body = {
         title, destination, days, description, hotelTier,
@@ -507,14 +522,13 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                         src={url.trim()}
                         alt=""
                         className="w-16 h-12 object-cover rounded border border-stone-200 shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                          const preview = e.currentTarget.nextElementSibling;
-                          preview?.classList.remove("hidden");
-                        }}
+                        onLoad={() => setPhotoStatus((current) => ({ ...current, [i]: "valid" }))}
+                        onError={() => setPhotoStatus((current) => ({ ...current, [i]: "invalid" }))}
                       />
                     )}
-                    <span className="hidden w-16 shrink-0 pt-1 text-[10px] leading-3 text-red-500">Image address could not be loaded</span>
+                    {photoStatus[i] === "invalid" && (
+                      <span className="w-16 shrink-0 pt-1 text-[10px] leading-3 text-red-500">Cannot load this image. Replace the URL.</span>
+                    )}
                     <input
                       type="url"
                       placeholder="Direct image address (https://...)"
@@ -523,6 +537,11 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                         const next = [...photos];
                         next[i] = e.target.value;
                         setPhotos(next);
+                        setPhotoStatus((current) => {
+                          const nextStatus = { ...current };
+                          delete nextStatus[i];
+                          return nextStatus;
+                        });
                       }}
                       className="flex-1 px-2 py-1.5 border border-stone-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-forest-500"
                     />
