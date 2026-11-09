@@ -80,7 +80,7 @@ model Package {
   slug             String        @unique
   status           PackageStatus @default(DRAFT)
   currentVersionId String?       @unique
-  draftVersionId   String?       @unique
+  draftVersionId   String?
   scheduledAt      DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
@@ -113,10 +113,10 @@ model PackageVersion {
   authorId       String
   createdAt      DateTime @default(now())
 
-  package   Package  @relation("PackageVersions", fields: [packageId], references: [id], onDelete: Cascade)
-  currentOf Package? @relation("CurrentVersion")
-  draftOf   Package? @relation("DraftVersion")
-  author    User     @relation(fields: [authorId], references: [id])
+  package   Package   @relation("PackageVersions", fields: [packageId], references: [id], onDelete: Cascade)
+  currentOf Package?  @relation("CurrentVersion")
+  draftOf   Package[] @relation("DraftVersion")
+  author    User      @relation(fields: [authorId], references: [id])
 
   @@index([packageId, versionNumber])
 }

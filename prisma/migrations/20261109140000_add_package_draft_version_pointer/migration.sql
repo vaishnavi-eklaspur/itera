@@ -11,8 +11,6 @@ SET "draftVersionId" = (
 )
 WHERE package."scheduledAt" IS NOT NULL;
 
-CREATE UNIQUE INDEX "Package_draftVersionId_key" ON "Package"("draftVersionId");
-
 ALTER TABLE "Package"
 ADD CONSTRAINT "Package_draftVersionId_fkey"
 FOREIGN KEY ("draftVersionId") REFERENCES "PackageVersion"("id")
