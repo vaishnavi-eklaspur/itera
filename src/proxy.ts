@@ -103,7 +103,8 @@ export const proxy = auth(async (request) => {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   const cspHeader =
-    `default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'nonce-${nonce}'; ` +
+    `default-src 'self'; base-uri 'self'; object-src 'none'; ` +
+    `script-src 'self' 'nonce-${nonce}' 'sha256-7mu4H06fwDCjmnxxr/xNHyuQC6pLTHr4M2E4jXw5WZs='; ` +
     `script-src-attr 'none'; style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com; ` +
     `style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; ` +
     `img-src 'self' data: blob: https://images.unsplash.com https://b3681537.assetcdn.net ` +
