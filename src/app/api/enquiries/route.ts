@@ -9,7 +9,12 @@ export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
   if (!rateLimit(`enquiry:${ip}`, 60_000, 5)) return rateLimitResponse();
 
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON" }, { status: 400 });
+  }
   const parsed = enquiryFormSchema.safeParse(body);
 
   if (!parsed.success) {
