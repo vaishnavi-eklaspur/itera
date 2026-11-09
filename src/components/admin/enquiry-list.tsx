@@ -25,12 +25,20 @@ export function EnquiryList({
   enquiries,
   currentStatus,
   currentAssignedTo,
+  currentQuery,
+  currentFrom,
+  currentThrough,
+  filterError,
   assignableUsers,
   canAssign,
 }: {
   enquiries: Enquiry[];
   currentStatus?: string;
   currentAssignedTo?: string;
+  currentQuery: string;
+  currentFrom: string;
+  currentThrough: string;
+  filterError?: string;
   assignableUsers: AssignableUser[];
   canAssign: boolean;
 }) {
@@ -84,12 +92,21 @@ export function EnquiryList({
     if (enquiry.replies.length > 0) return false;
     return now - new Date(enquiry.createdAt).getTime() >= 60 * 60 * 1000;
   }).length;
-  const withFilters = (status?: string, assignedTo = currentAssignedTo) => {
+  const withFilters = (
+    status?: string,
+    assignedTo = currentAssignedTo,
+    query = currentQuery,
+    from = currentFrom,
+    through = currentThrough
+  ) => {
     const params = new URLSearchParams();
     if (status && status !== "ALL") params.set("status", status);
     if (assignedTo) params.set("assignedTo", assignedTo);
-    const query = params.toString();
-    return `/admin/enquiries${query ? `?${query}` : ""}`;
+    if (query) params.set("q", query);
+    if (from) params.set("from", from);
+    if (through) params.set("through", through);
+    const search = params.toString();
+    return `/admin/enquiries${search ? `?${search}` : ""}`;
   };
 
   return (
@@ -123,6 +140,55 @@ export function EnquiryList({
           </Link>
         ))}
       </div>
+
+      <form action="/admin/enquiries" method="GET" className="mb-5 rounded-xl border border-stone-200 bg-white p-4">
+        <div className="grid gap-3 md:grid-cols-[minmax(14rem,2fr)_1fr_1fr_auto_auto] md:items-end">
+          {currentStatus && <input type="hidden" name="status" value={currentStatus} />}
+          {currentAssignedTo && <input type="hidden" name="assignedTo" value={currentAssignedTo} />}
+          <label htmlFor="enquiry-search" className="text-sm font-medium text-stone-600">
+            Search enquiries
+            <input
+              id="enquiry-search"
+              name="q"
+              type="search"
+              maxLength={100}
+              defaultValue={currentQuery}
+              placeholder="Name, email, message, or package"
+              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-forest-500"
+            />
+          </label>
+          <label htmlFor="enquiry-from" className="text-sm font-medium text-stone-600">
+            From
+            <input
+              id="enquiry-from"
+              name="from"
+              type="date"
+              defaultValue={currentFrom}
+              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-forest-500"
+            />
+          </label>
+          <label htmlFor="enquiry-through" className="text-sm font-medium text-stone-600">
+            Through
+            <input
+              id="enquiry-through"
+              name="through"
+              type="date"
+              defaultValue={currentThrough}
+              className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-forest-500"
+            />
+          </label>
+          <button type="submit" className="rounded-lg bg-forest-700 px-4 py-2 text-sm font-medium text-white hover:bg-forest-800">
+            Filter
+          </button>
+          <Link
+            href={withFilters(currentStatus, currentAssignedTo, "", "", "")}
+            className="rounded-lg border border-stone-200 px-4 py-2 text-center text-sm text-stone-600 hover:bg-stone-50"
+          >
+            Clear
+          </Link>
+        </div>
+        {filterError && <p role="alert" className="mt-3 text-sm text-red-600">{filterError}</p>}
+      </form>
 
       {/* Bulk action bar */}
       {selected.size > 0 && (
