@@ -28,7 +28,6 @@ async function getPackages(filters: PackageSearchFilters & { sort?: string }) {
           title: true,
           destination: true,
           days: true,
-          itinerary: true,
           description: true,
           hotelTier: true,
           photos: true,

@@ -245,6 +245,8 @@ export function PackageGrid({
                         alt={v.title}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        loading="lazy"
+                        fetchPriority="low"
                         className="object-cover img-zoom"
                       />
                     ) : (

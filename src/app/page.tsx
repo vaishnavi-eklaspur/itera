@@ -25,8 +25,8 @@ export default function HomePage() {
           alt="Kerala backwaters at golden hour"
           fill
           sizes="100vw"
-          preload
-          unoptimized
+          loading="eager"
+          fetchPriority="high"
           className="absolute inset-0 w-full h-full object-cover scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/5" />
