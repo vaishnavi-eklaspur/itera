@@ -25,18 +25,6 @@ Customer message: `;
 
 const CONFIDENCE_VERSION = 4;
 
-const EMPTY_EXTRACTION = {
-  dates: null,
-  additionalDays: null,
-  adults: null,
-  children: null,
-  destination: null,
-  budget: null,
-  requirements: [],
-  confidence: 0,
-  confidenceVersion: CONFIDENCE_VERSION,
-};
-
 function getFallbackExtraction(enquiry: {
   message: string;
   travelDates: string | null;
@@ -211,14 +199,13 @@ async function createHighConfidenceQuote(
 }
 
 function parseExtraction(rawText: string) {
-  try {
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
-    const validated = aiExtractedSchema.safeParse(parsed);
-    return validated.success ? validated.data : EMPTY_EXTRACTION;
-  } catch {
-    return EMPTY_EXTRACTION;
+  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+  const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
+  const validated = aiExtractedSchema.safeParse(parsed);
+  if (!validated.success) {
+    throw new Error("AI extraction response did not match the expected schema");
   }
+  return validated.data;
 }
 
 function dateMonth(date: string | null | undefined) {

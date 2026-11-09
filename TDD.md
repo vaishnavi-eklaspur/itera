@@ -119,11 +119,35 @@ sequenceDiagram
   P->>D: Store reply and status
 ```
 
-AI extraction is Zod-validated. Matching is deterministic: destination,
-budget, dates and group size are scored from database package data. The draft
-can contain only prices read from `SeasonalPrice`; staff must edit/approve it
-before sending. If providers are unavailable, a bounded fallback extraction
-keeps the enquiry usable and visibly leaves staff in control.
+AI extraction tries Groq first and uses Gemini when Groq fails or returns an
+invalid extraction response. Both providers' structured output is Zod-validated.
+Matching is deterministic: destination, budget, dates, group size, season and
+requirements are scored against published packages and their database prices.
+The draft can contain only prices read from `SeasonalPrice`; staff must
+edit/approve it before sending. If provider processing fails, a bounded
+fallback preserves structured enquiry fields where possible, leaves
+recommendations empty, and keeps staff in control.
+
+### Item 7 — Production AI verification (2026-11-09)
+
+Production verification used a synthetic enquiry. The submission returned
+HTTP 200 and was found in the Neon production database. The submitted travel
+dates, adult and child counts, budget, draft reply, and acknowledgement
+timestamp were persisted. The persisted extraction had no destination and the
+recommendation list was empty, so production success for destination
+extraction or package suggestions is **not verified**. A malformed JSON
+submission returned HTTP 400. Production Groq and Gemini keys were confirmed
+configured in Vercel, but historical runtime/request logs were unavailable
+within the Hobby-plan retention window; therefore the provider request or
+response that led to the incomplete extraction could not be diagnosed.
+
+Code review found and fixed a separate, reproducible failover case: malformed
+or schema-invalid Groq model text had been converted to an empty-but-truthy
+extraction, preventing the configured Gemini fallback from being attempted.
+A route regression test verifies Gemini is tried and its valid extraction and
+package suggestion are persisted. This fix does not establish the cause of the
+previous production result; a new controlled production verification is needed
+to confirm destination extraction and recommendations after deployment.
 
 ### Package publishing
 

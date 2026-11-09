@@ -3,6 +3,13 @@
 **Date:** 2026-11-07
 **Scope:** End-to-end submission readiness for all traveller and admin workflows.
 
+## Assignment Completion Tracker (updated 2026-11-09)
+
+| Item | Status | Evidence / qualification |
+|------|--------|-------------------------|
+| 6 — Legacy URL redirects | **COMPLETE** | Structural audit found 140 generated legacy mappings and 20 static aliases, with unique configured sources and permanent (301) redirect handling in `src/proxy.ts`. The original client URL inventory was unavailable, so correspondence with the actual legacy URLs was not independently verified. |
+| 7 — Production AI verification | **PARTIAL** | A synthetic production submission returned HTTP 200 with enquiry ID `cmw9gjfnc0001jt08onboxey0`; the row was verified in the Neon primary `main` branch. Dates, 2 adults, 1 child, budget, a draft reply, and `autoAckSentAt` persisted, but destination extraction was null and suggestions were empty. Production `GROQ_API_KEY` and `GEMINI_API_KEY` presence was confirmed, while historical logs were unavailable, so the provider-level cause is unknown. A reproducible Groq parse/failover defect was fixed and regression-tested; this change has not been production-verified. Keep Item 7 partial until a deployed controlled enquiry confirms extraction and recommendations. |
+
 ---
 
 ## Workflow Results
