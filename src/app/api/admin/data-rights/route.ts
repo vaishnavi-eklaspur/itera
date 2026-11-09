@@ -4,22 +4,22 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { authorizeRole } from "@/lib/roles";
 import { randomUUID } from "node:crypto";
+import { z } from "zod";
 
-const correctionFields = ["name", "email", "phone", "travelDates", "budget", "adults", "children"] as const;
-type CorrectionData = Partial<Record<(typeof correctionFields)[number], string | number | null>>;
+const correctionDataSchema = z.object({
+  name: z.string().min(2).max(200).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().max(500).nullable().optional(),
+  travelDates: z.string().max(500).nullable().optional(),
+  budget: z.string().max(500).nullable().optional(),
+  adults: z.number().int().min(0).nullable().optional(),
+  children: z.number().int().min(0).nullable().optional(),
+}).strict().refine((value) => Object.keys(value).length > 0);
+type CorrectionData = z.infer<typeof correctionDataSchema>;
 
 function parseCorrectionData(value: unknown): CorrectionData | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const entries = Object.entries(value);
-  if (entries.length === 0 || entries.some(([key]) => !correctionFields.includes(key as typeof correctionFields[number]))) return null;
-  const result: CorrectionData = {};
-  for (const [key, raw] of entries) {
-    if (raw !== null && typeof raw !== "string" && typeof raw !== "number") return null;
-    if (typeof raw === "string" && raw.length > 500) return null;
-    if ((key === "adults" || key === "children") && (typeof raw !== "number" || !Number.isInteger(raw) || raw < 0)) return null;
-    result[key as keyof CorrectionData] = raw as never;
-  }
-  return result;
+  const parsed = correctionDataSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 export async function GET() {
@@ -57,30 +57,45 @@ export async function PATCH(req: NextRequest) {
       { status: 400 },
     );
   }
+  const resolvedAt = status === "COMPLETED" || status === "REJECTED" ? new Date() : null;
+  const resolutionData = {
+    status,
+    resolvedAt,
+    resolvedById: resolvedAt ? session.user.id : null,
+    resolutionNote: request.type === "DELETION" && status === "COMPLETED"
+      ? "[Deletion completed; linked personal data anonymized]"
+      : typeof body?.resolutionNote === "string" ? body.resolutionNote.slice(0, 2000) : null,
+  };
   if (request.type === "CORRECTION" && status === "COMPLETED") {
-    const enquiry = request.enquiryId
-      ? await db.enquiry.findUnique({ where: { id: request.enquiryId }, select: { id: true } })
-      : await db.enquiry.findFirst({ where: { email: request.email }, select: { id: true } });
-    if (!enquiry) return NextResponse.json({ error: "Enquiry not found for correction" }, { status: 404 });
-    const enquiryData = Object.fromEntries(Object.entries(correctionData ?? {}));
-    await db.enquiry.update({ where: { id: enquiry.id }, data: enquiryData });
-    if (request.userId) {
-      const userData = Object.fromEntries(
-        Object.entries(correctionData ?? {}).filter(([key]) => ["name", "email", "phone"].includes(key)),
-      );
-      if (Object.keys(userData).length > 0) {
-        await db.user.update({ where: { id: request.userId }, data: userData });
+    const updated = await db.$transaction(async (tx) => {
+      const enquiry = request.enquiryId
+        ? await tx.enquiry.findUnique({ where: { id: request.enquiryId }, select: { id: true } })
+        : await tx.enquiry.findFirst({ where: { email: request.email }, select: { id: true } });
+      if (!enquiry) return null;
+      const enquiryData = Object.fromEntries(Object.entries(correctionData ?? {}));
+      await tx.enquiry.update({ where: { id: enquiry.id }, data: enquiryData });
+      if (request.userId) {
+        const userData = Object.fromEntries(
+          Object.entries(correctionData ?? {}).filter(([key]) => ["name", "email", "phone"].includes(key)),
+        );
+        if (Object.keys(userData).length > 0) {
+          await tx.user.update({ where: { id: request.userId }, data: userData });
+        }
       }
-    }
+      return tx.dataRightsRequest.update({ where: { id }, data: resolutionData });
+    });
+    if (!updated) return NextResponse.json({ error: "Enquiry not found for correction" }, { status: 404 });
+    return NextResponse.json(updated);
   }
   if (status === "COMPLETED" && request.type === "DELETION") {
     const deletedEmail = `deleted-${request.id}@privacy.invalid`;
-    await db.$transaction(async (tx) => {
+    const updated = await db.$transaction(async (tx) => {
       const enquiries = await tx.enquiry.findMany({
         where: { OR: [...(request.userId ? [{ userId: request.userId }] : []), { email: request.email }] },
         select: { id: true, userId: true },
       });
       const enquiryIds = enquiries.map((enquiry) => enquiry.id);
+      let quoteIds: string[] = [];
 
       if (enquiryIds.length > 0) {
         await tx.enquiry.updateMany({
@@ -122,6 +137,23 @@ export async function PATCH(req: NextRequest) {
             notes: "[Quote personal data deleted at traveller request]",
           },
         });
+        const quotes = await tx.quote.findMany({
+          where: { enquiryId: { in: enquiryIds } },
+          select: { id: true },
+        });
+        quoteIds = quotes.map((quote) => quote.id);
+      }
+
+      const activityEntityIds = [...enquiryIds, ...quoteIds, ...(request.userId ? [request.userId] : [])];
+      const activityFilters = [
+        ...(request.userId ? [{ userId: request.userId }] : []),
+        ...(activityEntityIds.length > 0 ? [{ entityId: { in: activityEntityIds } }] : []),
+      ];
+      if (activityFilters.length > 0) {
+        await tx.activityLog.updateMany({
+          where: { OR: activityFilters },
+          data: { details: "[Activity details deleted at traveller request]" },
+        });
       }
 
       if (request.userId) {
@@ -134,31 +166,22 @@ export async function PATCH(req: NextRequest) {
             passwordHash: `deleted:${randomUUID()}`,
           },
         });
-        await tx.activityLog.updateMany({
-          where: { userId: request.userId },
-          data: { details: "[Activity details deleted at traveller request]" },
-        });
       }
 
-      await tx.dataRightsRequest.update({
+      return tx.dataRightsRequest.update({
         where: { id: request.id },
         data: {
           email: deletedEmail,
           details: "[Data-rights request details deleted at traveller request]",
+          ...resolutionData,
         },
       });
     });
+    return NextResponse.json(updated);
   }
   const updated = await db.dataRightsRequest.update({
     where: { id },
-    data: {
-      status,
-      resolvedAt: status === "COMPLETED" || status === "REJECTED" ? new Date() : null,
-      resolvedById: status === "COMPLETED" || status === "REJECTED" ? session.user.id : null,
-      resolutionNote: request.type === "DELETION"
-        ? "[Deletion completed; linked personal data anonymized]"
-        : typeof body?.resolutionNote === "string" ? body.resolutionNote.slice(0, 2000) : null,
-    },
+    data: resolutionData,
   });
   return NextResponse.json(updated);
 }

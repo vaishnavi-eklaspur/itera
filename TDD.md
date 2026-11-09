@@ -29,6 +29,8 @@ redirects, sitemap, robots, activity logging and PDF generation.
 | Original requirement | English first; Hindi and German are deferred |
 | Original requirement | Payments, live inventory and native apps are out of scope |
 | Original requirement | Outside messaging systems may be mocked |
+| Additional feature | The product brief's Traveller and Staff Admin roles were expanded to Admin, Editor, Consultant and Traveller roles |
+| Additional feature | Public package discovery includes keyword/destination, duration, budget, hotel-tier and season filters, plus price/duration/popularity sorting |
 | Assumption | PostgreSQL is hosted on Neon for the Vercel demo |
 | Assumption | Prices are INR, per person, twin sharing, with GST treatment stored per price |
 | Assumption | A package photo can be represented by a trusted HTTPS URL in the demo |
@@ -146,8 +148,9 @@ package without training.
 
 Key screens:
 
-- **Package list/detail:** mobile-first cards, itinerary, map, gallery, prices
-  and estimator.
+- **Package list/detail:** mobile-first cards with URL-backed keyword,
+  destination, duration, budget, hotel-tier and season filters; price, duration
+  and popularity sorting; plus itinerary, map, gallery, prices and estimator.
 - **Package editor:** structured itinerary, seasonal price rows, photo URLs,
   preview and version history.
 - **Enquiry inbox/detail:** original message beside editable extracted fields,
@@ -172,13 +175,15 @@ logged server-side and staff-entered channel records are explicit.
   requires active consent.
 - Correction requests require structured allowlisted data before completion.
 - Deletion uses an atomic transaction to anonymize linked enquiry, reply, note,
-  quote, user and request data. This remains an area for further audit of
-  historical activity-log text.
+  quote, user, request and linked activity-log details.
 - Retention cron anonymizes closed enquiries after `ENQUIRY_RETENTION_DAYS`
   (default 730).
+- Package publishing and retention cron handlers fail closed unless the
+  configured `CRON_SECRET` bearer token is supplied.
 - CSP, frame, MIME, referrer and permissions headers are set in `proxy.ts`.
-  The current deployed CSP still requires browser verification for all external
-  image hosts and inline framework scripts.
+  A spot check of one deployed package detail page found no CSP violations;
+  it did show an aborted image request and an unused image-preload warning.
+  This does not establish clean-console behavior across all routes.
 
 ## 7. API surface
 
@@ -196,16 +201,16 @@ logged server-side and staff-entered channel records are explicit.
 
 ## 8. Testing and verification
 
-The repository uses Vitest. The verified local run completed 64 tests across
-validation, rate limiting, utilities and security/RBAC suites. TypeScript,
-production build and ESLint complete with zero ESLint errors; ESLint retains
-non-blocking warnings. A local package-page browser check confirmed the
-canonical URL, Leaflet container, six map tiles and six markers.
+The repository uses Vitest. On 2026-11-09, the local worktree passed all 83
+tests, `npx tsc --noEmit`, and `npm run build`. ESLint reported zero errors and
+19 warnings, primarily existing image and navigation recommendations. Tests
+include focused cases for package-search query construction, Markdown safety
+and round-tripping, data-rights transactions, and cron authorization.
 
 The following are not claimed as complete:
 
 - deployed Mobile Slow 4G Lighthouse threshold;
-- full browser CSP clean-console verification;
+- clean-console verification across every deployed route;
 - end-to-end mutation tests against a disposable production-like database;
 - distributed rate-limit behaviour across multiple serverless instances.
 
@@ -217,8 +222,8 @@ pagination at large scale, real-time notifications and conversion analytics.
 
 Next engineering steps, in order:
 
-1. Fix and browser-verify CSP image/script compatibility.
-2. Measure and tune the deployed Mobile Slow 4G target.
+1. Measure and tune the deployed Mobile Slow 4G target.
+2. Verify browser console and external asset behavior across public and staff routes.
 3. Move rate limiting to a shared store.
 4. Add end-to-end privacy and quote tests using an isolated database.
 5. Add real delivery providers, uploads, pagination and conversion analytics.

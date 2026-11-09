@@ -13,8 +13,9 @@ AI-assisted triage and branded quotes into one responsive application.
 
 ### Core build
 
-- Server-rendered public package pages with itinerary, inclusions, hotels,
-  photos, map and seasonal price estimator.
+- Server-rendered public package discovery with keyword/destination search,
+  duration and per-person budget filters, hotel tier and seasonal pricing
+  filters, sorting, itinerary, photos, map and price estimator.
 - Package CMS with create, edit, duplicate, preview, publish, schedule and
   append-only version history.
 - Enquiry form on package pages and a staff inbox with assignment, status,
@@ -84,8 +85,10 @@ npx tsc --noEmit
 npm run build
 ```
 
-The current repository verification run completed with 64 tests passing and
-zero ESLint errors. ESLint still reports non-blocking existing warnings.
+Verification run on 2026-11-09: `npm test` passed all 83 tests,
+`npx tsc --noEmit` passed, and `npm run build` passed. `npm run lint` reported
+zero errors and 19 warnings, primarily for existing `<img>` usage and internal
+navigation with `window.location.assign()`.
 
 ## Structure
 
@@ -109,5 +112,6 @@ tests/                   Vitest validation, utility and security tests
 - Photos are URL-backed rather than uploaded through an asset pipeline.
 - The blog editor is visually rich, but persists Markdown rather than a
   structured rich-text document.
-- The deployed CSP and external image policy should be browser-verified after
-  the latest security-header changes.
+- A spot check of one deployed package detail page found no CSP violations.
+  It did show an aborted image request and an unused image-preload warning;
+  broader browser checks remain outstanding.

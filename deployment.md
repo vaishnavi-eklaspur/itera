@@ -49,6 +49,10 @@ file or any secret.
 | `CRON_SECRET` | Yes | Protects scheduled retention and package-publishing requests |
 | `ENQUIRY_RETENTION_DAYS` | No | Closed-enquiry retention period; default is 730 |
 
+`NEXT_PUBLIC_SITE_URL` and `ENQUIRY_RETENTION_DAYS` are optional and are not
+included in the current `.env.example`; add them to `.env` or the deployment
+environment only when you need to override their defaults.
+
 Generate local secrets with a password manager or a cryptographically secure
 generator. For example, with OpenSSL:
 
@@ -115,11 +119,12 @@ npm run db:studio
    shared with the team.
 
 `vercel.json` schedules `/api/cron/retention` daily at 02:00 UTC and
-`/api/cron/publish` daily at 03:00 UTC. Both schedules work with Vercel Hobby;
-publishing may run up to 24 hours after a package's scheduled time. For more
-timely publishing, use a Vercel plan that supports more frequent cron jobs and
-adjust the schedule. Vercel sends the configured `CRON_SECRET` authorization
-header.
+`/api/cron/publish` daily at 03:00 UTC. Both schedules meet Vercel Hobby's
+once-daily limit; scheduled publishing can be delayed by up to roughly 24
+hours. Both handlers reject requests when `CRON_SECRET` is missing or the
+bearer token is incorrect. Vercel supplies the configured cron authorization
+header. These schedules are deployed only when the commit containing
+`vercel.json` is deployed.
 
 ## Other hosts
 
@@ -144,7 +149,7 @@ shared Redis/Upstash or platform rate-limit service before production traffic.
 | Prisma cannot connect | Confirm `DATABASE_URL`, SSL parameters and database network access |
 | Login redirects or fails | Confirm `NEXTAUTH_SECRET` and that `NEXTAUTH_URL` exactly matches the current origin |
 | AI fields use fallback values | Configure `GROQ_API_KEY` or `GEMINI_API_KEY`; the core enquiry flow still works without them |
-| Cron returns 401 | Confirm the platform sends its configured cron authorization header |
+| Cron returns 401 | Set `CRON_SECRET` in the deployment environment and confirm the platform sends its configured bearer authorization header |
 | Images do not render | Check the image host is permitted by `next.config.ts` and the response CSP |
 | Port already in use | Start Next.js with `npx next dev -p 3001` or stop the specific process holding the port |
 

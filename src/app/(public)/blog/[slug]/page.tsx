@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { db } from "@/lib/db";
@@ -8,6 +9,7 @@ import { Calendar, ArrowLeft, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { isSeoImageUrl } from "@/lib/seo";
+import { safeBlogLink } from "@/lib/blog-markdown";
 
 export const instant = false;
 
@@ -48,18 +50,55 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 function renderInline(text: string) {
-  const parts = text.split(/(\[[^\]]+\]\((?:https?:\/\/|mailto:)[^)]+\)|\*\*[^*]+\*\*|\*[^*]+\*)/g);
-  return parts.map((part, i) => {
-    const link = part.match(/^\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^)]+)\)$/);
-    if (link) {
-      return <a key={i} href={link[2]} target="_blank" rel="noopener noreferrer">{link[1]}</a>;
+  const parts: ReactNode[] = [];
+  let cursor = 0;
+  const pattern = /\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*/g;
+
+  for (const match of text.matchAll(pattern)) {
+    const index = match.index ?? 0;
+    if (index > cursor) parts.push(<span key={`text-${cursor}`}>{text.slice(cursor, index)}</span>);
+    if (match[1] && match[2]) {
+      const href = safeBlogLink(match[2]);
+      parts.push(href
+        ? <a key={`link-${index}`} href={href} target="_blank" rel="noopener noreferrer">{match[1]}</a>
+        : <span key={`text-${index}`}>{match[0]}</span>);
+    } else if (match[3]) {
+      parts.push(<strong key={`bold-${index}`}>{match[3]}</strong>);
+    } else if (match[4]) {
+      parts.push(<em key={`italic-${index}`}>{match[4]}</em>);
     }
-    if (part.startsWith("**") && part.endsWith("**"))
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
-    if (part.startsWith("*") && part.endsWith("*"))
-      return <em key={i}>{part.slice(1, -1)}</em>;
-    return <span key={i}>{part}</span>;
-  });
+    cursor = index + match[0].length;
+  }
+  if (cursor < text.length) parts.push(<span key={`text-${cursor}`}>{text.slice(cursor)}</span>);
+  return parts;
+}
+
+function renderBlogContent(content: string) {
+  const lines = content.split("\n");
+  const nodes: ReactNode[] = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.startsWith("- ")) {
+      const items: ReactNode[] = [];
+      while (index < lines.length && lines[index].startsWith("- ")) {
+        items.push(<li key={`li-${index}`}>{renderInline(lines[index].slice(2))}</li>);
+        index += 1;
+      }
+      index -= 1;
+      nodes.push(<ul key={`ul-${index}`}>{items}</ul>);
+    } else if (line.startsWith("# ")) {
+      nodes.push(<h1 key={index}>{renderInline(line.slice(2))}</h1>);
+    } else if (line.startsWith("## ")) {
+      nodes.push(<h2 key={index}>{renderInline(line.slice(3))}</h2>);
+    } else if (line.startsWith("### ")) {
+      nodes.push(<h3 key={index}>{renderInline(line.slice(4))}</h3>);
+    } else if (line.trim() === "") {
+      nodes.push(<br key={index} />);
+    } else {
+      nodes.push(<p key={index}>{renderInline(line)}</p>);
+    }
+  }
+  return nodes;
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -138,14 +177,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         )}
 
         <div className="mt-8 prose prose-slate max-w-none prose-headings:text-stone-900 prose-a:text-forest-600">
-          {post.content.split("\n").map((para, i) => {
-            if (para.startsWith("# ")) return <h1 key={i}>{renderInline(para.slice(2))}</h1>;
-            if (para.startsWith("## ")) return <h2 key={i}>{renderInline(para.slice(3))}</h2>;
-            if (para.startsWith("### ")) return <h3 key={i}>{renderInline(para.slice(4))}</h3>;
-            if (para.startsWith("- ")) return <li key={i}>{renderInline(para.slice(2))}</li>;
-            if (para.trim() === "") return <br key={i} />;
-            return <p key={i}>{renderInline(para)}</p>;
-          })}
+          {renderBlogContent(post.content)}
         </div>
 
         {relatedPackages.length > 0 && (

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Loader2, Eye, EyeOff, Edit3 } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import { SEO_DESCRIPTION_MAX_LENGTH, SEO_TITLE_MAX_LENGTH } from "@/lib/seo";
+import { blogHtmlToMarkdown, markdownToBlogHtml, safeBlogLink } from "@/lib/blog-markdown";
 
 type BlogData = {
   id: string;
@@ -42,86 +43,10 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
   const [error, setError] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
 
-  function escapeHtml(value: string) {
-    return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
-
-  function safeLink(value: string) {
-    try {
-      const url = new URL(value, window.location.origin);
-      return ["http:", "https:", "mailto:"].includes(url.protocol) ? url.href : null;
-    } catch {
-      return null;
-    }
-  }
-
-  function inlineMarkdownToHtml(value: string) {
-    const escaped = escapeHtml(value);
-    return escaped
-      .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|mailto:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*([^*]+)\*/g, "<em>$1</em>");
-  }
-
-  function markdownToHtml(markdown: string) {
-    const lines = markdown.split("\n");
-    const html: string[] = [];
-    let listItems: string[] = [];
-    const flushList = () => {
-      if (listItems.length > 0) {
-        html.push(`<ul>${listItems.join("")}</ul>`);
-        listItems = [];
-      }
-    };
-
-    for (const line of lines) {
-      if (line.startsWith("- ")) {
-        listItems.push(`<li>${inlineMarkdownToHtml(line.slice(2))}</li>`);
-        continue;
-      }
-      flushList();
-      if (line.startsWith("### ")) html.push(`<h3>${inlineMarkdownToHtml(line.slice(4))}</h3>`);
-      else if (line.startsWith("## ")) html.push(`<h2>${inlineMarkdownToHtml(line.slice(3))}</h2>`);
-      else if (line.startsWith("# ")) html.push(`<h1>${inlineMarkdownToHtml(line.slice(2))}</h1>`);
-      else html.push(line ? `<p>${inlineMarkdownToHtml(line)}</p>` : "<p><br></p>");
-    }
-    flushList();
-    return html.join("");
-  }
-
-  function htmlToMarkdown(root: HTMLElement) {
-    const render = (node: Node): string => {
-      if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
-      if (!(node instanceof HTMLElement)) return Array.from(node.childNodes).map(render).join("");
-      const text = Array.from(node.childNodes).map(render).join("");
-      switch (node.tagName) {
-        case "H1": return `# ${text}\n`;
-        case "H2": return `## ${text}\n`;
-        case "H3": return `### ${text}\n`;
-        case "STRONG":
-        case "B": return `**${text}**`;
-        case "EM":
-        case "I": return `*${text}*`;
-        case "LI": return `- ${text}\n`;
-        case "A": {
-          const href = safeLink(node.getAttribute("href") ?? "");
-          return href ? `[${text}](${href})` : text;
-        }
-        case "UL":
-        case "OL": return `${text}\n`;
-        case "BR": return "\n";
-        case "P":
-        case "DIV": return `${text}\n`;
-        default: return text;
-      }
-    };
-    return Array.from(root.childNodes).map(render).join("").replace(/\n{3,}/g, "\n\n").trim();
-  }
-
   // Only rehydrate when switching back into the editor; typing must not reset the caret.
   useEffect(() => {
     if (!showPreview && contentRef.current) {
-      contentRef.current.innerHTML = markdownToHtml(content);
+      contentRef.current.innerHTML = markdownToBlogHtml(content);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPreview]);
@@ -129,26 +54,59 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
   function runEditorCommand(command: string, value?: string) {
     contentRef.current?.focus();
     document.execCommand(command, false, value);
-    if (contentRef.current) setContent(htmlToMarkdown(contentRef.current));
+    if (contentRef.current) setContent(blogHtmlToMarkdown(contentRef.current, window.location.origin));
   }
 
-  function renderPreviewLine(line: string, index: number) {
-    const inline = line.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, partIndex) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        return <strong key={partIndex}>{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith("*") && part.endsWith("*")) {
-        return <em key={partIndex}>{part.slice(1, -1)}</em>;
-      }
-      return <span key={partIndex}>{part}</span>;
-    });
+  function renderInlineMarkdown(value: string, keyPrefix: string) {
+    const nodes: ReactNode[] = [];
+    let cursor = 0;
+    const pattern = /\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*/g;
 
-    if (line.startsWith("# ")) return <h1 key={index} className="text-2xl font-semibold text-stone-900">{inline.slice(1)}</h1>;
-    if (line.startsWith("## ")) return <h2 key={index} className="text-xl font-semibold text-stone-900">{inline.slice(1)}</h2>;
-    if (line.startsWith("### ")) return <h3 key={index} className="text-lg font-semibold text-stone-900">{inline.slice(1)}</h3>;
-    if (line.startsWith("- ")) return <li key={index} className="ml-5 list-disc text-stone-700">{inline.slice(1)}</li>;
-    if (!line.trim()) return <div key={index} className="h-3" />;
-    return <p key={index} className="text-sm leading-7 text-stone-700">{inline}</p>;
+    for (const match of value.matchAll(pattern)) {
+      const index = match.index ?? 0;
+      if (index > cursor) nodes.push(<span key={`${keyPrefix}-text-${cursor}`}>{value.slice(cursor, index)}</span>);
+      if (match[1] && match[2]) {
+        const href = safeBlogLink(match[2]);
+        nodes.push(href
+          ? <a key={`${keyPrefix}-link-${index}`} href={href} target="_blank" rel="noopener noreferrer">{match[1]}</a>
+          : <span key={`${keyPrefix}-text-${index}`}>{match[0]}</span>);
+      } else if (match[3]) {
+        nodes.push(<strong key={`${keyPrefix}-bold-${index}`}>{match[3]}</strong>);
+      } else if (match[4]) {
+        nodes.push(<em key={`${keyPrefix}-italic-${index}`}>{match[4]}</em>);
+      }
+      cursor = index + match[0].length;
+    }
+    if (cursor < value.length) nodes.push(<span key={`${keyPrefix}-text-${cursor}`}>{value.slice(cursor)}</span>);
+    return nodes;
+  }
+
+  function renderPreviewContent(markdown: string) {
+    const lines = markdown.split("\n");
+    const nodes: React.ReactNode[] = [];
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (line.startsWith("- ")) {
+        const items: ReactNode[] = [];
+        while (index < lines.length && lines[index].startsWith("- ")) {
+          items.push(<li key={`list-${index}`} className="text-sm leading-7 text-stone-700">{renderInlineMarkdown(lines[index].slice(2), `list-${index}`)}</li>);
+          index += 1;
+        }
+        index -= 1;
+        nodes.push(<ul key={`ul-${index}`} className="ml-5 list-disc">{items}</ul>);
+      } else if (line.startsWith("# ")) {
+        nodes.push(<h1 key={index} className="text-2xl font-semibold text-stone-900">{renderInlineMarkdown(line.slice(2), `h1-${index}`)}</h1>);
+      } else if (line.startsWith("## ")) {
+        nodes.push(<h2 key={index} className="text-xl font-semibold text-stone-900">{renderInlineMarkdown(line.slice(3), `h2-${index}`)}</h2>);
+      } else if (line.startsWith("### ")) {
+        nodes.push(<h3 key={index} className="text-lg font-semibold text-stone-900">{renderInlineMarkdown(line.slice(4), `h3-${index}`)}</h3>);
+      } else if (!line.trim()) {
+        nodes.push(<div key={index} className="h-3" />);
+      } else {
+        nodes.push(<p key={index} className="text-sm leading-7 text-stone-700">{renderInlineMarkdown(line, `p-${index}`)}</p>);
+      }
+    }
+    return nodes;
   }
 
   async function handleSave() {
@@ -165,7 +123,9 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
       return;
     }
     try {
-        const savedContent = contentRef.current && !showPreview ? htmlToMarkdown(contentRef.current) : content;
+        const savedContent = contentRef.current && !showPreview
+          ? blogHtmlToMarkdown(contentRef.current, window.location.origin)
+          : content;
         const body = {
           title, excerpt, content: savedContent, coverImage: coverImage || undefined,
         category, tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
@@ -257,20 +217,27 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
                 ))}
                 <button type="button" onClick={() => {
                   const url = window.prompt("Link URL");
-                  if (url) runEditorCommand("createLink", url);
+                  if (url) {
+                    const href = safeBlogLink(url, window.location.origin);
+                    if (!href) {
+                      setError("Enter a valid HTTP, HTTPS, or mailto link.");
+                      return;
+                    }
+                    runEditorCommand("createLink", href);
+                  }
                 }} className="rounded px-2 py-1 text-xs text-stone-600 hover:bg-white hover:text-forest-700">Link</button>
               </div>
               }
               {showPreview ? (
                 <div className="min-h-[384px] space-y-2 rounded-lg border border-stone-200 bg-white p-5">
-                  {content ? content.split("\n").map(renderPreviewLine) : <p className="text-sm italic text-stone-400">Start writing to see the rendered article preview.</p>}
+                  {content ? renderPreviewContent(content) : <p className="text-sm italic text-stone-400">Start writing to see the rendered article preview.</p>}
                 </div>
               ) : (
                 <div
                   ref={contentRef}
                   contentEditable
                   suppressContentEditableWarning
-                  onInput={(event) => setContent(htmlToMarkdown(event.currentTarget))}
+                  onInput={(event) => setContent(blogHtmlToMarkdown(event.currentTarget, window.location.origin))}
                   className="min-h-[384px] w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 prose prose-sm max-w-none"
                   aria-label="Blog content rich text editor"
                 />

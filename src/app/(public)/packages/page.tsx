@@ -5,6 +5,7 @@ import { PackageGrid } from "@/components/packages/package-grid";
 import { db } from "@/lib/db";
 import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
+import { activeSeasonalPriceWhere, buildPackageWhere, type PackageSearchFilters } from "@/lib/package-search";
 
 export const metadata: Metadata = {
   title: "Travel Packages",
@@ -14,39 +15,12 @@ export const metadata: Metadata = {
 
 export const instant = false;
 
-async function getPackages(filters: {
-  q?: string;
-  destination?: string;
-  maxBudget?: string;
-  sort?: string;
-}) {
+async function getPackages(filters: PackageSearchFilters & { sort?: string }) {
   "use cache";
   cacheLife("minutes");
 
-  const maxBudget = filters.maxBudget ? Number.parseInt(filters.maxBudget, 10) : NaN;
   const packages = await db.package.findMany({
-    where: {
-      status: "PUBLISHED",
-      AND: [
-        ...(filters.destination
-          ? [{ currentVersion: { destination: { contains: filters.destination, mode: "insensitive" as const } } }]
-          : []),
-        ...(filters.q
-          ? [{
-              currentVersion: {
-                OR: [
-                  { title: { contains: filters.q, mode: "insensitive" as const } },
-                  { destination: { contains: filters.q, mode: "insensitive" as const } },
-                  { description: { contains: filters.q, mode: "insensitive" as const } },
-                ],
-              },
-            }]
-          : []),
-      ],
-      ...(Number.isFinite(maxBudget) && maxBudget >= 0
-        ? { seasonalPrices: { some: { isActive: true, pricePerPerson: { lte: maxBudget } } } }
-        : {}),
-    },
+    where: buildPackageWhere(filters),
     include: {
       currentVersion: {
         select: {
@@ -59,7 +33,7 @@ async function getPackages(filters: {
           photos: true,
         },
       },
-      seasonalPrices: { where: { isActive: true }, orderBy: { pricePerPerson: "asc" } },
+      seasonalPrices: { where: activeSeasonalPriceWhere(filters), orderBy: { pricePerPerson: "asc" } },
       _count: { select: { enquiries: true } },
     },
   });
@@ -71,6 +45,7 @@ async function getPackages(filters: {
       case "price-desc": return bMin - aMin;
       case "days-asc": return (a.currentVersion?.days ?? 0) - (b.currentVersion?.days ?? 0);
       case "days-desc": return (b.currentVersion?.days ?? 0) - (a.currentVersion?.days ?? 0);
+      case "popularity": return b._count.enquiries - a._count.enquiries;
       default: return aMin - bMin;
     }
   });
@@ -87,13 +62,34 @@ async function getDestinations() {
   return [...new Set(packages.map((p) => p.currentVersion?.destination).filter(Boolean))] as string[];
 }
 
+async function getFilterOptions() {
+  "use cache";
+  cacheLife("minutes");
+
+  const packages = await db.package.findMany({
+    where: { status: "PUBLISHED" },
+    select: {
+      currentVersion: { select: { hotelTier: true } },
+      seasonalPrices: { where: { isActive: true }, select: { seasonName: true } },
+    },
+  });
+  return {
+    hotelTiers: [...new Set(packages.map((pkg) => pkg.currentVersion?.hotelTier).filter(Boolean))].sort() as string[],
+    seasons: [...new Set(packages.flatMap((pkg) => pkg.seasonalPrices.map((price) => price.seasonName)))].sort(),
+  };
+}
+
 export default async function PackagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; destination?: string; maxBudget?: string; sort?: string }>;
+  searchParams: Promise<PackageSearchFilters & { sort?: string }>;
 }) {
   const filters = await searchParams;
-  const [packages, destinations] = await Promise.all([getPackages(filters), getDestinations()]);
+  const [packages, destinations, filterOptions] = await Promise.all([
+    getPackages(filters),
+    getDestinations(),
+    getFilterOptions(),
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -121,12 +117,19 @@ export default async function PackagesPage({
           </div>
         </div>
         <PackageGrid
+          key={JSON.stringify(filters)}
           packages={JSON.parse(JSON.stringify(packages))}
           destinations={destinations}
           initialSearch={filters.q}
           initialDestination={filters.destination}
+          initialMinDays={filters.minDays}
+          initialMaxDays={filters.maxDays}
           initialMaxBudget={filters.maxBudget}
+          initialHotelTier={filters.hotelTier}
+          initialSeason={filters.season}
           initialSort={filters.sort}
+          hotelTiers={filterOptions.hotelTiers}
+          seasons={filterOptions.seasons}
         />
       </main>
       <Footer />
