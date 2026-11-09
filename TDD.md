@@ -33,6 +33,8 @@ redirects, sitemap, robots, activity logging and PDF generation.
 | Assumption | Prices are INR, per person, twin sharing, with GST treatment stored per price |
 | Assumption | A package photo can be represented by a trusted HTTPS URL in the demo |
 | Assumption | “Within an hour” is represented by status/response-time UI; no SLA worker sends reminders |
+| Assumption | The 140 redirects are a realistic simulated URL set from the brief, not Company A's actual legacy URL export |
+| Limitation | Vercel package publishing is scheduled daily; a package may publish up to 24 hours after its scheduled time |
 | Limitation | Production mobile Slow 4G Lighthouse performance is not yet verified |
 
 ## 2. Architecture

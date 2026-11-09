@@ -46,7 +46,7 @@ file or any secret.
 | `GROQ_API_KEY` | No | Preferred AI extraction and drafting provider |
 | `GEMINI_API_KEY` | No | AI fallback provider |
 | `INTERNAL_API_SECRET` | Yes | Protects the internal AI endpoint |
-| `CRON_SECRET` | Yes for retention | Protects scheduled retention requests |
+| `CRON_SECRET` | Yes | Protects scheduled retention and package-publishing requests |
 | `ENQUIRY_RETENTION_DAYS` | No | Closed-enquiry retention period; default is 730 |
 
 Generate local secrets with a password manager or a cryptographically secure
@@ -114,11 +114,12 @@ npm run db:studio
    Never place the connection string in source control or a shell history
    shared with the team.
 
-`vercel.json` schedules `/api/cron/retention` daily at 02:00 UTC. Vercel sends
-the configured `CRON_SECRET` authorization header. Scheduled package publishing
-is implemented at `/api/cron/publish` and is protected by the same secret, but
-is not currently included in `vercel.json`; add it to the scheduler only if
-scheduled publishing is required.
+`vercel.json` schedules `/api/cron/retention` daily at 02:00 UTC and
+`/api/cron/publish` daily at 03:00 UTC. Both schedules work with Vercel Hobby;
+publishing may run up to 24 hours after a package's scheduled time. For more
+timely publishing, use a Vercel plan that supports more frequent cron jobs and
+adjust the schedule. Vercel sends the configured `CRON_SECRET` authorization
+header.
 
 ## Other hosts
 
