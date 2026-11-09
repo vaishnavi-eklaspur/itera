@@ -149,6 +149,17 @@ package suggestion are persisted. This fix does not establish the cause of the
 previous production result; a new controlled production verification is needed
 to confirm destination extraction and recommendations after deployment.
 
+After the failover fix was pushed as `22740cfd201add722a08ae8ab7728c69c594f814`,
+a second synthetic enquiry returned HTTP 200 and was persisted in Neon
+(`cmw9h97zu0001l307sty2w4lr`). Dates, travellers, budget and a draft reply were
+present, but destination remained null and suggestions remained empty. The
+live malformed-body check still returned HTTP 400. The workspace had no
+Vercel project link or token, and GitHub exposed no deployment record for the
+commit, so deployment of that exact SHA and its Ready status could not be
+confirmed. The second production result therefore does not verify the fix is
+running, and provider-level diagnosis remains blocked by unavailable historical
+logs.
+
 ### Package publishing
 
 An Admin or Editor creates a package, adds itinerary and prices, and previews
