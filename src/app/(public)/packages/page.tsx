@@ -102,6 +102,7 @@ export default async function PackagesPage({
             alt="South India landscape"
             fill
             sizes="100vw"
+            loading="eager"
             fetchPriority="high"
             className="absolute inset-0 w-full h-full object-cover scale-105"
           />

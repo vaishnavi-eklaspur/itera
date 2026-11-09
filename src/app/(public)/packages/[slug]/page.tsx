@@ -162,7 +162,7 @@ export default async function PackageDetailPage({
       <div className="relative z-0 isolate h-[55vh] min-h-[420px] overflow-hidden">
         {(v.photos as string[])?.[0] ? (
           isSeoImageUrl((v.photos as string[])[0]) ? (
-            <Image src={(v.photos as string[])[0]} alt={v.photoAltTexts[0] || `${v.title} hero`} fill sizes="100vw" priority className="object-cover scale-105" />
+            <Image src={(v.photos as string[])[0]} alt={v.photoAltTexts[0] || `${v.title} hero`} fill sizes="100vw" preload className="object-cover scale-105" />
           ) : (
             <img src={(v.photos as string[])[0]} alt={v.photoAltTexts[0] || `${v.title} hero`} className="absolute inset-0 w-full h-full object-cover scale-105" />
           )

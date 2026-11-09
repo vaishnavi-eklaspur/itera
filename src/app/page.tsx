@@ -56,6 +56,7 @@ export default async function HomePage() {
           alt="Kerala backwaters at golden hour"
           fill
           sizes="100vw"
+          loading="eager"
           fetchPriority="high"
           className="absolute inset-0 w-full h-full object-cover scale-105"
         />
