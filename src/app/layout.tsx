@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { connection } from "next/server";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", weight: ["400", "500", "600", "700"] });
+
+export const instant = false;
 
 export const metadata: Metadata = {
   title: {
@@ -24,11 +27,13 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await connection();
+
   return (
     <html lang="en">
       <body className={`${inter.variable} ${playfair.variable} antialiased bg-ivory text-stone-900`}>
