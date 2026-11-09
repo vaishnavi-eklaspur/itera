@@ -263,6 +263,7 @@ model Quote {
   packageId      String
   enquiryId      String?
   generatedByAI  Boolean  @default(false)
+  approvedAt     DateTime?
   travellers     Int
   travelDate     String?
   pricePerPerson Int

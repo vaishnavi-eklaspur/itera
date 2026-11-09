@@ -31,6 +31,7 @@ type EnquiryQuote = {
   totalPrice: number;
   validUntil: string;
   generatedByAI: boolean;
+  approvedAt: string | null;
   author: { name: string };
 };
 
@@ -170,6 +171,8 @@ export function EnquiryDetail({
   const [addingNote, setAddingNote] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [savingAssignment, setSavingAssignment] = useState(false);
+  const [approvingQuoteId, setApprovingQuoteId] = useState<string | null>(null);
+  const [quoteApprovalError, setQuoteApprovalError] = useState("");
   const [assignmentResult, setAssignmentResult] = useState<"idle" | "success" | "error">("idle");
   const [sendResult, setSendResult] = useState<"idle" | "success" | "error">("idle");
   const [localExtracted, setLocalExtracted] = useState<AIExtracted | null>(enquiry.aiExtracted);
@@ -222,6 +225,23 @@ export function EnquiryDetail({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ aiExtracted: updated }),
     });
+  }
+
+  async function approveQuote(quoteId: string) {
+    setApprovingQuoteId(quoteId);
+    setQuoteApprovalError("");
+    try {
+      const response = await fetch(`/api/admin/quotes/${quoteId}/approve`, { method: "POST" });
+      if (!response.ok) {
+        const result = await response.json() as { error?: string };
+        throw new Error(result.error ?? "Could not approve quote");
+      }
+      router.refresh();
+    } catch (error) {
+      setQuoteApprovalError(error instanceof Error ? error.message : "Could not approve quote");
+    } finally {
+      setApprovingQuoteId(null);
+    }
   }
 
   async function retryAI() {
@@ -370,19 +390,37 @@ export function EnquiryDetail({
             <section className="rounded-xl border border-forest-200 bg-forest-50 p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-sm font-semibold text-forest-900">Quote ready</h2>
+                  <h2 className="text-sm font-semibold text-forest-900">
+                    {enquiry.quotes[0].generatedByAI && !enquiry.quotes[0].approvedAt ? "Quote draft — approval required" : "Quote ready"}
+                  </h2>
                   <p className="mt-1 text-sm text-forest-800">
-                    {enquiry.quotes[0].generatedByAI ? "Indicative quote generated for high confidence." : "Consultant quote linked to this enquiry."}
+                    {enquiry.quotes[0].generatedByAI
+                      ? enquiry.quotes[0].approvedAt
+                        ? "AI-generated indicative quote approved for sharing."
+                        : "Review the indicative quote and approve it before sharing."
+                      : "Consultant quote linked to this enquiry."}
                   </p>
                 </div>
-                <Link
-                  href={`/quote/${enquiry.quotes[0].token}`}
-                  target="_blank"
-                  className="shrink-0 rounded-lg bg-forest-700 px-3 py-2 text-sm font-medium text-white hover:bg-forest-800"
-                >
-                  Open quote
-                </Link>
+                {(!enquiry.quotes[0].generatedByAI || enquiry.quotes[0].approvedAt) ? (
+                  <Link
+                    href={`/quote/${enquiry.quotes[0].token}`}
+                    target="_blank"
+                    className="shrink-0 rounded-lg bg-forest-700 px-3 py-2 text-sm font-medium text-white hover:bg-forest-800"
+                  >
+                    Open quote
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => approveQuote(enquiry.quotes[0].id)}
+                    disabled={approvingQuoteId === enquiry.quotes[0].id}
+                    className="shrink-0 rounded-lg bg-forest-700 px-3 py-2 text-sm font-medium text-white hover:bg-forest-800 disabled:opacity-50"
+                  >
+                    {approvingQuoteId === enquiry.quotes[0].id ? "Approving..." : "Approve and publish"}
+                  </button>
+                )}
               </div>
+              {quoteApprovalError && <p role="alert" className="mt-3 text-sm text-red-700">{quoteApprovalError}</p>}
               <Link
                 href={quoteBuilderUrl}
                 className="mt-3 inline-flex rounded-lg border border-forest-300 bg-white px-3 py-2 text-sm font-medium text-forest-700 hover:bg-forest-50"

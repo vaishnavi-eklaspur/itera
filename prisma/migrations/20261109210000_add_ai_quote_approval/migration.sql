@@ -1,0 +1,1 @@
+ALTER TABLE "Quote" ADD COLUMN "approvedAt" TIMESTAMP(3);

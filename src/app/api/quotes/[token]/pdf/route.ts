@@ -38,7 +38,9 @@ export async function GET(
       author: { select: { name: true } },
     },
   });
-  if (!quote) return new Response("Quote not found", { status: 404 });
+  if (!quote || (quote.generatedByAI && !quote.approvedAt)) {
+    return new Response("Quote not found", { status: 404 });
+  }
   const gst = calculateGst(quote.pricePerPerson, quote.travellers, quote.gstRate, quote.gstInclusive);
 
   const pdf = await PDFDocument.create();

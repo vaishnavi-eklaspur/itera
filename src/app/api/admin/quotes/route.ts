@@ -55,6 +55,9 @@ export async function GET() {
     select: {
       id: true,
       token: true,
+      generatedByAI: true,
+      approvedAt: true,
+      enquiryId: true,
       travellers: true,
       travelDate: true,
       pricePerPerson: true,

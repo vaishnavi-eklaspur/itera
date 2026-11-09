@@ -10,6 +10,9 @@ import { selectSeasonalPrice } from "@/lib/seasonal-pricing";
 type Quote = {
   id: string;
   token: string;
+  generatedByAI: boolean;
+  approvedAt: string | null;
+  enquiryId: string | null;
   travellers: number;
   travelDate: string | null;
   pricePerPerson: number;
@@ -53,6 +56,7 @@ export default function QuotesPage() {
   const [travelDate, setTravelDate] = useState(() => searchParams.get("travelDate") || "");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [approvingQuoteId, setApprovingQuoteId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
@@ -93,6 +97,25 @@ export default function QuotesPage() {
   const [gstInclusive, setGstInclusive] = useState(true);
   const [gstRate, setGstRate] = useState(18);
   const gst = calculateGst(basePrice, travellers, gstRate, gstInclusive);
+
+  async function approveQuote(id: string) {
+    setApprovingQuoteId(id);
+    setLoadError("");
+    try {
+      const response = await fetch(`/api/admin/quotes/${id}/approve`, { method: "POST" });
+      if (!response.ok) {
+        const error = await response.json() as { error?: string };
+        throw new Error(error.error ?? "Could not approve quote");
+      }
+      const quotesResponse = await fetch("/api/admin/quotes");
+      if (!quotesResponse.ok) throw new Error("Quote was approved, but the quote list could not be refreshed");
+      setQuotes(await quotesResponse.json() as Quote[]);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Could not approve quote");
+    } finally {
+      setApprovingQuoteId(null);
+    }
+  }
 
   async function handleCreate() {
     setSaving(true);
@@ -198,9 +221,20 @@ export default function QuotesPage() {
                 <p className="font-medium text-stone-900 text-sm">{q.package.currentVersion?.title ?? "Unknown"}</p>
                 <p className="text-xs text-stone-400 mt-0.5">{q.travellers} pax · {formatPrice(q.totalPrice)} · {q.basis} · GST {q.gstRate}% {q.gstInclusive ? "inclusive" : "extra"} · Valid until {new Date(q.validUntil).toLocaleDateString()}</p>
               </div>
-              <a href={`/quote/${q.token}`} target="_blank" className="flex items-center gap-1 text-xs text-forest-600 hover:text-forest-700">
-                <ExternalLink className="w-3.5 h-3.5" /> Share Link
-              </a>
+              {q.generatedByAI && !q.approvedAt ? (
+                <button
+                  type="button"
+                  onClick={() => approveQuote(q.id)}
+                  disabled={approvingQuoteId === q.id}
+                  className="text-xs text-amber-700 disabled:opacity-50"
+                >
+                  {approvingQuoteId === q.id ? "Approving..." : "Approve and publish"}
+                </button>
+              ) : (
+                <a href={`/quote/${q.token}`} target="_blank" className="flex items-center gap-1 text-xs text-forest-600 hover:text-forest-700">
+                  <ExternalLink className="w-3.5 h-3.5" /> Share Link
+                </a>
+              )}
             </div>
           ))
         )}

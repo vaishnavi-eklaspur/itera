@@ -9,13 +9,15 @@ import { calculateGst } from "@/lib/gst";
 export const instant = false;
 
 async function getQuote(token: string) {
-  return db.quote.findUnique({
+  const quote = await db.quote.findUnique({
     where: { token },
     include: {
       package: { include: { currentVersion: { select: { title: true, destination: true, days: true } } } },
       author: { select: { name: true } },
     },
   });
+  if (quote?.generatedByAI && !quote.approvedAt) return null;
+  return quote;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {

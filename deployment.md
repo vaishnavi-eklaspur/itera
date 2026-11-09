@@ -1,11 +1,93 @@
 # Itera deployment guide
 
-## Reviewer access
+This guide covers a local reviewer setup and the deployed Vercel application.
+Do not use the demo credentials or a demo seed database for real customer
+traffic.
 
 - **Repository:** https://github.com/vaishnavi-eklaspur/itera
-- **Live app:** https://itera-5nq4.vercel.app
+- **Live application:** https://itera-5nq4.vercel.app/
+- **Technical design:** [TDD.pdf](TDD.pdf)
 
-Seeded demo accounts:
+## 1. Prerequisites
+
+- Node.js **20.9 or newer** (Next.js 16 requirement)
+- npm
+- PostgreSQL database and a connection URL
+- Git
+- Optional Groq and/or Gemini API key for provider-backed AI extraction
+
+Neon is used for the deployed PostgreSQL database. Any compatible PostgreSQL
+instance can be used locally.
+
+## 2. Install and configure locally
+
+In PowerShell:
+
+```powershell
+git clone https://github.com/vaishnavi-eklaspur/itera.git
+Set-Location itera
+npm ci
+Copy-Item .env.example .env
+```
+
+Edit `.env` with values for your local environment. These are the environment
+variable **names** read by the application; never commit their values:
+
+| Variable | Required | Purpose |
+|---|---:|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `NEXTAUTH_SECRET` | Yes | Signs/authenticates application sessions |
+| `NEXTAUTH_URL` | Yes | Canonical application origin, e.g. local HTTP origin |
+| `INTERNAL_API_SECRET` | Yes for AI extraction | Authenticates internal AI route requests |
+| `CRON_SECRET` | Yes for scheduled jobs | Authorizes publishing and retention cron requests |
+| `GROQ_API_KEY` | No | Preferred extraction provider |
+| `GEMINI_API_KEY` | No | Extraction fallback provider |
+| `NEXT_PUBLIC_SITE_URL` | No | Overrides the canonical URL used for sitemap/robots |
+| `ENQUIRY_RETENTION_DAYS` | No | Closed-enquiry retention threshold; defaults to 730 days |
+
+With neither AI provider key configured, enquiry submission still follows the
+deterministic fallback path. AI output should be reviewed by staff; production
+destination extraction and package suggestions have not been fully verified.
+
+## 3. Prepare the database and seed demo data
+
+The project's setup and Vercel build use Prisma schema synchronization
+(`db push`), not `prisma migrate deploy` as a clean-database bootstrap:
+
+```powershell
+npx prisma db push
+npm run db:seed
+```
+
+The repository contains incremental SQL migration files but does not contain
+a complete initial migration baseline. `db push` is the documented setup path
+for an empty review database. The seed creates demo roles, packages,
+seasonal prices, enquiries and blog content; it is intended for a demo
+database, not production traveller data.
+
+Start the development server:
+
+```powershell
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). To use another port:
+
+```powershell
+npx next dev -p 3001
+```
+
+Optional database browser:
+
+```powershell
+npm run db:studio
+```
+
+## 4. Reviewer demo accounts
+
+`prisma/seed.ts` upserts these accounts and hashes their passwords with
+bcrypt; `src/lib/auth.ts` checks credentials against those hashes. They are
+verified against the actual seed and authentication implementation:
 
 | Role | Email | Password |
 |---|---|---|
@@ -14,158 +96,82 @@ Seeded demo accounts:
 | Consultant | `consultant@itera.in` | `consultant123` |
 | Traveller | `traveller@itera.in` | `traveller123` |
 
-These credentials are for the review database only. Rotate or remove them
-before any real deployment.
+These are public demo credentials and are not suitable for real use. They
+work only where the corresponding seed has been run. The live production
+database's current seeded-account state was not independently confirmed for
+this documentation update.
 
-## Prerequisites
-
-- Node.js 20 or newer
-- npm
-- PostgreSQL 14 or newer; Neon is suitable for Vercel
-- A database connection string with SSL enabled for hosted PostgreSQL
-- Optional Groq and/or Gemini API key for live AI calls
-
-## Local setup (PowerShell)
-
-```powershell
-git clone https://github.com/vaishnavi-eklaspur/itera.git
-Set-Location itera
-npm install
-Copy-Item .env.example .env
-```
-
-Edit `.env` with local values. Names only are listed below; do not commit the
-file or any secret.
-
-| Variable | Required | Purpose |
-|---|---:|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `NEXTAUTH_SECRET` | Yes | Session signing secret |
-| `NEXTAUTH_URL` | Yes | Base URL, for example `http://localhost:3000` |
-| `NEXT_PUBLIC_SITE_URL` | No | Canonical/sitemap/robots base URL |
-| `GROQ_API_KEY` | No | Preferred AI extraction and drafting provider |
-| `GEMINI_API_KEY` | No | AI fallback provider |
-| `INTERNAL_API_SECRET` | Yes | Protects the internal AI endpoint |
-| `CRON_SECRET` | Yes | Protects scheduled retention and package-publishing requests |
-| `ENQUIRY_RETENTION_DAYS` | No | Closed-enquiry retention period; default is 730 |
-
-`NEXT_PUBLIC_SITE_URL` and `ENQUIRY_RETENTION_DAYS` are optional and are not
-included in the current `.env.example`; add them to `.env` or the deployment
-environment only when you need to override their defaults.
-
-Generate local secrets with a password manager or a cryptographically secure
-generator. For example, with OpenSSL:
-
-```powershell
-openssl rand -base64 32
-openssl rand -hex 32
-```
-
-Create the schema and sample data:
-
-```powershell
-npx prisma db push
-npx prisma db seed
-```
-
-Start the app:
-
-```powershell
-npm run dev
-```
-
-The default URL is http://localhost:3000. To use port 3001:
-
-```powershell
-npx next dev -p 3001
-```
-
-The seed creates packages, seasonal prices, enquiries, replies, notes, blog
-posts and users. Re-running it is intended to be safe for the demo database.
-
-## Verification commands
+## 5. Run checks
 
 ```powershell
 npm test
-npm run lint
 npx tsc --noEmit
+npm run lint
 npm run build
 ```
 
-For database inspection:
+The reviewed workspace check on 2026-11-09 passed 114 tests across 18 files,
+TypeScript checking and the production build. ESLint completed with no errors
+and 19 warnings. The current workspace contains uncommitted changes that are
+not part of deployed commit `4c58cbb`; see [TDD.pdf](TDD.pdf) for the release
+boundary and verification notes.
 
-```powershell
-npm run db:studio
-```
+## 6. Deploy to Vercel
 
-## Vercel deployment
+1. Import `vaishnavi-eklaspur/itera` in Vercel.
+2. Configure the required environment variables above in the intended
+   deployment environment. Add `GROQ_API_KEY` and/or `GEMINI_API_KEY` only
+   when provider-backed extraction is desired.
+3. Set `NEXTAUTH_URL` to the canonical HTTPS origin. Set
+   `NEXT_PUBLIC_SITE_URL` to the same origin when overriding sitemap/robots
+   metadata.
+4. Use the repository's `npm run vercel-build` build command. It runs
+   `prisma db push --skip-generate && next build`; this changes the target
+   database schema, so validate the environment and database before deploying.
+5. Seed only a dedicated review/demo database, once, from an authorized
+   environment. Do not copy production credentials into a shell command,
+   source file or shared terminal history.
+6. Confirm the deployment reaches Ready, then check the public pages and
+   protected staff sign-in with the intended environment.
 
-1. Import `vaishnavi-eklaspur/itera` at https://vercel.com/new.
-2. Add the environment variables above in Project Settings for the
-   **Production** environment.
-3. Set `NEXTAUTH_URL` and, preferably, `NEXT_PUBLIC_SITE_URL` to the final
-   HTTPS domain.
-4. Deploy. The repository build command is `npm run vercel-build`, which runs
-   `prisma db push --skip-generate && next build`.
-5. Seed the production database once from a controlled machine:
+The repository's `vercel.json` schedules package publishing daily at 03:00 UTC
+and retention at 02:00 UTC. Both routes require the configured cron bearer
+secret. Scheduled package publication can therefore occur up to roughly a
+day after the selected time on this schedule.
 
-   ```powershell
-   $env:DATABASE_URL = "<production-connection-string>"
-   npx prisma db seed
-   Remove-Item Env:DATABASE_URL
-   ```
+## 7. Operational behavior and limitations
 
-   Never place the connection string in source control or a shell history
-   shared with the team.
+- Email acknowledgement is a fixed-template implementation logged by the
+  application; no external email delivery provider is connected.
+- WhatsApp, payments, hotel/flight inventory and booking are not connected to
+  live services. This is consistent with the assignment's allowance for
+  mocked external integrations.
+- Production AI returned HTTP 200 for a synthetic enquiry and persisted
+  dates, traveller counts, budget and a draft reply, but destination was null
+  and package suggestions were empty. Provider-level historical logs were
+  unavailable; do not treat full production extraction as verified.
+- The client's original 140 legacy URL inventory was not available. Redirect
+  patterns were structurally checked, but exact client URL correspondence
+  remains unverified.
+- The current deployment's mobile Lighthouse LCP is 4.953 s (home), 2.518 s
+  (packages) and 3.765 s (Munnar detail). All improved against the retained
+  baseline; the 2.5 s target was not met.
+- Demo-seeded accounts must be changed or removed before real use. The
+  in-memory rate limiter is not shared across serverless instances.
+- The pushed release SHA is
+  `4c58cbbeb3db0e9e42aa53358b2a5420bca935cf`. Local quote-approval and
+  related-record retention changes are not in that deployed commit.
 
-`vercel.json` schedules `/api/cron/retention` daily at 02:00 UTC and
-`/api/cron/publish` daily at 03:00 UTC. Both schedules meet Vercel Hobby's
-once-daily limit; scheduled publishing can be delayed by up to roughly 24
-hours. Scheduled edits to published packages keep the current content and
-prices live until the cron activates the staged version and prices together;
-staff can use “Publish Now” to activate an edit immediately. Scheduled edits
-cannot change a package URL slug, since that is package-level data and changing
-it would affect the live URL immediately. Both handlers reject requests when
-`CRON_SECRET` is missing or the bearer token is incorrect. Vercel supplies the
-configured cron authorization header. These schedules are deployed only when
-the commit containing `vercel.json` is deployed.
-
-The package editor's hotel-name, photo-alt-text, and seasonal-price snapshot
-fields are stored on each package version. `vercel-build` applies the schema
-before building. Versions created before price snapshots existed cannot recover
-their original prices; their previews use current active prices and identify
-that fallback. New versions and restored versions preserve their own prices.
-
-## Other hosts
-
-For a long-running Node host:
-
-```powershell
-npm ci
-npx prisma generate
-npm run build
-npx prisma db push
-npm start
-```
-
-Set the same environment variables and expose the port selected by the host.
-For multiple application instances, replace the in-memory rate limiter with a
-shared Redis/Upstash or platform rate-limit service before production traffic.
-
-## Troubleshooting
+## 8. Troubleshooting
 
 | Symptom | Check |
 |---|---|
-| Prisma cannot connect | Confirm `DATABASE_URL`, SSL parameters and database network access |
-| Login redirects or fails | Confirm `NEXTAUTH_SECRET` and that `NEXTAUTH_URL` exactly matches the current origin |
-| AI fields use fallback values | Configure `GROQ_API_KEY` or `GEMINI_API_KEY`; the core enquiry flow still works without them |
-| Cron returns 401 | Set `CRON_SECRET` in the deployment environment and confirm the platform sends its configured bearer authorization header |
-| Images do not render | Check the image host is permitted by `next.config.ts` and the response CSP |
-| Port already in use | Start Next.js with `npx next dev -p 3001` or stop the specific process holding the port |
+| Prisma cannot connect | Validate `DATABASE_URL`, SSL requirements and database network access |
+| Authentication fails | Confirm `NEXTAUTH_SECRET`, `NEXTAUTH_URL` and that the seed ran against this database |
+| AI returns fallback data | Check provider environment configuration; enquiry intake is designed to continue without provider success |
+| Cron returns 401 | Confirm `CRON_SECRET` and the platform's bearer authorization header |
+| Remote image is blocked | Check the image host allowlist in `next.config.ts` and CSP in `src/proxy.ts` |
+| Port is occupied | Start Next.js with `npx next dev -p 3001` |
 
-## Security notes
-
-Do not commit `.env`, production credentials, real traveller data or API keys.
-Use separate secrets and databases for local, preview and production
-environments. Review the current CSP, external image hosts and distributed
-rate-limiting behaviour before treating the deployment as production-ready.
+Never commit `.env`, API keys, production connection strings or real traveller
+data.
