@@ -42,18 +42,51 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
   const [error, setError] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
 
+  function escapeHtml(value: string) {
+    return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function safeLink(value: string) {
+    try {
+      const url = new URL(value, window.location.origin);
+      return ["http:", "https:", "mailto:"].includes(url.protocol) ? url.href : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function inlineMarkdownToHtml(value: string) {
+    const escaped = escapeHtml(value);
+    return escaped
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|mailto:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  }
+
   function markdownToHtml(markdown: string) {
-    return markdown
-      .split("\n")
-      .map((line) => {
-        const escaped = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        if (escaped.startsWith("### ")) return `<h3>${escaped.slice(4)}</h3>`;
-        if (escaped.startsWith("## ")) return `<h2>${escaped.slice(3)}</h2>`;
-        if (escaped.startsWith("# ")) return `<h1>${escaped.slice(2)}</h1>`;
-        if (escaped.startsWith("- ")) return `<li>${escaped.slice(2)}</li>`;
-        return escaped ? `<p>${escaped}</p>` : "<p><br></p>";
-      })
-      .join("");
+    const lines = markdown.split("\n");
+    const html: string[] = [];
+    let listItems: string[] = [];
+    const flushList = () => {
+      if (listItems.length > 0) {
+        html.push(`<ul>${listItems.join("")}</ul>`);
+        listItems = [];
+      }
+    };
+
+    for (const line of lines) {
+      if (line.startsWith("- ")) {
+        listItems.push(`<li>${inlineMarkdownToHtml(line.slice(2))}</li>`);
+        continue;
+      }
+      flushList();
+      if (line.startsWith("### ")) html.push(`<h3>${inlineMarkdownToHtml(line.slice(4))}</h3>`);
+      else if (line.startsWith("## ")) html.push(`<h2>${inlineMarkdownToHtml(line.slice(3))}</h2>`);
+      else if (line.startsWith("# ")) html.push(`<h1>${inlineMarkdownToHtml(line.slice(2))}</h1>`);
+      else html.push(line ? `<p>${inlineMarkdownToHtml(line)}</p>` : "<p><br></p>");
+    }
+    flushList();
+    return html.join("");
   }
 
   function htmlToMarkdown(root: HTMLElement) {
@@ -70,6 +103,12 @@ export function BlogEditor({ post, packages }: { post: BlogData; packages: Packa
         case "EM":
         case "I": return `*${text}*`;
         case "LI": return `- ${text}\n`;
+        case "A": {
+          const href = safeLink(node.getAttribute("href") ?? "");
+          return href ? `[${text}](${href})` : text;
+        }
+        case "UL":
+        case "OL": return `${text}\n`;
         case "BR": return "\n";
         case "P":
         case "DIV": return `${text}\n`;
