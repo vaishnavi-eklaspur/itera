@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { preconnect } from "react-dom";
 import { connection } from "next/server";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
@@ -32,6 +33,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  preconnect("https://images.unsplash.com");
+  preconnect("https://b3681537.assetcdn.net");
   await connection();
 
   return (

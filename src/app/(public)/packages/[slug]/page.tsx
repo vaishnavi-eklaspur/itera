@@ -128,6 +128,28 @@ async function RelatedSections({ slug, packageId }: { slug: string; packageId: s
   );
 }
 
+async function AuthenticatedEnquiryForm({
+  packageId,
+  packageTitle,
+  packageDays,
+}: {
+  packageId: string;
+  packageTitle: string;
+  packageDays: number;
+}) {
+  const session = await auth();
+
+  return (
+    <EnquiryForm
+      packageId={packageId}
+      packageTitle={packageTitle}
+      packageDays={packageDays}
+      initialName={session?.user?.name || ""}
+      initialEmail={session?.user?.email || ""}
+    />
+  );
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -171,9 +193,7 @@ export default async function PackageDetailPage({
   const pkg = await getPackage(slug);
 
   if (!pkg?.currentVersion) notFound();
-
   const v = pkg.currentVersion;
-  const session = await auth();
   const minPrice = Math.min(...pkg.seasonalPrices.map((p) => p.pricePerPerson));
   const itinerary = v.itinerary as {
     day: number;
@@ -230,7 +250,7 @@ export default async function PackageDetailPage({
       <div className="relative z-0 isolate h-[55vh] min-h-[420px] overflow-hidden">
         {(v.photos as string[])?.[0] ? (
           isSeoImageUrl((v.photos as string[])[0]) ? (
-            <Image src={optimizeUnsplashImageUrl((v.photos as string[])[0], 960, 640, 50)} alt={v.photoAltTexts[0] || `${v.title} hero`} fill sizes="100vw" preload unoptimized className="object-cover scale-105" />
+            <Image src={optimizeUnsplashImageUrl((v.photos as string[])[0], 960, 640, 45)} alt={v.photoAltTexts[0] || `${v.title} hero`} fill sizes="100vw" preload unoptimized className="object-cover scale-105" />
           ) : (
             <img src={(v.photos as string[])[0]} alt={v.photoAltTexts[0] || `${v.title} hero`} className="absolute inset-0 w-full h-full object-cover scale-105" />
           )
@@ -402,13 +422,13 @@ export default async function PackageDetailPage({
 
               {/* Enquiry Form */}
               <div id="enquiry-form">
-                <EnquiryForm
-                  packageId={pkg.id}
-                  packageTitle={v.title}
-                  packageDays={durationDays}
-                  initialName={session?.user?.name || ""}
-                  initialEmail={session?.user?.email || ""}
-                />
+                <Suspense fallback={<div className="text-sm text-stone-500" aria-live="polite">Loading enquiry form…</div>}>
+                  <AuthenticatedEnquiryForm
+                    packageId={pkg.id}
+                    packageTitle={v.title}
+                    packageDays={durationDays}
+                  />
+                </Suspense>
               </div>
 
               {/* WhatsApp Button */}
