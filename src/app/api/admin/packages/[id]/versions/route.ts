@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { authorizeRole } from "@/lib/roles";
+import { revalidatePath } from "next/cache";
 
 export async function GET(
   req: NextRequest,
@@ -66,11 +67,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     await tx.package.update({
       where: { id },
-      data: { currentVersionId: v.id },
+      data: {
+        currentVersionId: v.id,
+        scheduledAt: null,
+      },
     });
+    await tx.seasonalPrice.deleteMany({ where: { packageId: id, isActive: false } });
 
     return v;
   });
 
+  revalidatePath("/");
+  revalidatePath("/packages");
   return NextResponse.json({ success: true, versionNumber: restored.versionNumber });
 }

@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { packageFormSchema } from "@/lib/validations";
 import { logActivity } from "@/lib/activity";
 import { authorizeRole } from "@/lib/roles";
+import { revalidatePath } from "next/cache";
+import { parseScheduledAt } from "@/lib/package-publishing";
 
 export async function GET(
   req: NextRequest,
@@ -30,7 +32,12 @@ export async function GET(
     return NextResponse.json({ error: "Package not found" }, { status: 404 });
   }
 
-  return NextResponse.json(pkg);
+  return NextResponse.json({
+    ...pkg,
+    scheduledVersion: pkg.scheduledAt ? pkg.versions[0] ?? null : null,
+    scheduledPrices: pkg.scheduledAt ? pkg.seasonalPrices.filter((price) => !price.isActive) : null,
+    seasonalPrices: pkg.seasonalPrices.filter((price) => price.isActive),
+  });
 }
 
 export async function PUT(
@@ -60,6 +67,16 @@ export async function PUT(
   }
 
   const data = parsed.data;
+  const scheduledAt = parseScheduledAt(body.scheduledAt);
+  if (scheduledAt === undefined) {
+    return NextResponse.json({ error: "Scheduled publish time must be in the future." }, { status: 400 });
+  }
+  if (scheduledAt && data.seasonalPrices.length === 0) {
+    return NextResponse.json({ error: "A scheduled package needs at least one seasonal price." }, { status: 400 });
+  }
+  if (scheduledAt && data.slug !== pkg.slug) {
+    return NextResponse.json({ error: "A package URL slug cannot be changed in a scheduled edit." }, { status: 400 });
+  }
   const nextVersionNumber = (pkg.versions[0]?.versionNumber || 0) + 1;
 
   await db.$transaction(async (tx) => {
@@ -81,30 +98,52 @@ export async function PUT(
       },
     });
 
+    const isScheduled = scheduledAt !== null;
     await tx.package.update({
       where: { id },
       data: {
-        currentVersionId: version.id,
         slug: data.slug,
-        ...(body.scheduledAt !== undefined ? { scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : null } : {}),
+        scheduledAt,
+        ...(!isScheduled ? { currentVersionId: version.id } : {}),
       },
     });
 
-    await tx.seasonalPrice.deleteMany({ where: { packageId: id } });
-    await tx.seasonalPrice.createMany({
-      data: data.seasonalPrices.map((price) => ({
-        packageId: id,
-        seasonName: price.seasonName,
-        seasonStartMonth: price.seasonStartMonth,
-        seasonEndMonth: price.seasonEndMonth,
-        pricePerPerson: price.pricePerPerson,
-        basis: price.basis,
-        gstInclusive: price.gstInclusive,
-      })),
-    });
+    if (isScheduled) {
+      await tx.seasonalPrice.deleteMany({ where: { packageId: id, isActive: false } });
+      await tx.seasonalPrice.createMany({
+        data: data.seasonalPrices.map((price) => ({
+          packageId: id,
+          seasonName: price.seasonName,
+          seasonStartMonth: price.seasonStartMonth,
+          seasonEndMonth: price.seasonEndMonth,
+          pricePerPerson: price.pricePerPerson,
+          basis: price.basis,
+          gstInclusive: price.gstInclusive,
+          isActive: false,
+        })),
+      });
+    } else {
+      await tx.seasonalPrice.deleteMany({ where: { packageId: id } });
+      await tx.seasonalPrice.createMany({
+        data: data.seasonalPrices.map((price) => ({
+          packageId: id,
+          seasonName: price.seasonName,
+          seasonStartMonth: price.seasonStartMonth,
+          seasonEndMonth: price.seasonEndMonth,
+          pricePerPerson: price.pricePerPerson,
+          basis: price.basis,
+          gstInclusive: price.gstInclusive,
+        })),
+      });
+    }
   });
 
   await logActivity(session.user.id, "updated", "package", id, `v${nextVersionNumber}`);
+  if (scheduledAt === null) {
+    revalidatePath("/");
+    revalidatePath("/packages");
+    revalidatePath(`/packages/${data.slug}`);
+  }
 
   return NextResponse.json({ success: true, versionNumber: nextVersionNumber });
 }
@@ -120,9 +159,15 @@ export async function DELETE(
 
   const { id } = await params;
 
-  await db.package.update({
-    where: { id },
-    data: { status: "ARCHIVED" },
+  await db.$transaction(async (tx) => {
+    await tx.package.update({
+      where: { id },
+      data: {
+        status: "ARCHIVED",
+        scheduledAt: null,
+      },
+    });
+    await tx.seasonalPrice.deleteMany({ where: { packageId: id, isActive: false } });
   });
 
   await logActivity(session.user.id, "archived", "package", id);

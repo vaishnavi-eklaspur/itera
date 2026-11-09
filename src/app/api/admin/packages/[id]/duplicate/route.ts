@@ -15,7 +15,7 @@ export async function POST(
 
   const source = await db.package.findUnique({
     where: { id },
-    include: { currentVersion: true, seasonalPrices: true },
+    include: { currentVersion: true, seasonalPrices: { where: { isActive: true } } },
   });
 
   if (!source?.currentVersion) {

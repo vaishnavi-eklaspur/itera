@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { packageFormSchema } from "@/lib/validations";
 import { authorizeRole } from "@/lib/roles";
+import { parseScheduledAt } from "@/lib/package-publishing";
 
 export async function GET() {
   const session = await auth();
@@ -36,6 +37,13 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
+  const scheduledAt = parseScheduledAt(body.scheduledAt);
+  if (scheduledAt === undefined) {
+    return NextResponse.json({ error: "Scheduled publish time must be in the future." }, { status: 400 });
+  }
+  if (scheduledAt && data.seasonalPrices.length === 0) {
+    return NextResponse.json({ error: "A scheduled package needs at least one seasonal price." }, { status: 400 });
+  }
 
   const existing = await db.package.findUnique({ where: { slug: data.slug } });
   if (existing) {
@@ -67,7 +75,10 @@ export async function POST(req: NextRequest) {
 
     await tx.package.update({
       where: { id: p.id },
-      data: { currentVersionId: version.id },
+      data: {
+        currentVersionId: version.id,
+        ...(scheduledAt ? { scheduledAt } : {}),
+      },
     });
 
     await tx.seasonalPrice.createMany({
@@ -79,6 +90,7 @@ export async function POST(req: NextRequest) {
         pricePerPerson: price.pricePerPerson,
         basis: price.basis,
         gstInclusive: price.gstInclusive,
+        isActive: !scheduledAt,
       })),
     });
 

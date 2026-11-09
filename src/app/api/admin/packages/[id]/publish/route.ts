@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
 import { authorizeRole } from "@/lib/roles";
+import { publishPackageNow } from "@/lib/package-publishing";
 
 export async function POST(
   req: NextRequest,
@@ -15,14 +16,10 @@ export async function POST(
 
   const { id } = await params;
 
-  const pkg = await db.package.findUnique({ where: { id } });
+  const pkg = await db.package.findUnique({ where: { id }, select: { id: true } });
   if (!pkg) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!pkg.currentVersionId) return NextResponse.json({ error: "No version to publish" }, { status: 400 });
-
-  await db.package.update({
-    where: { id },
-    data: { status: "PUBLISHED" },
-  });
+  const published = await publishPackageNow(id);
+  if (!published) return NextResponse.json({ error: "No version to publish" }, { status: 400 });
 
   await logActivity(session.user.id, "published", "package", id);
 

@@ -121,10 +121,14 @@ npm run db:studio
 `vercel.json` schedules `/api/cron/retention` daily at 02:00 UTC and
 `/api/cron/publish` daily at 03:00 UTC. Both schedules meet Vercel Hobby's
 once-daily limit; scheduled publishing can be delayed by up to roughly 24
-hours. Both handlers reject requests when `CRON_SECRET` is missing or the
-bearer token is incorrect. Vercel supplies the configured cron authorization
-header. These schedules are deployed only when the commit containing
-`vercel.json` is deployed.
+hours. Scheduled edits to published packages keep the current content and
+prices live until the cron activates the staged version and prices together;
+staff can use “Publish Now” to activate an edit immediately. Scheduled edits
+cannot change a package URL slug, since that is package-level data and changing
+it would affect the live URL immediately. Both handlers reject requests when
+`CRON_SECRET` is missing or the bearer token is incorrect. Vercel supplies the
+configured cron authorization header. These schedules are deployed only when
+the commit containing `vercel.json` is deployed.
 
 ## Other hosts
 

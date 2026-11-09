@@ -180,6 +180,11 @@ logged server-side and staff-entered channel records are explicit.
   (default 730).
 - Package publishing and retention cron handlers fail closed unless the
   configured `CRON_SECRET` bearer token is supplied.
+- Scheduled package edits stage the version and seasonal prices separately;
+  the currently published content and prices remain live until the scheduled
+  time. The publishing cron activates both together, while an explicit
+  “Publish Now” action can activate a pending edit immediately. A URL slug
+  cannot be changed in a scheduled edit because the slug controls the live URL.
 - CSP, frame, MIME, referrer and permissions headers are set in `proxy.ts`.
   A spot check of one deployed package detail page found no CSP violations;
   it did show an aborted image request and an unused image-preload warning.

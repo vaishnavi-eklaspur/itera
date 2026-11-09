@@ -17,8 +17,8 @@ export default async function AdminPackageEditPage({
     where: { id },
     include: {
       currentVersion: true,
-      seasonalPrices: { where: { isActive: true } },
-      versions: { orderBy: { versionNumber: "desc" }, take: 10, select: { id: true, versionNumber: true, title: true, createdAt: true } },
+      seasonalPrices: true,
+      versions: { orderBy: { versionNumber: "desc" }, take: 10 },
     },
   });
 
@@ -26,7 +26,12 @@ export default async function AdminPackageEditPage({
 
   return (
     <PackageEditor
-      pkg={JSON.parse(JSON.stringify(pkg))}
+      pkg={JSON.parse(JSON.stringify({
+        ...pkg,
+        scheduledVersion: pkg.scheduledAt ? pkg.versions[0] ?? null : null,
+        scheduledPrices: pkg.scheduledAt ? pkg.seasonalPrices.filter((price) => !price.isActive) : null,
+        seasonalPrices: pkg.seasonalPrices.filter((price) => price.isActive),
+      }))}
       readOnly={session.user.role === "CONSULTANT"}
     />
   );

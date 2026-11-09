@@ -42,6 +42,11 @@ function findLocationCoordinates(location: string) {
   return Object.entries(LOCATION_COORDINATES).find(([name]) => normalized.includes(name))?.[1];
 }
 
+function toLocalDateTimeValue(value: string) {
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
 type SeasonalPrice = {
   id?: string;
   seasonName: string;
@@ -57,6 +62,18 @@ type PackageData = {
   slug: string;
   status: string;
   scheduledAt: string | null;
+  scheduledVersion: {
+    title: string;
+    destination: string;
+    days: number;
+    description: string;
+    hotelTier: string;
+    inclusions: string[];
+    exclusions: string[];
+    itinerary: ItineraryDay[];
+    photos: string[];
+  } | null;
+  scheduledPrices: SeasonalPrice[] | null;
   currentVersion: {
     title: string;
     destination: string;
@@ -75,7 +92,7 @@ type PackageData = {
 export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; readOnly?: boolean }) {
   const router = useRouter();
   const isNew = !pkg;
-  const v = pkg?.currentVersion;
+  const v = pkg?.scheduledVersion ?? pkg?.currentVersion;
 
   const [title, setTitle] = useState(v?.title ?? "");
   const [destination, setDestination] = useState(v?.destination ?? "");
@@ -87,10 +104,10 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     v?.itinerary ?? [{ day: 1, title: "", location: "", lat: 10.0, lng: 76.0, description: "", activities: [] }]
   );
   const [prices, setPrices] = useState<SeasonalPrice[]>(
-    pkg?.seasonalPrices ?? [{ seasonName: "Regular", seasonStartMonth: 1, seasonEndMonth: 12, pricePerPerson: 0, basis: "Per person, twin sharing", gstInclusive: true }]
+    pkg?.scheduledPrices ?? pkg?.seasonalPrices ?? [{ seasonName: "Regular", seasonStartMonth: 1, seasonEndMonth: 12, pricePerPerson: 0, basis: "Per person, twin sharing", gstInclusive: true }]
   );
   const [photos, setPhotos] = useState<string[]>(v?.photos ?? []);
-  const [scheduledAt, setScheduledAt] = useState(pkg?.scheduledAt ? new Date(pkg.scheduledAt).toISOString().slice(0, 16) : "");
+  const [scheduledAt, setScheduledAt] = useState(pkg?.scheduledAt ? toLocalDateTimeValue(pkg.scheduledAt) : "");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -250,14 +267,14 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
               <button onClick={handleDuplicate} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50">
                 <Copy className="w-4 h-4" /> Duplicate
               </button>
-              {pkg.status !== "PUBLISHED" && (
+              {(pkg.status !== "PUBLISHED" || pkg.scheduledAt) && (
                 <button
                   onClick={handlePublish}
                   disabled={publishing}
                   className="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                 >
                   {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  Publish
+                  {pkg.scheduledAt ? "Publish Now" : "Publish"}
                 </button>
               )}
             </>
@@ -565,7 +582,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
           <section className="bg-white rounded-xl border border-stone-200 p-6">
             <h2 className="font-semibold text-stone-900 mb-4">Publish Schedule</h2>
             <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
-            {scheduledAt && <p className="text-xs text-stone-400 mt-2">Will auto-publish at {new Date(scheduledAt).toLocaleString()}</p>}
+            {scheduledAt && <p className="text-xs text-stone-400 mt-2">Will publish at {new Date(scheduledAt).toLocaleString()}. Until then, the currently published version remains live.</p>}
             {scheduledAt && <button onClick={() => setScheduledAt("")} className="text-xs text-red-500 mt-1">Clear schedule</button>}
           </section>
 

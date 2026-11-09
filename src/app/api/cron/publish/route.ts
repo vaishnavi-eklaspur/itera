@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { publishPackageNow } from "@/lib/package-publishing";
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -14,17 +15,14 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
   const due = await db.package.findMany({
-    where: { scheduledAt: { lte: now }, status: { not: "PUBLISHED" } },
+    where: { scheduledAt: { lte: now } },
+    select: { id: true },
   });
 
+  let published = 0;
   for (const pkg of due) {
-    if (pkg.currentVersionId) {
-      await db.package.update({
-        where: { id: pkg.id },
-        data: { status: "PUBLISHED", scheduledAt: null },
-      });
-    }
+    if (await publishPackageNow(pkg.id, now)) published++;
   }
 
-  return NextResponse.json({ published: due.length });
+  return NextResponse.json({ published });
 }

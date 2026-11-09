@@ -59,6 +59,8 @@ export const seasonalPriceSchema = z.object({
   gstInclusive: z.boolean().default(true),
 });
 
+export const seasonalPricesSchema = z.array(seasonalPriceSchema);
+
 export const packageFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   slug: z.string().min(3),
@@ -71,7 +73,7 @@ export const packageFormSchema = z.object({
   itinerary: z.array(itineraryDaySchema),
   photos: z.array(z.string()),
   mapCenter: z.object({ lat: z.number(), lng: z.number(), zoom: z.number() }).optional(),
-  seasonalPrices: z.array(seasonalPriceSchema),
+  seasonalPrices: seasonalPricesSchema,
 });
 
 export type PackageFormData = z.infer<typeof packageFormSchema>;
