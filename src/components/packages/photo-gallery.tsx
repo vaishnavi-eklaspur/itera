@@ -22,7 +22,7 @@ export function PhotoGallery({ photos, altTexts = [] }: { photos: string[]; altT
               onClick={() => setLightboxIndex(i)}
               className={`relative aspect-[4/3] overflow-hidden group ${i === 0 ? "col-span-2 row-span-2 aspect-auto" : ""}`}
             >
-              <img src={url} alt={altTexts[i] || `Photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <img src={url} alt={altTexts[i] || `Photo ${i + 1}`} loading="lazy" fetchPriority="low" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition duration-300" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
               {i === 5 && remaining > 0 && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <span className="text-white text-lg font-semibold">+{remaining} more</span>

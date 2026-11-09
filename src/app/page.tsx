@@ -21,7 +21,7 @@ export default function HomePage() {
       {/* Hero — cinematic full-bleed */}
       <section id="main-content" className="relative h-[92vh] min-h-[640px] flex items-end overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1280&h=720&fit=crop&auto=format&q=60"
+          src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1280&h=720&fit=crop&auto=format&q=45"
           alt="Kerala backwaters at golden hour"
           fill
           sizes="100vw"
@@ -146,6 +146,8 @@ export default function HomePage() {
                   src={`https://images.unsplash.com/${region.img}?w=400&h=540&fit=crop&auto=format&q=80`}
                   alt={region.name}
                   loading="lazy"
+                  fetchPriority="low"
+                  decoding="async"
                   className="absolute inset-0 w-full h-full object-cover img-zoom"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />

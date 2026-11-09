@@ -59,6 +59,7 @@ export async function HomePackageSections() {
                       src={(hero.currentVersion.photos as string[])[0]}
                       alt={hero.currentVersion.title}
                       loading="lazy"
+                      fetchPriority="low"
                       decoding="async"
                       className="absolute inset-0 w-full h-full object-cover img-zoom"
                     />
@@ -128,10 +129,12 @@ export async function HomePackageSections() {
                           alt={version.title}
                           fill
                           sizes={isWide ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 100vw, 33vw"}
+                          loading="lazy"
+                          fetchPriority="low"
                           className="object-cover img-zoom"
                         />
                       ) : (
-                        <img src={photo} alt={version.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover img-zoom" />
+                        <img src={photo} alt={version.title} loading="lazy" fetchPriority="low" decoding="async" className="absolute inset-0 w-full h-full object-cover img-zoom" />
                       )
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-forest-100 to-forest-300 flex items-center justify-center">

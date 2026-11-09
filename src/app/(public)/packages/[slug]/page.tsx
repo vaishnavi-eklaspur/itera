@@ -14,7 +14,7 @@ import { Check, X as XIcon, Calendar, Star, Users, MapPin, MessageCircle, BookOp
 import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
 import Image from "next/image";
-import { isSeoImageUrl } from "@/lib/seo";
+import { isSeoImageUrl, optimizeUnsplashImageUrl } from "@/lib/seo";
 
 export const instant = false;
 
@@ -78,7 +78,7 @@ async function RelatedSections({ slug, packageId }: { slug: string; packageId: s
                 <Link key={rp.id} href={`/packages/${rp.slug}`} className="group bg-white rounded-xl border border-sand-200/60 overflow-hidden hover:shadow-lg hover:border-sand-300 transition-all">
                   <div className="aspect-[16/10] relative overflow-hidden bg-gradient-to-br from-forest-100 to-forest-200">
                     {(rv.photos as string[])?.[0] ? (
-                      <img src={(rv.photos as string[])[0]} alt={rv.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={(rv.photos as string[])[0]} alt={rv.title} loading="lazy" fetchPriority="low" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center"><MapPin className="w-10 h-10 text-forest-300" /></div>
                     )}
@@ -230,7 +230,7 @@ export default async function PackageDetailPage({
       <div className="relative z-0 isolate h-[55vh] min-h-[420px] overflow-hidden">
         {(v.photos as string[])?.[0] ? (
           isSeoImageUrl((v.photos as string[])[0]) ? (
-            <Image src={(v.photos as string[])[0]} alt={v.photoAltTexts[0] || `${v.title} hero`} fill sizes="100vw" preload unoptimized className="object-cover scale-105" />
+            <Image src={optimizeUnsplashImageUrl((v.photos as string[])[0], 960, 640, 50)} alt={v.photoAltTexts[0] || `${v.title} hero`} fill sizes="100vw" preload unoptimized className="object-cover scale-105" />
           ) : (
             <img src={(v.photos as string[])[0]} alt={v.photoAltTexts[0] || `${v.title} hero`} className="absolute inset-0 w-full h-full object-cover scale-105" />
           )
