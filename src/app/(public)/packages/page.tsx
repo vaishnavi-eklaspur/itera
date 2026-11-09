@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import Image from "next/image";
 import { Footer } from "@/components/layout/footer";
@@ -79,7 +80,7 @@ async function getFilterOptions() {
   };
 }
 
-export default async function PackagesPage({
+async function PackageResults({
   searchParams,
 }: {
   searchParams: Promise<PackageSearchFilters & { sort?: string }>;
@@ -92,10 +93,33 @@ export default async function PackagesPage({
   ]);
 
   return (
+    <PackageGrid
+      key={JSON.stringify(filters)}
+      packages={JSON.parse(JSON.stringify(packages))}
+      destinations={destinations}
+      initialSearch={filters.q}
+      initialDestination={filters.destination}
+      initialMinDays={filters.minDays}
+      initialMaxDays={filters.maxDays}
+      initialMaxBudget={filters.maxBudget}
+      initialHotelTier={filters.hotelTier}
+      initialSeason={filters.season}
+      initialSort={filters.sort}
+      hotelTiers={filterOptions.hotelTiers}
+      seasons={filterOptions.seasons}
+    />
+  );
+}
+
+export default function PackagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<PackageSearchFilters & { sort?: string }>;
+}) {
+  return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main id="main-content" className="relative z-10 flex-1 bg-ivory">
-        {/* Hero — photo-led */}
         <div className="relative z-0 isolate h-[44vh] min-h-[300px] overflow-hidden">
           <Image
             src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1280&h=500&fit=crop&auto=format&q=60"
@@ -112,26 +136,14 @@ export default async function PackagesPage({
               <p className="text-[0.6875rem] font-semibold tracking-[0.15em] uppercase text-white/70 mb-3">All Packages</p>
               <h1 className="text-4xl sm:text-5xl font-display font-bold text-white tracking-tight">Explore South India</h1>
               <p className="mt-3 text-[15px] text-white/70 max-w-lg">
-                {packages.length} handcrafted journeys through Kerala, Tamil Nadu, Karnataka &amp; Goa
+                Handcrafted journeys through Kerala, Tamil Nadu, Karnataka &amp; Goa
               </p>
             </div>
           </div>
         </div>
-        <PackageGrid
-          key={JSON.stringify(filters)}
-          packages={JSON.parse(JSON.stringify(packages))}
-          destinations={destinations}
-          initialSearch={filters.q}
-          initialDestination={filters.destination}
-          initialMinDays={filters.minDays}
-          initialMaxDays={filters.maxDays}
-          initialMaxBudget={filters.maxBudget}
-          initialHotelTier={filters.hotelTier}
-          initialSeason={filters.season}
-          initialSort={filters.sort}
-          hotelTiers={filterOptions.hotelTiers}
-          seasons={filterOptions.seasons}
-        />
+        <Suspense fallback={<div className="min-h-[40vh]" aria-hidden="true" />}>
+          <PackageResults searchParams={searchParams} />
+        </Suspense>
       </main>
       <Footer />
     </div>

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -55,6 +56,76 @@ async function getRelatedBlogPosts(packageId: string) {
     orderBy: { createdAt: "desc" },
     take: 3,
   });
+}
+
+async function RelatedSections({ slug, packageId }: { slug: string; packageId: string }) {
+  const [relatedPackages, relatedBlogPosts] = await Promise.all([
+    getRelatedPackages(slug),
+    getRelatedBlogPosts(packageId),
+  ]);
+
+  return (
+    <>
+      {relatedPackages.length > 0 && (
+        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 border-t border-sand-200/60">
+          <h2 className="text-2xl font-display font-semibold text-stone-900 mb-6">You Might Also Like</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {relatedPackages.map((rp) => {
+              const rv = rp.currentVersion;
+              if (!rv) return null;
+              const rpPrice = rp.seasonalPrices[0]?.pricePerPerson;
+              return (
+                <Link key={rp.id} href={`/packages/${rp.slug}`} className="group bg-white rounded-xl border border-sand-200/60 overflow-hidden hover:shadow-lg hover:border-sand-300 transition-all">
+                  <div className="aspect-[16/10] relative overflow-hidden bg-gradient-to-br from-forest-100 to-forest-200">
+                    {(rv.photos as string[])?.[0] ? (
+                      <img src={(rv.photos as string[])[0]} alt={rv.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center"><MapPin className="w-10 h-10 text-forest-300" /></div>
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-semibold text-stone-900 group-hover:text-forest-700 transition line-clamp-1">{rv.title}</h3>
+                    <p className="text-xs text-stone-500 mt-1">{rv.destination} · {(Array.isArray(rv.itinerary) ? rv.itinerary.length : rv.days)} Days</p>
+                    {rpPrice && <p className="mt-2 text-sm font-semibold text-forest-700">{formatPrice(rpPrice)}<span className="block text-xs font-normal text-stone-400">{rp.seasonalPrices[0]?.basis ?? "Per person, twin sharing"}</span></p>}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {relatedBlogPosts.length > 0 && (
+        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 border-t border-sand-200/60">
+          <div className="flex items-center gap-2 mb-6">
+            <BookOpen className="w-5 h-5 text-forest-600" />
+            <h2 className="text-2xl font-display font-semibold text-stone-900">Travel Guides for This Journey</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {relatedBlogPosts.map((post) => (
+              <Link key={post.id} href={`/blog/${post.slug}`} className="group bg-white rounded-xl border border-sand-200/60 overflow-hidden hover:shadow-lg transition-all">
+                <div className="relative aspect-[16/9] bg-gradient-to-br from-forest-100 to-forest-200 overflow-hidden">
+                  {post.coverImage ? (
+                    isSeoImageUrl(post.coverImage) ? (
+                      <Image src={post.coverImage} alt={`${post.title} cover`} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <img src={post.coverImage} alt={`${post.title} cover`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    )
+                  ) : (
+                    <div className="h-full flex items-center justify-center"><BookOpen className="w-8 h-8 text-forest-300" /></div>
+                  )}
+                </div>
+                <div className="p-5">
+                  <h3 className="font-semibold text-stone-900 group-hover:text-forest-700 transition line-clamp-2">{post.title}</h3>
+                  <p className="text-sm text-stone-500 mt-2 line-clamp-2">{post.excerpt}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  );
 }
 
 export async function generateMetadata({
@@ -114,9 +185,6 @@ export default async function PackageDetailPage({
     activities: string[];
   }[];
   const durationDays = itinerary.length || v.days;
-
-  const relatedPackages = await getRelatedPackages(slug);
-  const relatedBlogPosts = await getRelatedBlogPosts(pkg.id);
 
   const whatsappMessage = encodeURIComponent(
     `Hi, I'm interested in the "${v.title}" package (${durationDays} days). Could you share more details?`
@@ -358,65 +426,9 @@ export default async function PackageDetailPage({
         </div>
       </main>
 
-      {/* Related Packages */}
-      {relatedPackages.length > 0 && (
-        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 border-t border-sand-200/60">
-          <h2 className="text-2xl font-display font-semibold text-stone-900 mb-6">You Might Also Like</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {relatedPackages.map((rp) => {
-              const rv = rp.currentVersion;
-              if (!rv) return null;
-              const rpPrice = rp.seasonalPrices[0]?.pricePerPerson;
-              return (
-                <Link key={rp.id} href={`/packages/${rp.slug}`} className="group bg-white rounded-xl border border-sand-200/60 overflow-hidden hover:shadow-lg hover:border-sand-300 transition-all">
-                  <div className="aspect-[16/10] relative overflow-hidden bg-gradient-to-br from-forest-100 to-forest-200">
-                    {(rv.photos as string[])?.[0] ? (
-                      <img src={(rv.photos as string[])[0]} alt={rv.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center"><MapPin className="w-10 h-10 text-forest-300" /></div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-semibold text-stone-900 group-hover:text-forest-700 transition line-clamp-1">{rv.title}</h3>
-                    <p className="text-xs text-stone-500 mt-1">{rv.destination} · {(Array.isArray(rv.itinerary) ? rv.itinerary.length : rv.days)} Days</p>
-                    {rpPrice && <p className="mt-2 text-sm font-semibold text-forest-700">{formatPrice(rpPrice)}<span className="block text-xs font-normal text-stone-400">{rp.seasonalPrices[0]?.basis ?? "Per person, twin sharing"}</span></p>}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {relatedBlogPosts.length > 0 && (
-        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 border-t border-sand-200/60">
-          <div className="flex items-center gap-2 mb-6">
-            <BookOpen className="w-5 h-5 text-forest-600" />
-            <h2 className="text-2xl font-display font-semibold text-stone-900">Travel Guides for This Journey</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {relatedBlogPosts.map((post) => (
-              <Link key={post.id} href={`/blog/${post.slug}`} className="group bg-white rounded-xl border border-sand-200/60 overflow-hidden hover:shadow-lg transition-all">
-                <div className="relative aspect-[16/9] bg-gradient-to-br from-forest-100 to-forest-200 overflow-hidden">
-                  {post.coverImage ? (
-                    isSeoImageUrl(post.coverImage) ? (
-                      <Image src={post.coverImage} alt={`${post.title} cover`} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <img src={post.coverImage} alt={`${post.title} cover`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    )
-                  ) : (
-                    <div className="h-full flex items-center justify-center"><BookOpen className="w-8 h-8 text-forest-300" /></div>
-                  )}
-                </div>
-                <div className="p-5">
-                  <h3 className="font-semibold text-stone-900 group-hover:text-forest-700 transition line-clamp-2">{post.title}</h3>
-                  <p className="text-sm text-stone-500 mt-2 line-clamp-2">{post.excerpt}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      <Suspense fallback={null}>
+        <RelatedSections slug={slug} packageId={pkg.id} />
+      </Suspense>
 
       {/* Mobile WhatsApp FAB */}
       <a
