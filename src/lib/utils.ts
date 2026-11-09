@@ -22,7 +22,7 @@ export function slugify(text: string): string {
     .trim();
 }
 
-export function getSeasonForMonth(month: number, prices: { seasonStartMonth: number; seasonEndMonth: number; seasonName: string; pricePerPerson: number }[]) {
+export function getSeasonForMonth<T extends { seasonStartMonth: number; seasonEndMonth: number; seasonName: string; pricePerPerson: number }>(month: number, prices: T[]): T | undefined {
   return prices.find((p) => {
     if (p.seasonStartMonth <= p.seasonEndMonth) {
       return month >= p.seasonStartMonth && month <= p.seasonEndMonth;

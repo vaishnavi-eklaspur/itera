@@ -95,6 +95,9 @@ describe("package edit scheduling", () => {
     const updateData = mocks.packageUpdate.mock.calls[0][0].data;
 
     expect(response.status).toBe(200);
+    expect(mocks.packageVersionCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ seasonalPrices: packageInput.seasonalPrices }),
+    }));
     expect(updateData).toMatchObject({
       scheduledAt: new Date(scheduledAt),
     });

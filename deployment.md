@@ -130,6 +130,12 @@ it would affect the live URL immediately. Both handlers reject requests when
 configured cron authorization header. These schedules are deployed only when
 the commit containing `vercel.json` is deployed.
 
+The package editor's hotel-name, photo-alt-text, and seasonal-price snapshot
+fields are stored on each package version. `vercel-build` applies the schema
+before building. Versions created before price snapshots existed cannot recover
+their original prices; their previews use current active prices and identify
+that fallback. New versions and restored versions preserve their own prices.
+
 ## Other hosts
 
 For a long-running Node host:

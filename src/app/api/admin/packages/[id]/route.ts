@@ -91,8 +91,11 @@ export async function PUT(
         inclusions: data.inclusions,
         exclusions: data.exclusions,
         hotelTier: data.hotelTier,
+        hotelNames: data.hotelNames,
         itinerary: data.itinerary,
         photos: data.photos,
+        photoAltTexts: data.photoAltTexts,
+        seasonalPrices: data.seasonalPrices,
         mapCenter: data.mapCenter ?? undefined,
         authorId: session.user.id,
       },
@@ -159,8 +162,8 @@ export async function DELETE(
 
   const { id } = await params;
 
-  await db.$transaction(async (tx) => {
-    await tx.package.update({
+  const archived = await db.$transaction(async (tx) => {
+    const pkg = await tx.package.update({
       where: { id },
       data: {
         status: "ARCHIVED",
@@ -168,9 +171,13 @@ export async function DELETE(
       },
     });
     await tx.seasonalPrice.deleteMany({ where: { packageId: id, isActive: false } });
+    return pkg;
   });
 
   await logActivity(session.user.id, "archived", "package", id);
+  revalidatePath("/");
+  revalidatePath("/packages");
+  revalidatePath(`/packages/${archived.slug}`);
 
   return NextResponse.json({ success: true });
 }

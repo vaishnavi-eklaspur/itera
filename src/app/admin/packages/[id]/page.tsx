@@ -18,7 +18,10 @@ export default async function AdminPackageEditPage({
     include: {
       currentVersion: true,
       seasonalPrices: true,
-      versions: { orderBy: { versionNumber: "desc" }, take: 10 },
+      versions: {
+        orderBy: { versionNumber: "desc" },
+        include: { author: { select: { name: true } } },
+      },
     },
   });
 
@@ -31,6 +34,10 @@ export default async function AdminPackageEditPage({
         scheduledVersion: pkg.scheduledAt ? pkg.versions[0] ?? null : null,
         scheduledPrices: pkg.scheduledAt ? pkg.seasonalPrices.filter((price) => !price.isActive) : null,
         seasonalPrices: pkg.seasonalPrices.filter((price) => price.isActive),
+        versions: pkg.versions.map((version) => ({
+          ...version,
+          currentOf: version.id === pkg.currentVersionId ? { id: pkg.id } : null,
+        })),
       }))}
       readOnly={session.user.role === "CONSULTANT"}
     />

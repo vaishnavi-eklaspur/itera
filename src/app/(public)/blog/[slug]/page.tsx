@@ -211,7 +211,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                       <div>
                         <h3 className="font-medium text-stone-900 text-sm">{v.title}</h3>
                         <p className="text-xs text-stone-500 mt-0.5">{v.destination} · {v.days} Days</p>
-                        {price && <p className="text-sm font-semibold text-forest-700 mt-1">{formatPrice(price)}<span className="block text-xs font-normal text-stone-400">Per person, twin sharing</span></p>}
+                        {price && <p className="text-sm font-semibold text-forest-700 mt-1">{formatPrice(price)}<span className="block text-xs font-normal text-stone-400">{pkg.seasonalPrices[0]?.basis ?? "Per person, twin sharing"}</span></p>}
                       </div>
                     </Link>
                     <div className="flex gap-2 mt-4">

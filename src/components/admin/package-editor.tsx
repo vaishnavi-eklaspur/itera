@@ -68,10 +68,12 @@ type PackageData = {
     days: number;
     description: string;
     hotelTier: string;
+    hotelNames: string[];
     inclusions: string[];
     exclusions: string[];
     itinerary: ItineraryDay[];
     photos: string[];
+    photoAltTexts: string[];
   } | null;
   scheduledPrices: SeasonalPrice[] | null;
   currentVersion: {
@@ -80,13 +82,22 @@ type PackageData = {
     days: number;
     description: string;
     hotelTier: string;
+    hotelNames: string[];
     inclusions: string[];
     exclusions: string[];
     itinerary: ItineraryDay[];
     photos: string[];
+    photoAltTexts: string[];
   } | null;
   seasonalPrices: SeasonalPrice[];
-  versions: { id: string; versionNumber: number; title: string; createdAt: string }[];
+  versions: {
+    id: string;
+    versionNumber: number;
+    title: string;
+    createdAt: string;
+    author: { name: string | null };
+    currentOf?: { id: string } | null;
+  }[];
 } | null;
 
 export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; readOnly?: boolean }) {
@@ -98,6 +109,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
   const [destination, setDestination] = useState(v?.destination ?? "");
   const [description, setDescription] = useState(v?.description ?? "");
   const [hotelTier, setHotelTier] = useState(v?.hotelTier ?? "3-Star");
+  const [hotelNames, setHotelNames] = useState<string[]>(v?.hotelNames ?? [""]);
   const [inclusions, setInclusions] = useState<string[]>(v?.inclusions ?? [""]);
   const [exclusions, setExclusions] = useState<string[]>(v?.exclusions ?? [""]);
   const [itinerary, setItinerary] = useState<ItineraryDay[]>(
@@ -107,6 +119,9 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     pkg?.scheduledPrices ?? pkg?.seasonalPrices ?? [{ seasonName: "Regular", seasonStartMonth: 1, seasonEndMonth: 12, pricePerPerson: 0, basis: "Per person, twin sharing", gstInclusive: true }]
   );
   const [photos, setPhotos] = useState<string[]>(v?.photos ?? []);
+  const [photoAltTexts, setPhotoAltTexts] = useState<string[]>(
+    v?.photos.map((_, index) => v.photoAltTexts?.[index] ?? "") ?? []
+  );
   const [scheduledAt, setScheduledAt] = useState(pkg?.scheduledAt ? toLocalDateTimeValue(pkg.scheduledAt) : "");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -114,23 +129,21 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
   const [error, setError] = useState("");
   const [photoStatus, setPhotoStatus] = useState<Record<number, "valid" | "invalid">>({});
 
-  function getPhotoUrls() {
+  function getPhotoItems() {
     return photos
-      .map((photo) => photo.trim().replace(/&amp;/gi, "&").replace(/^["']|["']$/g, ""))
-      .filter(Boolean);
-  }
-
-  function validatePhotoUrls() {
-    const urls = getPhotoUrls();
-    return urls;
+      .map((photo, index) => ({
+        url: photo.trim().replace(/&amp;/gi, "&").replace(/^["']|["']$/g, ""),
+        altText: photoAltTexts[index]?.trim() ?? "",
+      }))
+      .filter((photo) => photo.url);
   }
 
   async function handleSave() {
     setSaving(true);
     setError("");
     try {
-      const photoUrls = validatePhotoUrls();
-      if (!photoUrls) return;
+      const photoItems = getPhotoItems();
+      const photoUrls = photoItems.map((photo) => photo.url);
       const body = {
         title, destination, days: itinerary.length, description, hotelTier,
         inclusions: inclusions.filter(Boolean),
@@ -138,6 +151,8 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
         itinerary,
         seasonalPrices: prices,
         photos: photoUrls,
+        hotelNames: hotelNames.map((hotel) => hotel.trim()).filter(Boolean),
+        photoAltTexts: photoItems.map((photo) => photo.altText),
         slug: isNew ? slugify(title) : pkg.slug,
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       };
@@ -185,8 +200,8 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     setPreviewing(true);
     setError("");
     try {
-      const photoUrls = validatePhotoUrls();
-      if (!photoUrls) return;
+      const photoItems = getPhotoItems();
+      const photoUrls = photoItems.map((photo) => photo.url);
       const body = {
         title, destination, days: itinerary.length, description, hotelTier,
         inclusions: inclusions.filter(Boolean),
@@ -195,6 +210,8 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
         seasonalPrices: prices,
         slug: isNew ? slugify(title) : pkg.slug,
         photos: photoUrls,
+        hotelNames: hotelNames.map((hotel) => hotel.trim()).filter(Boolean),
+        photoAltTexts: photoItems.map((photo) => photo.altText),
       };
       const res = await fetch("/api/admin/packages/preview", {
         method: "POST",
@@ -231,6 +248,31 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
       body: JSON.stringify({ versionId }),
     });
     if (res.ok) router.refresh();
+  }
+
+  function moveDay(index: number, offset: -1 | 1) {
+    const target = index + offset;
+    if (target < 0 || target >= itinerary.length) return;
+    setItinerary((current) => {
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next.map((day, dayIndex) => ({ ...day, day: dayIndex + 1 }));
+    });
+  }
+
+  function movePhoto(index: number, offset: -1 | 1) {
+    const target = index + offset;
+    if (target < 0 || target >= photos.length) return;
+    setPhotos((current) => {
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+    setPhotoAltTexts((current) => {
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   }
 
   function updateItineraryDay(index: number, field: string, value: string | number | string[]) {
@@ -330,6 +372,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                   </select>
                 </div>
               </div>
+              <ListEditor label="Hotel Names (optional)" items={hotelNames} onChange={setHotelNames} />
               <div>
                 <label className="text-sm text-stone-600 mb-1 block">Description</label>
                 <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500 resize-none" />
@@ -350,11 +393,19 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                 <div key={i} className="border border-stone-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-semibold text-forest-700">Day {day.day}</span>
-                    {itinerary.length > 1 && (
-                      <button onClick={() => removeDay(i)} className="text-stone-400 hover:text-red-500">
-                        <Trash2 className="w-4 h-4" />
+                    <div className="flex items-center gap-2">
+                      <button type="button" aria-label={`Move day ${day.day} up`} title="Move day up" disabled={i === 0} onClick={() => moveDay(i, -1)} className="text-stone-400 hover:text-stone-700 disabled:opacity-30">
+                        <ChevronUp className="w-4 h-4" />
                       </button>
-                    )}
+                      <button type="button" aria-label={`Move day ${day.day} down`} title="Move day down" disabled={i === itinerary.length - 1} onClick={() => moveDay(i, 1)} className="text-stone-400 hover:text-stone-700 disabled:opacity-30">
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      {itinerary.length > 1 && (
+                        <button type="button" aria-label={`Remove day ${day.day}`} onClick={() => removeDay(i)} className="text-stone-400 hover:text-red-500">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <input placeholder="Title" value={day.title} onChange={(e) => updateItineraryDay(i, "title", e.target.value)} className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest-500" />
@@ -478,6 +529,38 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                     }}
                     className="w-full px-2 py-1.5 border border-stone-200 rounded text-sm"
                   />
+                  <label className="block text-xs text-stone-500">
+                    Pricing basis
+                    <select
+                      value={price.basis}
+                      onChange={(e) => {
+                        const next = [...prices];
+                        next[i] = { ...next[i], basis: e.target.value };
+                        setPrices(next);
+                      }}
+                      className="mt-1 w-full rounded border border-stone-200 px-2 py-1.5 text-sm"
+                    >
+                      {!["Per person, twin sharing", "Per person, single", "Per person, triple sharing"].includes(price.basis) && (
+                        <option value={price.basis}>{price.basis}</option>
+                      )}
+                      <option value="Per person, twin sharing">Per person, twin sharing</option>
+                      <option value="Per person, single">Per person, single</option>
+                      <option value="Per person, triple sharing">Per person, triple sharing</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-stone-600">
+                    <input
+                      type="checkbox"
+                      checked={price.gstInclusive}
+                      onChange={(e) => {
+                        const next = [...prices];
+                        next[i] = { ...next[i], gstInclusive: e.target.checked };
+                        setPrices(next);
+                      }}
+                      className="rounded border-stone-300 text-forest-700 focus:ring-forest-500"
+                    />
+                    Price includes GST
+                  </label>
                 </div>
               ))}
             </div>
@@ -494,14 +577,31 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                   <div key={ver.id} className="flex items-center justify-between text-sm">
                     <div>
                       <span className="font-medium text-stone-700">v{ver.versionNumber}</span>
-                      <p className="text-xs text-stone-400">{new Date(ver.createdAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-stone-400">
+                        {new Date(ver.createdAt).toLocaleString()} · {ver.author?.name || "Unknown author"}
+                        {ver.currentOf ? " · Live" : ""}
+                      </p>
                     </div>
-                    <button
-                      onClick={() => handleRestoreVersion(ver.id)}
-                      className="text-xs text-forest-600 hover:text-forest-700"
-                    >
-                      Restore
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {pkg && (
+                        <a
+                          href={`/api/admin/packages/${pkg.id}/versions/${ver.id}/preview`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-forest-600 hover:text-forest-700"
+                        >
+                          Preview
+                        </a>
+                      )}
+                      {!readOnly && (
+                        <button
+                          onClick={() => handleRestoreVersion(ver.id)}
+                          className="text-xs text-forest-600 hover:text-forest-700"
+                        >
+                          Restore
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -512,7 +612,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
           <section className="bg-white rounded-xl border border-stone-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-stone-900">Photos</h2>
-              <button onClick={() => setPhotos(prev => [...prev, ""])} className="text-sm text-forest-600 hover:text-forest-700">
+              <button onClick={() => { setPhotos((prev) => [...prev, ""]); setPhotoAltTexts((prev) => [...prev, ""]); }} className="text-sm text-forest-600 hover:text-forest-700">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
@@ -551,10 +651,18 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                       className="flex-1 px-2 py-1.5 border border-stone-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-forest-500"
                     />
                     <div className="flex flex-col gap-0.5 shrink-0">
-                      <button disabled={i === 0} onClick={() => { const next = [...photos]; [next[i - 1], next[i]] = [next[i], next[i - 1]]; setPhotos(next); }} className="text-stone-400 hover:text-stone-600 disabled:opacity-30"><ChevronUp className="w-3.5 h-3.5" /></button>
-                      <button disabled={i === photos.length - 1} onClick={() => { const next = [...photos]; [next[i], next[i + 1]] = [next[i + 1], next[i]]; setPhotos(next); }} className="text-stone-400 hover:text-stone-600 disabled:opacity-30"><ChevronDown className="w-3.5 h-3.5" /></button>
+                      <button type="button" aria-label={`Move photo ${i + 1} up`} disabled={i === 0} onClick={() => movePhoto(i, -1)} className="text-stone-400 hover:text-stone-600 disabled:opacity-30"><ChevronUp className="w-3.5 h-3.5" /></button>
+                      <button type="button" aria-label={`Move photo ${i + 1} down`} disabled={i === photos.length - 1} onClick={() => movePhoto(i, 1)} className="text-stone-400 hover:text-stone-600 disabled:opacity-30"><ChevronDown className="w-3.5 h-3.5" /></button>
                     </div>
-                    <button onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))} className="text-stone-400 hover:text-red-500 shrink-0 mt-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button type="button" aria-label={`Remove photo ${i + 1}`} onClick={() => { setPhotos((prev) => prev.filter((_, j) => j !== i)); setPhotoAltTexts((prev) => prev.filter((_, j) => j !== i)); }} className="text-stone-400 hover:text-red-500 shrink-0 mt-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <input
+                      type="text"
+                      aria-label={`Alt text for photo ${i + 1}`}
+                      placeholder="Describe this photo for accessibility"
+                      value={photoAltTexts[i] ?? ""}
+                      onChange={(e) => setPhotoAltTexts((current) => current.map((alt, index) => index === i ? e.target.value : alt))}
+                      className="flex-1 px-2 py-1.5 border border-stone-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-forest-500"
+                    />
                   </div>
                 ))}
                 {photos.filter(Boolean).length > 0 && (

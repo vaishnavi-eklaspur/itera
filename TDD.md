@@ -151,10 +151,14 @@ Key screens:
 - **Package list/detail:** mobile-first cards with URL-backed keyword,
   destination, duration, budget, hotel-tier and season filters; price, duration
   and popularity sorting; plus itinerary, map, gallery, prices and estimator.
-- **Package editor:** structured itinerary, seasonal price rows, photo URLs,
-  preview and version history.
+- **Package editor:** reorderable itinerary, hotel tier and names, editable
+  seasonal basis/GST, photo URLs with alt text, unsaved and per-version
+  previews with versioned price snapshots, and full version history with
+  author and restore actions.
 - **Enquiry inbox/detail:** original message beside editable extracted fields,
-  suggestions, draft reply, assignment, notes and consent status.
+  suggestions, draft reply, assignment, notes and consent status. The inbox
+  supports server-side search across contact details, message, and package
+  title, plus inclusive creation-date range filters alongside status/assignee.
 - **Blog editor:** visual `contentEditable` surface with formatting controls;
   saved content remains Markdown-compatible.
 - **Quote page/PDF:** verified package price, basis, GST, validity and CTA.

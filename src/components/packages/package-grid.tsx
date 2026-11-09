@@ -20,7 +20,7 @@ type Package = {
     hotelTier: string;
     photos?: string[];
   } | null;
-  seasonalPrices: { pricePerPerson: number; seasonName: string }[];
+  seasonalPrices: { pricePerPerson: number; seasonName: string; basis: string; gstInclusive: boolean }[];
   _count: { enquiries: number };
 };
 
@@ -295,7 +295,7 @@ export function PackageGrid({
                       <p className="text-lg font-display font-bold text-forest-700">
                         {formatPrice(minPrice)}
                       </p>
-                      <span className="text-[10px] text-stone-400">Per person, twin sharing</span>
+                      <span className="text-[10px] text-stone-400">{pkg.seasonalPrices[0]?.basis ?? "Per person, twin sharing"}</span>
                     </div>
                     <span className="text-xs text-forest-600 font-medium group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
                       View Details <ArrowRight className="w-3.5 h-3.5" />

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { authorizeRole } from "@/lib/roles";
 import { revalidatePath } from "next/cache";
+import { seasonalPricesSchema } from "@/lib/validations";
 
 export async function GET(
   req: NextRequest,
@@ -34,9 +35,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { versionId } = await req.json();
 
-  const sourceVersion = await db.packageVersion.findUnique({ where: { id: versionId } });
+  const sourceVersion = await db.packageVersion.findUnique({
+    where: { id: versionId },
+    include: { package: { include: { seasonalPrices: { where: { isActive: true } } } } },
+  });
   if (!sourceVersion || sourceVersion.packageId !== id) {
     return NextResponse.json({ error: "Version not found" }, { status: 404 });
+  }
+
+  const sourcePrices = sourceVersion.seasonalPrices === null
+    ? sourceVersion.package.seasonalPrices.map((price) => ({
+        seasonName: price.seasonName,
+        seasonStartMonth: price.seasonStartMonth,
+        seasonEndMonth: price.seasonEndMonth,
+        pricePerPerson: price.pricePerPerson,
+        basis: price.basis,
+        gstInclusive: price.gstInclusive,
+      }))
+    : sourceVersion.seasonalPrices;
+  const parsedPrices = seasonalPricesSchema.safeParse(sourcePrices);
+  if (!parsedPrices.success) {
+    return NextResponse.json({ error: "Saved version pricing is invalid and cannot be restored." }, { status: 500 });
   }
 
   const latest = await db.packageVersion.findFirst({
@@ -58,8 +77,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         inclusions: sourceVersion.inclusions,
         exclusions: sourceVersion.exclusions,
         hotelTier: sourceVersion.hotelTier,
+        hotelNames: sourceVersion.hotelNames,
         itinerary: sourceVersion.itinerary as object,
         photos: sourceVersion.photos,
+        photoAltTexts: sourceVersion.photoAltTexts,
+        seasonalPrices: parsedPrices.data,
         mapCenter: sourceVersion.mapCenter as object,
         authorId: session.user.id,
       },
@@ -72,12 +94,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         scheduledAt: null,
       },
     });
-    await tx.seasonalPrice.deleteMany({ where: { packageId: id, isActive: false } });
+    await tx.seasonalPrice.deleteMany({ where: { packageId: id } });
+    await tx.seasonalPrice.createMany({
+      data: parsedPrices.data.map((price) => ({
+        packageId: id,
+        seasonName: price.seasonName,
+        seasonStartMonth: price.seasonStartMonth,
+        seasonEndMonth: price.seasonEndMonth,
+        pricePerPerson: price.pricePerPerson,
+        basis: price.basis,
+        gstInclusive: price.gstInclusive,
+      })),
+    });
 
     return v;
   });
 
   revalidatePath("/");
   revalidatePath("/packages");
+  revalidatePath(`/packages/${sourceVersion.package.slug}`);
   return NextResponse.json({ success: true, versionNumber: restored.versionNumber });
 }

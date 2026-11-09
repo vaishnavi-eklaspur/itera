@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
-export function PhotoGallery({ photos }: { photos: string[] }) {
+export function PhotoGallery({ photos, altTexts = [] }: { photos: string[]; altTexts?: string[] }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (photos.length === 0) return null;
@@ -22,7 +22,7 @@ export function PhotoGallery({ photos }: { photos: string[] }) {
               onClick={() => setLightboxIndex(i)}
               className={`relative aspect-[4/3] overflow-hidden group ${i === 0 ? "col-span-2 row-span-2 aspect-auto" : ""}`}
             >
-              <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <img src={url} alt={altTexts[i] || `Photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
               {i === 5 && remaining > 0 && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <span className="text-white text-lg font-semibold">+{remaining} more</span>
@@ -58,7 +58,7 @@ export function PhotoGallery({ photos }: { photos: string[] }) {
 
           <img
             src={photos[lightboxIndex]}
-            alt={`Photo ${lightboxIndex + 1}`}
+            alt={altTexts[lightboxIndex] || `Photo ${lightboxIndex + 1}`}
             onClick={(e) => e.stopPropagation()}
             className="max-h-[85vh] max-w-[90vw] object-contain rounded"
             onError={(e) => { (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23374151' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' fill='%239ca3af' font-size='14' text-anchor='middle' dy='.3em'%3EImage unavailable%3C/text%3E%3C/svg%3E"; }}

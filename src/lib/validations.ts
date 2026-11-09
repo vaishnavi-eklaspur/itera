@@ -70,8 +70,10 @@ export const packageFormSchema = z.object({
   inclusions: z.array(z.string()),
   exclusions: z.array(z.string()),
   hotelTier: z.string().min(1),
+  hotelNames: z.array(z.string().trim().max(200)).default([]),
   itinerary: z.array(itineraryDaySchema),
   photos: z.array(z.string()),
+  photoAltTexts: z.array(z.string().trim().max(500)).default([]),
   mapCenter: z.object({ lat: z.number(), lng: z.number(), zoom: z.number() }).optional(),
   seasonalPrices: seasonalPricesSchema,
 });

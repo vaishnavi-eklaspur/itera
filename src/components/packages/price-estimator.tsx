@@ -10,6 +10,8 @@ type SeasonalPrice = {
   seasonStartMonth: number;
   seasonEndMonth: number;
   pricePerPerson: number;
+  basis: string;
+  gstInclusive: boolean;
 };
 
 export function PriceEstimator({ prices }: { prices: SeasonalPrice[] }) {
@@ -24,6 +26,8 @@ export function PriceEstimator({ prices }: { prices: SeasonalPrice[] }) {
       seasonName: price.seasonName,
       perPerson: price.pricePerPerson,
       total: price.pricePerPerson * travellers,
+      basis: price.basis,
+      gstInclusive: price.gstInclusive,
     };
   }, [month, travellers, prices]);
 
@@ -68,7 +72,7 @@ export function PriceEstimator({ prices }: { prices: SeasonalPrice[] }) {
           <p className="text-2xl font-bold text-forest-700">{formatPrice(estimate.total)}</p>
           <p className="text-xs text-stone-400">Total estimated price</p>
           <p className="text-xs text-stone-400">
-            {formatPrice(estimate.perPerson)} per person, twin sharing x {travellers} traveller{travellers !== 1 ? "s" : ""}
+            {formatPrice(estimate.perPerson)} · {estimate.basis} · GST {estimate.gstInclusive ? "included" : "additional"} × {travellers} traveller{travellers !== 1 ? "s" : ""}
           </p>
         </div>
       )}

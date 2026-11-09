@@ -54,24 +54,24 @@ enum DataRightsRequestStatus {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  phone         String?
-  passwordHash  String
-  role          Role     @default(TRAVELLER)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  role         Role     @default(TRAVELLER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  enquiries         Enquiry[]       @relation("EnquirySubmitter")
-  assignedEnquiries Enquiry[]       @relation("EnquiryAssignee")
-  enquiryNotes      EnquiryNote[]
-  enquiryReplies    EnquiryReply[]
-  packageVersions   PackageVersion[]
-  blogPosts         BlogPost[]
-  quotes            Quote[]
-  activityLogs      ActivityLog[]
-  dataRightsRequests DataRightsRequest[] @relation("DataRightsRequester")
+  enquiries                  Enquiry[]           @relation("EnquirySubmitter")
+  assignedEnquiries          Enquiry[]           @relation("EnquiryAssignee")
+  enquiryNotes               EnquiryNote[]
+  enquiryReplies             EnquiryReply[]
+  packageVersions            PackageVersion[]
+  blogPosts                  BlogPost[]
+  quotes                     Quote[]
+  activityLogs               ActivityLog[]
+  dataRightsRequests         DataRightsRequest[] @relation("DataRightsRequester")
   resolvedDataRightsRequests DataRightsRequest[] @relation("DataRightsResolver")
 }
 
@@ -84,7 +84,7 @@ model Package {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  currentVersion PackageVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  currentVersion PackageVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id])
   versions       PackageVersion[] @relation("PackageVersions")
   seasonalPrices SeasonalPrice[]
   enquiries      Enquiry[]
@@ -92,39 +92,42 @@ model Package {
 }
 
 model PackageVersion {
-  id            String   @id @default(cuid())
-  packageId     String
-  versionNumber Int
-  title         String
-  destination   String
-  days          Int
-  description   String
-  inclusions    String[]
-  exclusions    String[]
-  hotelTier     String
-  itinerary     Json
-  photos        String[]
-  mapCenter     Json?
-  authorId      String
-  createdAt     DateTime @default(now())
+  id             String   @id @default(cuid())
+  packageId      String
+  versionNumber  Int
+  title          String
+  destination    String
+  days           Int
+  description    String
+  inclusions     String[]
+  exclusions     String[]
+  hotelTier      String
+  hotelNames     String[] @default([])
+  itinerary      Json
+  photos         String[]
+  photoAltTexts  String[] @default([])
+  seasonalPrices Json?
+  mapCenter      Json?
+  authorId       String
+  createdAt      DateTime @default(now())
 
-  package        Package @relation("PackageVersions", fields: [packageId], references: [id], onDelete: Cascade)
-  currentOf      Package? @relation("CurrentVersion")
-  author         User    @relation(fields: [authorId], references: [id])
+  package   Package  @relation("PackageVersions", fields: [packageId], references: [id], onDelete: Cascade)
+  currentOf Package? @relation("CurrentVersion")
+  author    User     @relation(fields: [authorId], references: [id])
 
   @@index([packageId, versionNumber])
 }
 
 model SeasonalPrice {
-  id              String  @id @default(cuid())
-  packageId       String
-  seasonName      String
+  id               String  @id @default(cuid())
+  packageId        String
+  seasonName       String
   seasonStartMonth Int
   seasonEndMonth   Int
-  pricePerPerson  Int
-  basis           String  @default("Per person, twin sharing")
-  gstInclusive    Boolean @default(true)
-  isActive        Boolean @default(true)
+  pricePerPerson   Int
+  basis            String  @default("Per person, twin sharing")
+  gstInclusive     Boolean @default(true)
+  isActive         Boolean @default(true)
 
   package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
@@ -132,41 +135,41 @@ model SeasonalPrice {
 }
 
 model Enquiry {
-  id             String        @id @default(cuid())
-  packageId      String?
-  userId         String?
-  name           String
-  email          String
-  phone          String?
-  message        String
-  travelDates    String?
-  adults         Int?
-  children       Int?
-  budget         String?
-  channel        EnquiryChannel @default(WEB)
-  privacyConsentAt DateTime?
-  privacyConsentSource String?
-  privacyConsentVersion String?
-  privacyConsentWithdrawnAt DateTime?
-  whatsappConsentAt DateTime?
-  whatsappConsentSource String?
-  whatsappConsentVersion String?
+  id                         String         @id @default(cuid())
+  packageId                  String?
+  userId                     String?
+  name                       String
+  email                      String
+  phone                      String?
+  message                    String
+  travelDates                String?
+  adults                     Int?
+  children                   Int?
+  budget                     String?
+  channel                    EnquiryChannel @default(WEB)
+  privacyConsentAt           DateTime?
+  privacyConsentSource       String?
+  privacyConsentVersion      String?
+  privacyConsentWithdrawnAt  DateTime?
+  whatsappConsentAt          DateTime?
+  whatsappConsentSource      String?
+  whatsappConsentVersion     String?
   whatsappConsentWithdrawnAt DateTime?
-  status         EnquiryStatus @default(NEW)
-  assignedToId   String?
-  aiExtracted    Json?
-  aiSuggestions  Json?
-  aiDraftReply   String?
-  autoAckSentAt  DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  status                     EnquiryStatus  @default(NEW)
+  assignedToId               String?
+  aiExtracted                Json?
+  aiSuggestions              Json?
+  aiDraftReply               String?
+  autoAckSentAt              DateTime?
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
 
-  package    Package? @relation(fields: [packageId], references: [id])
-  user       User?    @relation("EnquirySubmitter", fields: [userId], references: [id])
-  assignedTo User?    @relation("EnquiryAssignee", fields: [assignedToId], references: [id])
-  notes      EnquiryNote[]
-  replies    EnquiryReply[]
-  quotes     Quote[]
+  package            Package?            @relation(fields: [packageId], references: [id])
+  user               User?               @relation("EnquirySubmitter", fields: [userId], references: [id])
+  assignedTo         User?               @relation("EnquiryAssignee", fields: [assignedToId], references: [id])
+  notes              EnquiryNote[]
+  replies            EnquiryReply[]
+  quotes             Quote[]
   dataRightsRequests DataRightsRequest[]
 
   @@index([status])
@@ -175,11 +178,11 @@ model Enquiry {
 }
 
 model EnquiryNote {
-  id         String   @id @default(cuid())
-  enquiryId  String
-  authorId   String
-  content    String
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  enquiryId String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
 
   enquiry Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
   author  User    @relation(fields: [authorId], references: [id])
@@ -198,20 +201,20 @@ model EnquiryReply {
 }
 
 model DataRightsRequest {
-  id            String                 @id @default(cuid())
-  userId        String?
-  enquiryId     String?
-  email         String
-  type          DataRightsRequestType
-  details       String?
-  status        DataRightsRequestStatus @default(PENDING)
-  requestedAt   DateTime               @default(now())
-  resolvedAt    DateTime?
-  resolvedById  String?
+  id             String                  @id @default(cuid())
+  userId         String?
+  enquiryId      String?
+  email          String
+  type           DataRightsRequestType
+  details        String?
+  status         DataRightsRequestStatus @default(PENDING)
+  requestedAt    DateTime                @default(now())
+  resolvedAt     DateTime?
+  resolvedById   String?
   resolutionNote String?
 
-  requester User? @relation("DataRightsRequester", fields: [userId], references: [id], onDelete: SetNull)
-  resolver  User? @relation("DataRightsResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  requester User?    @relation("DataRightsRequester", fields: [userId], references: [id], onDelete: SetNull)
+  resolver  User?    @relation("DataRightsResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
   enquiry   Enquiry? @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
 
   @@index([status, requestedAt])
@@ -229,21 +232,21 @@ model PreviewCache {
 }
 
 model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  excerpt     String
-  content     String
-  coverImage  String?
-  category    String
-  tags        String[]
-  seoTitle    String?
-  seoDescription String?
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  title             String
+  excerpt           String
+  content           String
+  coverImage        String?
+  category          String
+  tags              String[]
+  seoTitle          String?
+  seoDescription    String?
   relatedPackageIds String[]
-  published   Boolean  @default(false)
-  authorId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  published         Boolean  @default(false)
+  authorId          String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   author User @relation(fields: [authorId], references: [id])
 
@@ -252,40 +255,40 @@ model BlogPost {
 }
 
 model Quote {
-  id          String   @id @default(cuid())
-  token       String   @unique
-  packageId   String
-  enquiryId   String?
-  generatedByAI Boolean  @default(false)
-  travellers  Int
-  travelDate  String?
+  id             String   @id @default(cuid())
+  token          String   @unique
+  packageId      String
+  enquiryId      String?
+  generatedByAI  Boolean  @default(false)
+  travellers     Int
+  travelDate     String?
   pricePerPerson Int
-  basis       String   @default("Per person, twin sharing")
-  gstInclusive Boolean  @default(true)
-  gstRate      Float    @default(18)
-  totalPrice Int
-  inclusions  String[]
-  exclusions  String[]
-  notes       String?
-  validUntil  DateTime
-  authorId    String
-  createdAt   DateTime @default(now())
+  basis          String   @default("Per person, twin sharing")
+  gstInclusive   Boolean  @default(true)
+  gstRate        Float    @default(18)
+  totalPrice     Int
+  inclusions     String[]
+  exclusions     String[]
+  notes          String?
+  validUntil     DateTime
+  authorId       String
+  createdAt      DateTime @default(now())
 
-  package Package @relation(fields: [packageId], references: [id])
+  package Package  @relation(fields: [packageId], references: [id])
   enquiry Enquiry? @relation(fields: [enquiryId], references: [id])
-  author  User    @relation(fields: [authorId], references: [id])
+  author  User     @relation(fields: [authorId], references: [id])
 
   @@index([token])
 }
 
 model ActivityLog {
-  id         String   @id @default(cuid())
-  userId     String
-  action     String
-  entity     String
-  entityId   String?
-  details    String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 

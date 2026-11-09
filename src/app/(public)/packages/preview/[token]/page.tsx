@@ -4,6 +4,7 @@ import { Footer } from "@/components/layout/footer";
 import { formatPrice } from "@/lib/utils";
 import { ItinerarySection } from "@/components/packages/itinerary-section";
 import { PriceEstimator } from "@/components/packages/price-estimator";
+import { PhotoGallery } from "@/components/packages/photo-gallery";
 import { Check, X as XIcon, Calendar, Star, Users, MapPin, AlertTriangle } from "lucide-react";
 import { db } from "@/lib/db";
 import type { Metadata } from "next";
@@ -35,8 +36,12 @@ export default async function PreviewPage({
     days: number;
     description: string;
     hotelTier: string;
+    hotelNames?: string[];
     inclusions: string[];
     exclusions: string[];
+    photos?: string[];
+    photoAltTexts?: string[];
+    versionPreview?: { versionNumber: number; createdAt: string; pricingSnapshotAvailable: boolean };
     itinerary: { day: number; title: string; location: string; lat: number; lng: number; description: string; activities: string[] }[];
     seasonalPrices: { seasonName: string; seasonStartMonth: number; seasonEndMonth: number; pricePerPerson: number; basis: string; gstInclusive: boolean }[];
   };
@@ -54,7 +59,11 @@ export default async function PreviewPage({
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center gap-2 text-amber-800 text-sm font-medium">
           <AlertTriangle className="w-4 h-4" />
-          Preview Mode — This package has not been saved or published.
+          {data.versionPreview
+            ? data.versionPreview.pricingSnapshotAvailable
+              ? `Version ${data.versionPreview.versionNumber} preview — live content is unchanged; pricing is from this saved version.`
+              : `Version ${data.versionPreview.versionNumber} preview — live content is unchanged; this legacy version has no saved pricing, so current active prices are shown.`
+            : "Preview Mode — This package has not been saved or published."}
         </div>
       </div>
 
@@ -87,6 +96,18 @@ export default async function PreviewPage({
               <p className="text-stone-600 leading-relaxed">{data.description}</p>
             </section>
 
+            {data.hotelNames?.length ? (
+              <section>
+                <h2 className="text-xl font-semibold text-stone-900 mb-3">Hotels</h2>
+                <ul className="flex flex-wrap gap-2">
+                  {data.hotelNames.map((hotel) => (
+                    <li key={hotel} className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-600">{hotel}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+            {data.photos?.length ? <PhotoGallery photos={data.photos} altTexts={data.photoAltTexts} /> : null}
+
             <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { icon: Calendar, label: "Duration", value: `${durationDays} Days` },
@@ -112,8 +133,8 @@ export default async function PreviewPage({
                     <tr className="border-b border-stone-200">
                       <th className="text-left py-3 text-stone-500 font-medium">Season</th>
                       <th className="text-left py-3 text-stone-500 font-medium">Months</th>
-                      <th className="text-right py-3 text-stone-500 font-medium">Price per person, twin sharing</th>
-                      <th className="text-right py-3 text-stone-500 font-medium">Basis</th>
+                      <th className="text-right py-3 text-stone-500 font-medium">Price per person</th>
+                      <th className="text-right py-3 text-stone-500 font-medium">Basis / GST</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -128,9 +149,9 @@ export default async function PreviewPage({
                           <td className="py-3 text-stone-500">{range}</td>
                           <td className="py-3 text-right font-semibold text-forest-700">
                             {formatPrice(price.pricePerPerson)}
-                            <span className="block text-[10px] font-normal text-stone-400">Per person, twin sharing</span>
+                            <span className="block text-[10px] font-normal text-stone-400">{price.basis}</span>
                           </td>
-                          <td className="py-3 text-right text-stone-400 text-xs">{price.basis}{price.gstInclusive ? ", GST incl." : ""}</td>
+                          <td className="py-3 text-right text-stone-400 text-xs">{price.gstInclusive ? "GST inclusive" : "GST additional"}</td>
                         </tr>
                       );
                     })}
@@ -173,7 +194,7 @@ export default async function PreviewPage({
                 <div className="text-center mb-4">
                   <span className="text-xs text-stone-400">Starting from</span>
                   <p className="text-2xl font-bold text-forest-700">{formatPrice(minPrice)}</p>
-                  <span className="text-xs text-stone-400">Per person, twin sharing</span>
+                  <span className="text-xs text-stone-400">{data.seasonalPrices[0]?.basis ?? "Per person, twin sharing"}</span>
                 </div>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center text-sm text-amber-700">
                   Preview only — enquiry form disabled
