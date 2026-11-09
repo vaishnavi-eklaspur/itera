@@ -61,8 +61,9 @@ type PackageData = {
   id: string;
   slug: string;
   status: string;
+  draftVersionId: string | null;
   scheduledAt: string | null;
-  scheduledVersion: {
+  draftVersion: {
     title: string;
     destination: string;
     days: number;
@@ -75,7 +76,7 @@ type PackageData = {
     photos: string[];
     photoAltTexts: string[];
   } | null;
-  scheduledPrices: SeasonalPrice[] | null;
+  draftPrices: SeasonalPrice[] | null;
   currentVersion: {
     title: string;
     destination: string;
@@ -97,13 +98,14 @@ type PackageData = {
     createdAt: string;
     author: { name: string | null };
     currentOf?: { id: string } | null;
+    draftOf?: { id: string } | null;
   }[];
 } | null;
 
 export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; readOnly?: boolean }) {
   const router = useRouter();
   const isNew = !pkg;
-  const v = pkg?.scheduledVersion ?? pkg?.currentVersion;
+  const v = pkg?.draftVersion ?? pkg?.currentVersion;
 
   const [title, setTitle] = useState(v?.title ?? "");
   const [destination, setDestination] = useState(v?.destination ?? "");
@@ -116,7 +118,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
     v?.itinerary ?? [{ day: 1, title: "", location: "", lat: 10.0, lng: 76.0, description: "", activities: [] }]
   );
   const [prices, setPrices] = useState<SeasonalPrice[]>(
-    pkg?.scheduledPrices ?? pkg?.seasonalPrices ?? [{ seasonName: "Regular", seasonStartMonth: 1, seasonEndMonth: 12, pricePerPerson: 0, basis: "Per person, twin sharing", gstInclusive: true }]
+    pkg?.draftPrices ?? pkg?.seasonalPrices ?? [{ seasonName: "Regular", seasonStartMonth: 1, seasonEndMonth: 12, pricePerPerson: 0, basis: "Per person, twin sharing", gstInclusive: true }]
   );
   const [photos, setPhotos] = useState<string[]>(v?.photos ?? []);
   const [photoAltTexts, setPhotoAltTexts] = useState<string[]>(
@@ -309,14 +311,14 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
               <button onClick={handleDuplicate} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50">
                 <Copy className="w-4 h-4" /> Duplicate
               </button>
-              {(pkg.status !== "PUBLISHED" || pkg.scheduledAt) && (
+              {(pkg.status !== "PUBLISHED" || pkg.draftVersionId !== null) && (
                 <button
                   onClick={handlePublish}
                   disabled={publishing}
                   className="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                 >
                   {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  {pkg.scheduledAt ? "Publish Now" : "Publish"}
+                  {pkg.scheduledAt ? "Publish Now" : pkg.draftVersionId ? "Publish Draft" : "Publish"}
                 </button>
               )}
             </>
@@ -336,13 +338,18 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
               className="flex items-center gap-1.5 px-4 py-2 text-sm bg-forest-700 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {isNew ? "Create" : "Save (New Version)"}
+              {isNew ? "Create Draft" : scheduledAt ? "Save Schedule" : "Save as Draft"}
             </button>
           )}
         </div>
       </div>
 
       {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>}
+      {pkg?.draftVersionId && (
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Unpublished changes are saved as a draft. Public package content and prices remain unchanged until you publish this draft.
+        </p>
+      )}
 
       <fieldset disabled={readOnly} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main form */}
@@ -580,6 +587,7 @@ export function PackageEditor({ pkg, readOnly = false }: { pkg: PackageData; rea
                       <p className="text-xs text-stone-400">
                         {new Date(ver.createdAt).toLocaleString()} · {ver.author?.name || "Unknown author"}
                         {ver.currentOf ? " · Live" : ""}
+                        {ver.draftOf ? " · Draft" : ""}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">

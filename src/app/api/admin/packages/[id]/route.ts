@@ -32,10 +32,16 @@ export async function GET(
     return NextResponse.json({ error: "Package not found" }, { status: 404 });
   }
 
+  const draftVersion = pkg.draftVersionId
+    ? pkg.versions.find((version) => version.id === pkg.draftVersionId) ?? null
+    : pkg.scheduledAt
+      ? pkg.versions[0] ?? null
+      : null;
+
   return NextResponse.json({
     ...pkg,
-    scheduledVersion: pkg.scheduledAt ? pkg.versions[0] ?? null : null,
-    scheduledPrices: pkg.scheduledAt ? pkg.seasonalPrices.filter((price) => !price.isActive) : null,
+    draftVersion,
+    draftPrices: draftVersion ? pkg.seasonalPrices.filter((price) => !price.isActive) : null,
     seasonalPrices: pkg.seasonalPrices.filter((price) => price.isActive),
   });
 }
@@ -74,8 +80,8 @@ export async function PUT(
   if (scheduledAt && data.seasonalPrices.length === 0) {
     return NextResponse.json({ error: "A scheduled package needs at least one seasonal price." }, { status: 400 });
   }
-  if (scheduledAt && data.slug !== pkg.slug) {
-    return NextResponse.json({ error: "A package URL slug cannot be changed in a scheduled edit." }, { status: 400 });
+  if (data.slug !== pkg.slug) {
+    return NextResponse.json({ error: "A package URL slug cannot be changed while editing." }, { status: 400 });
   }
   const nextVersionNumber = (pkg.versions[0]?.versionNumber || 0) + 1;
 
@@ -101,54 +107,32 @@ export async function PUT(
       },
     });
 
-    const isScheduled = scheduledAt !== null;
     await tx.package.update({
       where: { id },
       data: {
-        slug: data.slug,
         scheduledAt,
-        ...(!isScheduled ? { currentVersionId: version.id } : {}),
+        draftVersionId: version.id,
       },
     });
 
-    if (isScheduled) {
-      await tx.seasonalPrice.deleteMany({ where: { packageId: id, isActive: false } });
-      await tx.seasonalPrice.createMany({
-        data: data.seasonalPrices.map((price) => ({
-          packageId: id,
-          seasonName: price.seasonName,
-          seasonStartMonth: price.seasonStartMonth,
-          seasonEndMonth: price.seasonEndMonth,
-          pricePerPerson: price.pricePerPerson,
-          basis: price.basis,
-          gstInclusive: price.gstInclusive,
-          isActive: false,
-        })),
-      });
-    } else {
-      await tx.seasonalPrice.deleteMany({ where: { packageId: id } });
-      await tx.seasonalPrice.createMany({
-        data: data.seasonalPrices.map((price) => ({
-          packageId: id,
-          seasonName: price.seasonName,
-          seasonStartMonth: price.seasonStartMonth,
-          seasonEndMonth: price.seasonEndMonth,
-          pricePerPerson: price.pricePerPerson,
-          basis: price.basis,
-          gstInclusive: price.gstInclusive,
-        })),
-      });
-    }
+    await tx.seasonalPrice.deleteMany({ where: { packageId: id, isActive: false } });
+    await tx.seasonalPrice.createMany({
+      data: data.seasonalPrices.map((price) => ({
+        packageId: id,
+        seasonName: price.seasonName,
+        seasonStartMonth: price.seasonStartMonth,
+        seasonEndMonth: price.seasonEndMonth,
+        pricePerPerson: price.pricePerPerson,
+        basis: price.basis,
+        gstInclusive: price.gstInclusive,
+        isActive: false,
+      })),
+    });
   });
 
-  await logActivity(session.user.id, "updated", "package", id, `v${nextVersionNumber}`);
-  if (scheduledAt === null) {
-    revalidatePath("/");
-    revalidatePath("/packages");
-    revalidatePath(`/packages/${data.slug}`);
-  }
+  await logActivity(session.user.id, scheduledAt ? "scheduled" : "saved draft", "package", id, `v${nextVersionNumber}`);
 
-  return NextResponse.json({ success: true, versionNumber: nextVersionNumber });
+  return NextResponse.json({ success: true, versionNumber: nextVersionNumber, scheduledAt });
 }
 
 export async function DELETE(
@@ -167,6 +151,7 @@ export async function DELETE(
       where: { id },
       data: {
         status: "ARCHIVED",
+        draftVersionId: null,
         scheduledAt: null,
       },
     });

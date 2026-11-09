@@ -127,9 +127,12 @@ keeps the enquiry usable and visibly leaves staff in control.
 
 ### Package publishing
 
-An Admin or Editor creates a package, adds itinerary and prices, previews it,
-then publishes or schedules it. Each edit creates a version. Public routes read
-the current published version only; preview uses a short-lived preview token.
+An Admin or Editor creates a package, adds itinerary and prices, and previews
+it. Saving an edit creates a separate draft version and inactive staged prices;
+the live version remains unchanged until explicit publication or its schedule
+is due. Public routes read the current published version only; preview uses a
+short-lived preview token. Restoring history stages the restored version as a
+draft rather than changing the public package immediately.
 
 ### Quotes
 

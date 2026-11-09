@@ -32,6 +32,7 @@ describe("scheduled package publication", () => {
       id: "package-1",
       slug: "kerala-tour",
       currentVersionId: "live-version",
+      draftVersionId: "scheduled-version",
       scheduledAt: new Date("2026-11-09T10:00:00.000Z"),
       versions: [{ id: "scheduled-version" }],
       seasonalPrices: scheduledPrices.map((price, index) => ({ ...price, id: `price-${index}`, isActive: false })),
@@ -58,6 +59,7 @@ describe("scheduled package publication", () => {
     expect(mocks.packageUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         currentVersionId: "scheduled-version",
+        draftVersionId: null,
         status: "PUBLISHED",
         scheduledAt: null,
       }),
@@ -78,6 +80,45 @@ describe("scheduled package publication", () => {
     expect(result).toBeNull();
     expect(mocks.packageUpdateMany).not.toHaveBeenCalled();
     expect(mocks.seasonalPriceDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("keeps live content intact until an unscheduled draft is explicitly published", async () => {
+    mocks.packageFindUnique.mockResolvedValue({
+      id: "package-1",
+      slug: "kerala-tour",
+      currentVersionId: "live-version",
+      draftVersionId: "draft-version",
+      scheduledAt: null,
+      versions: [{ id: "draft-version" }],
+      seasonalPrices: [
+        { id: "active-price", isActive: true, ...scheduledPrices[0], pricePerPerson: 24000 },
+        { id: "draft-price", isActive: false, ...scheduledPrices[0] },
+      ],
+    });
+
+    const result = await publishPackageNow("package-1");
+
+    expect(result).toEqual({ slug: "kerala-tour" });
+    expect(mocks.packageUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: "package-1",
+        scheduledAt: null,
+        draftVersionId: "draft-version",
+      },
+      data: {
+        currentVersionId: "draft-version",
+        draftVersionId: null,
+        status: "PUBLISHED",
+        scheduledAt: null,
+      },
+    });
+    expect(mocks.seasonalPriceDeleteMany).toHaveBeenCalledWith({
+      where: { packageId: "package-1", isActive: true },
+    });
+    expect(mocks.seasonalPriceUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["draft-price"] } },
+      data: { isActive: true },
+    });
   });
 
   it("rejects invalid staged pricing instead of publishing a partial update", async () => {

@@ -21,6 +21,7 @@ export async function publishPackageNow(packageId: string, dueAt?: Date) {
         id: true,
         slug: true,
         currentVersionId: true,
+        draftVersionId: true,
         scheduledAt: true,
         versions: { orderBy: { versionNumber: "desc" }, take: 1, select: { id: true } },
         seasonalPrices: true,
@@ -29,12 +30,11 @@ export async function publishPackageNow(packageId: string, dueAt?: Date) {
 
     if (!pkg || (dueAt && (!pkg.scheduledAt || pkg.scheduledAt > dueAt))) return null;
 
-    const versionId = pkg.scheduledAt
-      ? pkg.versions[0]?.id ?? pkg.currentVersionId
-      : pkg.currentVersionId;
+    const versionId = pkg.draftVersionId ?? (pkg.scheduledAt ? pkg.versions[0]?.id : null) ?? pkg.currentVersionId;
     if (!versionId) return null;
 
-    const stagedPrices = pkg.scheduledAt
+    const hasStagedPrices = pkg.draftVersionId !== null || pkg.scheduledAt !== null;
+    const stagedPrices = hasStagedPrices
       ? seasonalPricesSchema.safeParse(pkg.seasonalPrices.filter((price) => !price.isActive))
       : null;
     if (stagedPrices && !stagedPrices.success) {
@@ -45,9 +45,11 @@ export async function publishPackageNow(packageId: string, dueAt?: Date) {
       where: {
         id: pkg.id,
         scheduledAt: pkg.scheduledAt,
+        draftVersionId: pkg.draftVersionId,
       },
       data: {
         currentVersionId: versionId,
+        draftVersionId: null,
         status: "PUBLISHED",
         scheduledAt: null,
       },
@@ -57,8 +59,8 @@ export async function publishPackageNow(packageId: string, dueAt?: Date) {
 
     if (stagedPrices?.success) {
       const stagedPriceIds = pkg.seasonalPrices.filter((price) => !price.isActive).map((price) => price.id);
+      await tx.seasonalPrice.deleteMany({ where: { packageId: pkg.id, isActive: true } });
       if (stagedPriceIds.length > 0) {
-        await tx.seasonalPrice.deleteMany({ where: { packageId: pkg.id, isActive: true } });
         await tx.seasonalPrice.updateMany({
           where: { id: { in: stagedPriceIds } },
           data: { isActive: true },

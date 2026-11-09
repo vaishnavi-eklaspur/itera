@@ -110,7 +110,7 @@ describe("package edit scheduling", () => {
     });
   });
 
-  it("publishes edits immediately and clears a previous schedule when no future time is set", async () => {
+  it("saves unscheduled edits as a draft without changing live content or prices", async () => {
     const response = await PUT(request(packageInput), {
       params: Promise.resolve({ id: "package-1" }),
     });
@@ -118,11 +118,18 @@ describe("package edit scheduling", () => {
 
     expect(response.status).toBe(200);
     expect(updateData).toMatchObject({
-      currentVersionId: "new-version",
+      draftVersionId: "new-version",
       scheduledAt: null,
     });
-    expect(mocks.seasonalPriceDeleteMany).toHaveBeenCalledWith({ where: { packageId: "package-1" } });
+    expect(updateData).not.toHaveProperty("currentVersionId");
+    expect(updateData).not.toHaveProperty("slug");
+    expect(mocks.seasonalPriceDeleteMany).toHaveBeenCalledWith({
+      where: { packageId: "package-1", isActive: false },
+    });
     expect(mocks.seasonalPriceCreateMany).toHaveBeenCalledOnce();
+    expect(mocks.seasonalPriceCreateMany).toHaveBeenCalledWith({
+      data: packageInput.seasonalPrices.map((price) => ({ ...price, packageId: "package-1", isActive: false })),
+    });
   });
 
   it("rejects a scheduled time in the past without writing a version", async () => {
@@ -137,7 +144,7 @@ describe("package edit scheduling", () => {
     expect(mocks.transaction).not.toHaveBeenCalled();
   });
 
-  it("rejects slug changes in scheduled edits so the live URL stays unchanged", async () => {
+  it("rejects slug changes so the live URL stays unchanged", async () => {
     const response = await PUT(request({
       ...packageInput,
       slug: "new-kerala-tour",

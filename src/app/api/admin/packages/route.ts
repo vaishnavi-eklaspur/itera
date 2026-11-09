@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
       where: { id: p.id },
       data: {
         currentVersionId: version.id,
+        ...(scheduledAt ? { draftVersionId: version.id } : {}),
         ...(scheduledAt ? { scheduledAt } : {}),
       },
     });

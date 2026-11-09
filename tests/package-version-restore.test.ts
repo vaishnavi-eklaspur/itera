@@ -84,7 +84,7 @@ describe("package version restore", () => {
     }));
   });
 
-  it("restores the selected version's content and pricing as a new version", async () => {
+  it("stages the restored version and its pricing as a draft without changing live content", async () => {
     const response = await POST(new NextRequest("https://itera.example/api/versions", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -95,13 +95,15 @@ describe("package version restore", () => {
     expect(mocks.packageVersionCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({ seasonalPrices: historicalPrices }),
     });
-    expect(mocks.seasonalPriceDeleteMany).toHaveBeenCalledWith({ where: { packageId: "package-1" } });
+    expect(mocks.seasonalPriceDeleteMany).toHaveBeenCalledWith({
+      where: { packageId: "package-1", isActive: false },
+    });
     expect(mocks.seasonalPriceCreateMany).toHaveBeenCalledWith({
-      data: historicalPrices.map((price) => ({ ...price, packageId: "package-1" })),
+      data: historicalPrices.map((price) => ({ ...price, packageId: "package-1", isActive: false })),
     });
     expect(mocks.packageUpdate).toHaveBeenCalledWith({
       where: { id: "package-1" },
-      data: { currentVersionId: "version-4", scheduledAt: null },
+      data: { draftVersionId: "version-4", scheduledAt: null },
     });
   });
 });

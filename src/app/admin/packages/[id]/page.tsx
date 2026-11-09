@@ -27,16 +27,23 @@ export default async function AdminPackageEditPage({
 
   if (!pkg) notFound();
 
+  const draftVersion = pkg.draftVersionId
+    ? pkg.versions.find((version) => version.id === pkg.draftVersionId) ?? null
+    : pkg.scheduledAt
+      ? pkg.versions[0] ?? null
+      : null;
+
   return (
     <PackageEditor
       pkg={JSON.parse(JSON.stringify({
         ...pkg,
-        scheduledVersion: pkg.scheduledAt ? pkg.versions[0] ?? null : null,
-        scheduledPrices: pkg.scheduledAt ? pkg.seasonalPrices.filter((price) => !price.isActive) : null,
+        draftVersion,
+        draftPrices: draftVersion ? pkg.seasonalPrices.filter((price) => !price.isActive) : null,
         seasonalPrices: pkg.seasonalPrices.filter((price) => price.isActive),
         versions: pkg.versions.map((version) => ({
           ...version,
           currentOf: version.id === pkg.currentVersionId ? { id: pkg.id } : null,
+          draftOf: version.id === pkg.draftVersionId ? { id: pkg.id } : null,
         })),
       }))}
       readOnly={session.user.role === "CONSULTANT"}
